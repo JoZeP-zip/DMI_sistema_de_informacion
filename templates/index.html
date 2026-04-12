@@ -83,6 +83,36 @@
     </select>
     </div>
 
+
+        {% if vehicle_to_edit %}
+    <h1 style="color: #2e7d32;">✏️ Editar Vehículo</h1>
+    <form action="/vehiculo/editar/{{ vehicle_to_edit[0] }}" method="post">
+        <!-- los mismos campos que ya tienes, pero con value prellenado -->
+        <div><label>Código vehículo: <input type="text" name="codigovehiculo" value="{{ vehicle_to_edit[1] }}" required></label></div>
+        <div><label>Placa: <input type="text" name="placa" value="{{ vehicle_to_edit[5] }}" required maxlength="10"></label></div>
+        <div><label>Marca: <input type="text" name="marca" value="{{ vehicle_to_edit[8] }}" required></label></div>
+        <div>
+            <label>Tipo de vehículo:</label>
+            <select name="tipovehiculos_idtipovehiculos" required>
+                {% for tipo in tipos %}
+                    <option value="{{ tipo[0] }}" {% if tipo[0] == vehicle_to_edit[9] %}selected{% endif %}>
+                        {{ tipo[1] }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div><label>Descripción: <input type="text" name="descripcionvehiculo" value="{{ vehicle_to_edit[2] }}"></label></div>
+        <div><label>Motor: <input type="text" name="motor" value="{{ vehicle_to_edit[3] }}"></label></div>
+        <div><label>Cantidad asientos: <input type="text" name="cantidad_asientos" value="{{ vehicle_to_edit[4] }}"></label></div>
+        <div><label>Capacidad: <input type="text" name="capacidad" value="{{ vehicle_to_edit[6] }}"></label></div>
+        <div><label>Modelo: <input type="text" name="modelo" value="{{ vehicle_to_edit[7] }}"></label></div>
+        <button type="submit">💾 Guardar Cambios</button>
+        <a href="/" style="margin-left:10px; color:red;">Cancelar</a>
+    </form>
+    <hr>
+    {% endif %}
+
+
     <div>
         <label>Descripción: <input type="text" name="descripcionvehiculo"></label>
     </div>
@@ -133,6 +163,16 @@
                 <th>Tipo Vehículo ID</th>
             </tr>
             {% for row in data %}
+
+                <td>
+                    <a href="/vehiculo/editar/{{ row[0] }}" style="color:blue; margin-right:10px;">✏️ Editar</a>
+    
+                    <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" style="display:inline;">
+                        <button type="submit" onclick="return confirm('¿Seguro que quieres eliminar este vehículo?')" 
+                        style="color:red; background:none; border:none; cursor:pointer;">🗑️ Eliminar</button>
+                    </form>
+                </td>
+
                 <tr>
                     <td>{{ row[0] }}</td>  <!-- idvehiculo -->
                     <td>{{ row[1] }}</td>  <!-- codigovehiculo -->
@@ -145,6 +185,7 @@
                     <td>{{ row[8] }}</td>
                     <td>{{ row[9] }}</td>  <!-- tipovehiculos_idtipo... -->
                 </tr>
+                <th>Acciones</th> 
             {% endfor %}
         </table>
     {% endif %}

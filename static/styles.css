@@ -3,8 +3,22 @@ body{
     
     background-color: #8d8d8d;
 }
-.Registro{
-    display: flex;
-    justify-content: center;
-    background-color: aqua;
+
+select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+    border-color: #007BFF;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
 }
