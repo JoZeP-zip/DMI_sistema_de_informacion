@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehículos</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    {% if usuario %}
+    <h2>Bienvenido, {{ usuario }}</h2>
+    {% else %}
+    <h2>No has iniciado sesión</h2>
+    {% endif %}
+
+    <div class="Regristro">
+    <h1>Registrar Usuario</h1>
+    <form action="/registro" method="post">
+        <div>
+            <label>Email: <input type="email" name="email" required></label>
+        </div>
+        <div>
+            <label>Password: <input type="password" name="password" required></label>
+        </div>
+        <div>
+            <label>Nombre: <input type="text" name="nombre" required></label>
+        </div>
+        <div>
+            <label>Apellidos: <input type="text" name="apellidos" required></label>
+        </div>
+        <div>
+            <label>Documento: <input type="number" name="documento" required></label>
+        </div>
+        <div>
+            <label>Telefono: <input type="text" name="telefono" required></label>
+        </div>
+        <div>
+            <label>Usuario: <input type="text" name="usuarionombre" required></label>
+        </div>
+        <button type="submit">Registrarse</button>
+    </form>
+    <div/>
+
+
+
+
+    <h1>Iniciar Sesión</h1>
+    <form action="/login" method="post">
+        <div>
+            <label>Email: <input type="email" name="email" required></label>
+        </div>
+        <div>
+            <label>Password: <input type="password" name="password" required></label>
+        </div>
+        <button type="submit">Iniciar sesión</button>
+    </form>
+
+
+
+
+    <h1>Registro de Vehículos</h1>
+
+    <form action="/vehiculo/nuevo" method="post">
+    <div>
+        <label>Código vehículo: <input type="text" name="codigovehiculo" required></label>
+    </div>
+    <div>
+        <label>Placa: <input type="text" name="placa" required maxlength="10"></label>
+    </div>
+    <div>
+        <label>Marca: <input type="text" name="marca" required></label>
+    </div>
+
+    <div>
+    <label>Tipo de vehículo:</label>
+    <select name="tipovehiculos_idtipovehiculos" required>
+        <option value="" disabled selected>Seleccione un tipo</option>
+        {% for tipo in tipos %}
+            <option value="{{ tipo.idtipovehiculos }}">
+                {{ tipo.codigotipovehiculos }}
+            </option>
+        {% endfor %}
+    </select>
+    </div>
+
+    <div>
+        <label>Descripción: <input type="text" name="descripcionvehiculo"></label>
+    </div>
+    <div>
+        <label>Motor: <input type="text" name="motor"></label>
+    </div>
+    <div>
+        <label>Cantidad asientos: <input type="text" name="cantidad_asientos"></label>
+    </div>
+    <div>
+        <label>Capacidad: <input type="text" name="capacidad"></label>
+    </div>
+    <div>
+        <label>Modelo: <input type="text" name="modelo"></label>
+    </div>
+
+    <button type="submit">Guardar Vehículo</button>
+</form>
+
+
+
+
+
+
+
+
+{% if success_msg %}
+    <p style="color: green; font-weight: bold;">{{ success_msg }}</p>
+{% endif %}
+
+{% if error %}
+    <p style="color: red; font-weight: bold;">Error: {{ error }}</p>
+{% endif %}
+
+    <h1>Listado de Vehículos</h1>
+    {% if data %}
+        <table border="1">
+            <tr>
+                <th>ID Vehículo</th>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Motor</th>
+                <th>Asientos</th>
+                <th>Placa</th>
+                <th>Capacidad</th>
+                <th>Modelo</th>
+                <th>Marca</th>
+                <th>Tipo Vehículo ID</th>
+            </tr>
+            {% for row in data %}
+                <tr>
+                    <td>{{ row[0] }}</td>  <!-- idvehiculo -->
+                    <td>{{ row[1] }}</td>  <!-- codigovehiculo -->
+                    <td>{{ row[2] }}</td>  <!-- descripcionvehiculo -->
+                    <td>{{ row[3] }}</td>
+                    <td>{{ row[4] }}</td>
+                    <td>{{ row[5] }}</td>
+                    <td>{{ row[6] }}</td>
+                    <td>{{ row[7] }}</td>
+                    <td>{{ row[8] }}</td>
+                    <td>{{ row[9] }}</td>  <!-- tipovehiculos_idtipo... -->
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
+</body>
+</html>

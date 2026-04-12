@@ -1,0 +1,10 @@
+body{
+    display: grid;
+    
+    background-color: #8d8d8d;
+}
+.Registro{
+    display: flex;
+    justify-content: center;
+    background-color: aqua;
+}
