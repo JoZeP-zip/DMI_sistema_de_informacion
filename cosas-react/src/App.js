@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import './App.css'; // Aquí pondremos todos los estilos
+import RegistroVehiculo from './componentes/RegristroVehiculo.js';
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [view, setView] = useState('inicio');
 
   // Animación de contadores (stats)
   useEffect(() => {
@@ -32,7 +34,7 @@ function App() {
 
       observer.observe(counter);
     });
-  }, []);
+  }, [view]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -45,22 +47,48 @@ function App() {
       {/* NAVEGACIÓN */}
       <nav className="main-nav">
         <div className="nav-container">
-          <a href="#" className="logo">Disol<span>Motors</span></a>
+          <a href="#" className="logo" onClick={() => setView('inicio')}>Disol<span>Motors</span></a>
           
           <ul className={`nav-links ${menuOpen ? 'active' : ''}`}>
-            <li><a href="#inicio" onClick={() => setMenuOpen(false)}>Inicio</a></li>
-            <li><a href="#servicios" onClick={() => setMenuOpen(false)}>Servicios</a></li>
-            <li><a href="#galeria" onClick={() => setMenuOpen(false)}>Galería</a></li>
-            <li><a href="#contacto" onClick={() => setMenuOpen(false)}>Contacto</a></li>
+            {/* AQUÍ ESTÁ EL BLOQUE DE ENLACES */}
+            <li><a href="#inicio" onClick={() => { setMenuOpen(false); setView('inicio'); }}>Inicio</a></li>
+            
+            {/* ESTA ES LA LÍNEA QUE BUSCAS: */}
+            <li><a href="#servicios" onClick={() => { setMenuOpen(false); setView('inicio'); }}>Servicios</a></li>
+            
+            <li><a href="#galeria" onClick={() => { setMenuOpen(false); setView('inicio'); }}>Galería</a></li>
+            <li><a href="#contacto" onClick={() => { setMenuOpen(false); setView('inicio'); }}>Contacto</a></li>
+            <li>
+              <a 
+                href="#registro" 
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  setMenuOpen(false); 
+                  setView('registro'); 
+                }}
+              >
+                Registrar Vehículos
+              </a>
+            </li>
           </ul>
-
-          <div className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? '✕' : '☰'}
-          </div>
+          
+          {/* ... resto del nav-container ... */}
         </div>
       </nav>
 
-      {/* HERO */}
+      {/* Si la vista es 'registro', mostramos el componente. Si no, mostramos TODO tu código original */}
+      {view === 'registro' ? (
+        <section className="section" style={{ paddingTop: '100px', minHeight: '80vh' }}>
+          <RegistroVehiculo />
+          <div style={{ textAlign: 'center', marginTop: '20px' }}>
+            <button className="btn outline" onClick={() => setView('inicio')}>
+              ← Volver al Inicio
+            </button>
+          </div>
+        </section>
+      ) : (
+        <>
+           {/* HERO */}
       <header id="inicio" className="hero">
         <div className="overlay"></div>
         <div className="hero-content">
@@ -236,18 +264,16 @@ function App() {
           </div>
         </div>
       </section>
+        </>
+      )}
 
-      {/* ====================== FOOTER ====================== */}
       <footer>
         <div className="footer-content">
-          <p className="copyright">
-            © 2025–2026 Disol Motors Injection • Todos los derechos reservados
-          </p>
-          
+          <p className="copyright">© 2025–2026 Disol Motors Injection • Todos los derechos reservados</p>
           <div className="social-links">
-            <a href="#" target="_blank" rel="noopener noreferrer">Instagram</a>
-            <a href="#" target="_blank" rel="noopener noreferrer">Facebook</a>
-            <a href="#" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+            <a href="#">Instagram</a>
+            <a href="#">Facebook</a>
+            <a href="#">WhatsApp</a>
           </div>
         </div>
       </footer>
