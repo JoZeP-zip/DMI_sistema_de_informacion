@@ -159,49 +159,95 @@ function App() {
         </div>
       </section>
 
-      {/* CONTACTO */}
+            {/* ====================== CONTACTO ====================== */}
       <section id="contacto" className="section contacto">
-        <div className="section-title light">
+        <div className="section-title">
           <h2>¿Listo para potenciar tu auto?</h2>
           <div className="title-underline"></div>
         </div>
 
         <div className="contact-container">
+          {/* Formulario de contacto */}
           <form className="contact-form" onSubmit={handleSubmit}>
-            <input type="text" placeholder="Nombre completo" required />
-            <input type="tel" placeholder="Teléfono / WhatsApp" required />
-            <input type="email" placeholder="Email" required />
+            <input 
+              type="text" 
+              placeholder="Nombre completo" 
+              required 
+            />
+            
+            <input 
+              type="tel" 
+              placeholder="Teléfono / WhatsApp" 
+              required 
+            />
+            
+            <input 
+              type="email" 
+              placeholder="Email" 
+              required 
+            />
+
             <select required>
-              <option value="" disabled selected>Servicio de interés</option>
+              <option value="" disabled selected>
+                Servicio de interés
+              </option>
               <option>Mecánica general</option>
               <option>Service completo</option>
               <option>Reprogramación / Tuning</option>
-              <option>Diagnóstico</option>
+              <option>Diagnóstico electrónico</option>
               <option>Revisión pre-compra</option>
               <option>Otro</option>
             </select>
-            <textarea placeholder="Cuéntanos qué necesita tu vehículo..." rows="5" required></textarea>
+
+            <textarea 
+              placeholder="Cuéntanos qué necesita tu vehículo..." 
+              rows="5" 
+              required
+            />
+
             <button type="submit" className="btn primary large">
               Solicitar Turno Ahora
             </button>
           </form>
 
+          {/* Información de contacto */}
           <div className="contact-info">
             <h3>Disol Motors Injection</h3>
-            <p><strong>Dirección:</strong> Av. Siempre Viva 7423, Galpón 12</p>
-            <p><strong>WhatsApp:</strong> +54 9 11 5555-4321</p>
-            <p><strong>Horario:</strong> Lunes a Viernes 9:00 - 19:00 | Sábados 9:00 - 14:00</p>
-            <p><strong>Email:</strong> info@disolmotors.com</p>
+            
+            <div className="info-item">
+              <strong>Dirección:</strong> 
+              Av. Siempre Viva 7423, Galpón 12
+            </div>
+            
+            <div className="info-item">
+              <strong>WhatsApp:</strong> 
+              +54 9 11 5555-4321
+            </div>
+            
+            <div className="info-item">
+              <strong>Horario:</strong> 
+              Lunes a Viernes 9:00 - 19:00 | Sábados 9:00 - 14:00
+            </div>
+            
+            <div className="info-item">
+              <strong>Email:</strong> 
+              info@disolmotors.com
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* ====================== FOOTER ====================== */}
       <footer>
         <div className="footer-content">
-          <p>© 2025–2026 Disol Motors Injection • Todos los derechos reservados</p>
+          <p className="copyright">
+            © 2025–2026 Disol Motors Injection • Todos los derechos reservados
+          </p>
+          
           <div className="social-links">
-            <a href="#">Instagram</a> • <a href="#">Facebook</a> • <a href="#">WhatsApp</a>
+            <a href="#" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="#" target="_blank" rel="noopener noreferrer">Facebook</a>
+            <a href="#" target="_blank" rel="noopener noreferrer">WhatsApp</a>
           </div>
         </div>
       </footer>
