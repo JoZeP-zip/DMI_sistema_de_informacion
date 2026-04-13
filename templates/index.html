@@ -85,9 +85,9 @@
 
 
         {% if vehicle_to_edit %}
-    <h1 style="color: #2e7d32;">✏️ Editar Vehículo</h1>
+    <h1 style="color: #2e7d32;">Editar Vehículo</h1>
     <form action="/vehiculo/editar/{{ vehicle_to_edit[0] }}" method="post">
-        <!-- los mismos campos que ya tienes, pero con value prellenado -->
+        
         <div><label>Código vehículo: <input type="text" name="codigovehiculo" value="{{ vehicle_to_edit[1] }}" required></label></div>
         <div><label>Placa: <input type="text" name="placa" value="{{ vehicle_to_edit[5] }}" required maxlength="10"></label></div>
         <div><label>Marca: <input type="text" name="marca" value="{{ vehicle_to_edit[8] }}" required></label></div>
@@ -174,9 +174,9 @@
                 </td>
 
                 <tr>
-                    <td>{{ row[0] }}</td>  <!-- idvehiculo -->
-                    <td>{{ row[1] }}</td>  <!-- codigovehiculo -->
-                    <td>{{ row[2] }}</td>  <!-- descripcionvehiculo -->
+                    <td>{{ row[0] }}</td>  
+                    <td>{{ row[1] }}</td>  
+                    <td>{{ row[2] }}</td> 
                     <td>{{ row[3] }}</td>
                     <td>{{ row[4] }}</td>
                     <td>{{ row[5] }}</td>
