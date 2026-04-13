@@ -128,4 +128,5 @@ const RegistroVehiculo = () => {
   );
 };
 
+
 export default RegistroVehiculo;
