@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './App.css'; // Aquí pondremos todos los estilos
-import RegistroVehiculo from './componentes/RegristroVehiculo.js';
+import RegistroVehiculo from './componentes/RegistroVehiculo.js';
+
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);

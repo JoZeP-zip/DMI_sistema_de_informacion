@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './RegistroVehiculo.css';
+import { supabase } from '../supabaseClient';
 
 
 const RegistroVehiculo = () => {
