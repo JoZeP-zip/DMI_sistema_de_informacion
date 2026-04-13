@@ -147,48 +147,53 @@
     <p style="color: red; font-weight: bold;">Error: {{ error }}</p>
 {% endif %}
 
-    <h1>Listado de Vehículos</h1>
-    {% if data %}
-        <table border="1">
-            <tr>
-                <th>ID Vehículo</th>
-                <th>Código</th>
-                <th>Descripción</th>
-                <th>Motor</th>
-                <th>Asientos</th>
-                <th>Placa</th>
-                <th>Capacidad</th>
-                <th>Modelo</th>
-                <th>Marca</th>
-                <th>Tipo Vehículo ID</th>
-            </tr>
-            {% for row in data %}
 
-                <td>
-                    <a href="/vehiculo/editar/{{ row[0] }}" style="color:blue; margin-right:10px;">✏️ Editar</a>
-    
-                    <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" style="display:inline;">
-                        <button type="submit" onclick="return confirm('¿Seguro que quieres eliminar este vehículo?')" 
-                        style="color:red; background:none; border:none; cursor:pointer;">🗑️ Eliminar</button>
-                    </form>
-                </td>
+<h1>Listado de Vehículos</h1>
 
-                <tr>
-                    <td>{{ row[0] }}</td>  
-                    <td>{{ row[1] }}</td>  
-                    <td>{{ row[2] }}</td> 
-                    <td>{{ row[3] }}</td>
-                    <td>{{ row[4] }}</td>
-                    <td>{{ row[5] }}</td>
-                    <td>{{ row[6] }}</td>
-                    <td>{{ row[7] }}</td>
-                    <td>{{ row[8] }}</td>
-                    <td>{{ row[9] }}</td>  <!-- tipovehiculos_idtipo... -->
-                </tr>
-                <th>Acciones</th> 
-            {% endfor %}
-        </table>
-    {% endif %}
+{% if data %}
+<table border="1">
+    <tr>
+        <th>ID Vehículo</th>
+        <th>Código</th>
+        <th>Descripción</th>
+        <th>Motor</th>
+        <th>Asientos</th>
+        <th>Placa</th>
+        <th>Capacidad</th>
+        <th>Modelo</th>
+        <th>Marca</th>
+        <th>Tipo Vehículo ID</th>
+        <th>Acciones</th>
+    </tr>
+
+    {% for row in data %}
+    <tr>
+        <td>{{ row[0] }}</td>
+        <td>{{ row[1] }}</td>
+        <td>{{ row[2] }}</td>
+        <td>{{ row[3] }}</td>
+        <td>{{ row[4] }}</td>
+        <td>{{ row[5] }}</td>
+        <td>{{ row[6] }}</td>
+        <td>{{ row[7] }}</td>
+        <td>{{ row[8] }}</td>
+        <td>{{ row[9] }}</td>
+
+        <td>
+            <a href="/vehiculo/editar/{{ row[0] }}" style="color:blue; margin-right:10px;">✏️ Editar</a>
+
+            <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" style="display:inline;">
+                <button type="submit"
+                    onclick="return confirm('¿Seguro que quieres eliminar este vehículo?')"
+                    style="color:red; background:none; border:none; cursor:pointer;">
+                    🗑️ Eliminar
+                </button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
 
 </body>
 </html>

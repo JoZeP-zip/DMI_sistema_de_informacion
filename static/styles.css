@@ -1,24 +1,61 @@
-body{
-    display: grid;
-    
-    background-color: #8d8d8d;
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #777777;
 }
 
-select {
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+/* TITULOS */
+h1 {
+    color: #2f3640;
+}
+
+/* TABLA */
+table {
+    width: 100%;
+    border-collapse: collapse;
     background-color: white;
-    font-size: 14px;
+}
+
+th {
+    background-color: #273c75;
+    color: white;
+    padding: 10px;
+    text-align: left;
+}
+
+td {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+tr:hover {
+    background-color: #f1f2f6;
+}
+
+/* BOTONES */
+button {
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: none;
     cursor: pointer;
 }
 
-select:focus {
-    outline: none;
-    border-color: #007BFF;
+button:hover {
+    opacity: 0.8;
 }
 
-label {
-    display: block;
+/* LINKS */
+a {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* FORMULARIOS */
+input, select {
+    padding: 6px;
+    margin-top: 5px;
     margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 200px;
 }
