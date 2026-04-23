@@ -5,14 +5,14 @@
 }
 
 :root {
-  --rojo-fuerte:    #d00c0c;
-  --rojo-oscuro:    #a00808;
-  --rojo-claro:     #ff2d2d;
+  --rojo-fuerte:    #a8202b;
+  --rojo-oscuro:    #5a0f1e;
+  --rojo-claro:     #b11e1e;
   --blanco:         #ffffff;
   --blanco-suave:   #f8f8f8;
-  --gris-oscuro:    #1a1a1a;
+  --gris-oscuro:    #242123;
   --gris-medio:     #333;
-  --negro:          #0f0f0f;
+  --negro:          #796d66;
   
   --gradiente-rojo: linear-gradient(135deg, var(--rojo-oscuro) 0%, var(--rojo-fuerte) 50%, var(--rojo-claro) 100%);
   --sombra-dura:    0 12px 35px rgba(208, 12, 12, 0.28);
@@ -38,7 +38,7 @@ body {
   top: 0;
   width: 100%;
   z-index: 1000;
-  background: rgba(10,10,10,0.92);
+  background: #0a0a0aeb;
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(208,12,12,0.18);
   transition: var(--transicion);
@@ -111,7 +111,7 @@ body {
 .hero {
   height: 100vh;
   min-height: 720px;
-  background: url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=2940') center center/cover no-repeat fixed;
+  background: url('https://e0.pxfuel.com/wallpapers/728/607/desktop-wallpaper-white-modified-chevrolet-camaro-camaro-car.jpg') center center/cover no-repeat fixed;
   position: relative;
   display: flex;
   align-items: center;
@@ -122,7 +122,7 @@ body {
 .overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(208,12,12,0.28) 100%);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(48, 53, 78, 0.37) 100%);
 }
 
 .hero-content {
@@ -132,6 +132,7 @@ body {
 }
 
 .hero h1 {
+
   font-family: 'Orbitron', sans-serif;
   font-size: clamp(4.5rem, 12vw, 11rem);
   font-weight: 700;
@@ -144,6 +145,11 @@ body {
 .hero h1 span { 
   color: var(--rojo-fuerte); 
 }
+
+.motors { 
+  font-size: clamp(2.6rem, 10vw, 6.2rem);
+}
+
 
 .slogan {
   font-size: clamp(1.6rem, 5vw, 3.2rem);
@@ -229,14 +235,22 @@ body {
   border-radius: 5px;
 }
 
-/* ====================== SERVICIOS ====================== */
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 2.2rem;
+/* ====================== SERVICIOS + CARRUSEL ====================== */
+.carousel-track-wrap {
+  overflow: hidden;
+  width: 100%;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.38s ease;
+  gap: 12px;
 }
 
 .service-card {
+  min-width: calc((33.333% / var(--visible-items)) - 8px);
+  flex-shrink: 0;
+  box-sizing: border-box;
   background: rgba(25,25,25,0.92);
   border: 1px solid rgba(208,12,12,0.15);
   border-radius: 16px;
@@ -247,7 +261,6 @@ body {
 }
 
 .service-card:hover {
-  transform: translateY(-14px);
   border-color: var(--rojo-claro);
   box-shadow: var(--sombra-dura);
 }
@@ -255,13 +268,64 @@ body {
 .service-card.highlight {
   background: linear-gradient(145deg, rgba(208,12,12,0.22), rgba(25,25,25,0.95));
   border-color: var(--rojo-fuerte);
-  transform: scale(1.04);
 }
 
 .icon {
   font-size: 3.8rem;
   margin-bottom: 1.4rem;
   color: var(--rojo-claro);
+}
+
+.carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 1.5rem;
+}
+
+.carousel-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(208,12,12,0.5);
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: var(--transicion);
+}
+
+.carousel-btn:hover {
+  background: var(--rojo-fuerte);
+  border-color: var(--rojo-fuerte);
+}
+
+.carousel-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.carousel-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(208,12,12,0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: var(--transicion);
+}
+
+.dot.active {
+  background: var(--rojo-fuerte);
+  transform: scale(1.3);
 }
 
 /* ====================== ESTADÍSTICAS ====================== */
@@ -420,7 +484,7 @@ footer {
   }
 }
 
-/* Menú móvil mejorado (opcional pero recomendado) */
+/* Menú móvil */
 @media (max-width: 900px) {
   .nav-links.active {
     display: flex;
@@ -433,5 +497,17 @@ footer {
     padding: 2rem 0;
     gap: 1.5rem;
     border-top: 1px solid rgba(208,12,12,0.3);
+  }
+}
+
+@media (max-width: 900px) {
+  .service-card {
+    min-width: calc(50% - 6px);
+  }
+}
+
+@media (max-width: 540px) {
+  .service-card {
+    min-width: 100%;
   }
 }
