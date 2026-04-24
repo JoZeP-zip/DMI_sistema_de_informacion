@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import RegistroVehiculo from './componentes/RegistroVehiculo.js';
-import Contacto from './componentes/Contacto.js';  
+import Contacto from './componentes/Contacto.js';
+import AgendarCita from './componentes/AgendarCita.js';
 
 function App() {
   const [menuOpen] = useState(false);
@@ -21,20 +22,25 @@ function App() {
       <nav className="main-nav">
         <div className="nav-container">
           <a href="#" className="logo" onClick={() => setView('inicio')}>
-            Disol<span>Motors</span>
+            <img src="/DMIheader.png" alt="Logo" style={{ height: '60px', width: 'auto' }} />
           </a>
 
           <ul className={`nav-links ${menuOpen ? 'active' : ''}`}>
             <li><a href="#inicio" onClick={() => setView('inicio')}>Inicio</a></li>
             <li><a href="#galeria">Galería</a></li>
             <li>
+              < a href="#" onClick={(e) =>{
+                e.preventDefault();
+                setView('citas');
+              }}>Agendar Cita</a>
+            </li>
+            <li>
               <a href="#" onClick={(e) => {
                 e.preventDefault();
                 setView('contacto');
               }}>contacto</a>
-              </li>
+            </li>
             <li>
-              
               <a href="#registro" onClick={(e) => {
                 e.preventDefault();
                 setView('registro');
@@ -46,26 +52,38 @@ function App() {
         </div>
       </nav>
 
+      {/* VISTA: AGENDAR CITA */}
+      {view === 'citas' && (
+        <section className="section no-scroll-section">
+          <AgendarCita />
+          <button className="btn outline" onClick={() => setView('inicio')}>
+            ← Volver al Inicio
+          </button>
+        </section>
+      )}
+
+      {/* VISTA REGISTRO */}
       {view === 'registro' && (
         <section className="section no-scroll-section">
-          <RegistroVehiculo />
+          <RegistroVehiculo /> {/* 2. Usado correctamente */}
           <button className="btn outline" onClick={() => setView('inicio')}>
             ← Volver
           </button>
         </section>
       )}
 
-        {view === 'contacto' && (
-          <section className="section no-scroll-section">
-            <contacto />
-            <button className="btn outline" onClick={() => setView('inicio')}>
-              ← Volver
-            </button>
-          </section>
-        )}
+      {/* VISTA CONTACTO */}
+      {view === 'contacto' && (
+        <section className="section no-scroll-section">
+          <Contacto /> {/* 3. Corregido a Mayúscula aquí para que coincida con el import */}
+          <button className="btn outline" onClick={() => setView('inicio')}>
+            ← Volver
+          </button>
+        </section>
+      )}
 
-        {view === 'inicio' && (
-          
+      {/* VISTA INICIO */}
+      {view === 'inicio' && (
         <>
           {/* HERO */}
           <header id="inicio" className="hero no-scroll-section">
@@ -85,7 +103,6 @@ function App() {
           {/* GALERÍA */}
           <section id="galeria" className="section galeria no-scroll-section">
             <h2>Trabajos Realizados</h2>
-
             <div className="gallery-grid">
               <div className="gallery-item item-1"></div>
               <div className="gallery-item item-2"></div>
@@ -95,7 +112,6 @@ function App() {
               <div className="gallery-item item-6"></div>
             </div>
           </section>
-          
         </>
       )}
 
