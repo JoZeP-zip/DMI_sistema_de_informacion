@@ -3,6 +3,7 @@ import './App.css';
 import RegistroVehiculo from './componentes/RegistroVehiculo.js';
 import Contacto from './componentes/Contacto.js';
 import AgendarCita from './componentes/AgendarCita.js';
+import Catalogo from './componentes/Catalogo.js';
 
 function App() {
   const [menuOpen] = useState(false);
@@ -21,32 +22,41 @@ function App() {
       {/* NAV */}
       <nav className="main-nav">
         <div className="nav-container">
-          <a href="#" className="logo" onClick={() => setView('inicio')}>
+          <a href="#inicio" className="logo" onClick={() => setView('inicio')}>
             <img src="/DMIheader.png" alt="Logo" style={{ height: '60px', width: 'auto' }} />
           </a>
 
           <ul className={`nav-links ${menuOpen ? 'active' : ''}`}>
             <li><a href="#inicio" onClick={() => setView('inicio')}>Inicio</a></li>
-            <li><a href="#galeria">Galería</a></li>
+            
             <li>
-              < a href="#" onClick={(e) =>{
+              <a href="#catalogo" onClick={(e) => {
+                e.preventDefault();
+                setView('catalogo');
+              }}>Catálogo</a>
+            </li>
+
+            <li><a href="#galeria">Galería</a></li>
+
+            <li>
+              <a href="#citas" onClick={(e) =>{
                 e.preventDefault();
                 setView('citas');
               }}>Agendar Cita</a>
             </li>
+
             <li>
-              <a href="#" onClick={(e) => {
+              <a href="#contacto" onClick={(e) => {
                 e.preventDefault();
                 setView('contacto');
-              }}>contacto</a>
+              }}>Contacto</a>
             </li>
+
             <li>
               <a href="#registro" onClick={(e) => {
                 e.preventDefault();
                 setView('registro');
-              }}>
-                Registrar Vehículos
-              </a>
+              }}>Registrar Vehículos</a>
             </li>
           </ul>
         </div>
@@ -65,9 +75,19 @@ function App() {
       {/* VISTA REGISTRO */}
       {view === 'registro' && (
         <section className="section no-scroll-section">
-          <RegistroVehiculo /> {/* 2. Usado correctamente */}
+          <RegistroVehiculo />
           <button className="btn outline" onClick={() => setView('inicio')}>
             ← Volver
+          </button>
+        </section>
+      )}
+
+      {/* VISTA: CATÁLOGO */}
+      {view === 'catalogo' && (
+        <section className="section no-scroll-section">
+          <Catalogo />
+          <button className="btn outline" onClick={() => setView('inicio')}>
+            ← Volver al Inicio
           </button>
         </section>
       )}
@@ -75,7 +95,7 @@ function App() {
       {/* VISTA CONTACTO */}
       {view === 'contacto' && (
         <section className="section no-scroll-section">
-          <Contacto /> {/* 3. Corregido a Mayúscula aquí para que coincida con el import */}
+          <Contacto />
           <button className="btn outline" onClick={() => setView('inicio')}>
             ← Volver
           </button>
@@ -93,7 +113,6 @@ function App() {
               <p className="slogan">
                 Rendimiento que se siente • Potencia que se ve
               </p>
-
               <div className="cta-buttons">
                 <a href="#galeria" className="btn primary">Ver Trabajos</a>
               </div>
