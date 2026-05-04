@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import './App.css';
+import './styles/App.css';
 import RegistroVehiculo from './componentes/RegistroVehiculo.js';
 import Contacto from './componentes/Contacto.js';
 import AgendarCita from './componentes/AgendarCita.js';
 import Catalogo from './componentes/Catalogo.js';
+
+
 
 function App() {
   const [menuOpen] = useState(false);
@@ -23,7 +25,7 @@ function App() {
       <nav className="main-nav">
         <div className="nav-container">
           <a href="#inicio" className="logo" onClick={() => setView('inicio')}>
-            <img src="/DMIheader.png" alt="Logo" style={{ height: '60px', width: 'auto' }} />
+            <img src="/assets/images/LOGOGOTY.png" alt="Disol Motors Logo" style={{ height: '60px', width: 'auto' }} />
           </a>
 
           <ul className={`nav-links ${menuOpen ? 'active' : ''}`}>
