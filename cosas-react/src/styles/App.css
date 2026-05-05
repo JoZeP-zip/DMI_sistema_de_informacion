@@ -85,10 +85,23 @@ body {
 .menu-toggle { display: none; font-size: 2rem; cursor: pointer; }
 
 /* ====================== HERO ====================== */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(49, 47, 47),
+    rgba(0, 0, 0, 0.5),
+    rgb(49, 47, 47)
+  );
+}
+
 .hero {
+  position: relative;
   height: 100vh;
-  background: linear-gradient(rgb(0, 0, 0), rgba(0, 0, 0, 0)), 
-              url('https://e0.pxfuel.com/wallpapers/728/607/desktop-wallpaper-white-modified-chevrolet-camaro-camaro-car.jpg') center/cover no-repeat fixed;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;

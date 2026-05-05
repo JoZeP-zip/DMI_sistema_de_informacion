@@ -5,19 +5,35 @@ import Contacto from './componentes/Contacto.js';
 import AgendarCita from './componentes/AgendarCita.js';
 import Catalogo from './componentes/Catalogo.js';
 
-
+// Imágenes del carrusel
+const heroSlides = [
+  '/assets/images/carmaroblanco.jpg',
+  '/assets/images/fotoautos.jpg',
+  '/assets/images/rx8.jpg',
+];
 
 function App() {
   const [menuOpen] = useState(false);
   const [view, setView] = useState('inicio');
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  // 🔒 BLOQUEAR SCROLL
+  //BLOQUEAR SCROLL
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'auto';
     };
   }, []);
+
+  //CARRUSEL 
+  useEffect(() => {
+    if (view !== 'inicio') return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [view]);
+
 
   return (
     <>
@@ -108,7 +124,14 @@ function App() {
       {view === 'inicio' && (
         <>
           {/* HERO */}
-          <header id="inicio" className="hero no-scroll-section">
+          <header
+            id="inicio"
+            className="hero no-scroll-section"
+            style={{
+              backgroundImage: `url(${heroSlides[currentSlide]})`,
+              transition: 'background-image 0.8s ease-in-out',
+            }}
+          >
             <div className="overlay"></div>
             <div className="hero-content">
               <h1>Disol Motors Injection</h1>
@@ -117,6 +140,23 @@ function App() {
               </p>
               <div className="cta-buttons">
                 <a href="#galeria" className="btn primary">Ver Trabajos</a>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '20px' }}>
+                {heroSlides.map((_, i) => (
+                  <span
+                    key={i}
+                    onClick={() => setCurrentSlide(i)}
+                    style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: i === currentSlide ? '#fff' : 'rgba(255,255,255,0.4)',
+                      cursor: 'pointer',
+                      display: 'inline-block',
+                      transition: 'background 0.3s',
+                    }}
+                  />
+                ))}
               </div>
             </div>
           </header>
