@@ -276,12 +276,16 @@ tr:hover td { background: var(--gray-100); }
     margin-bottom: .4rem;
     text-transform: uppercase;
     letter-spacing: .05em;
+
+    width: 30px;
+    height: 50px;
 }
 
 .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 4px;
+
 }
 
 .cal-day {
