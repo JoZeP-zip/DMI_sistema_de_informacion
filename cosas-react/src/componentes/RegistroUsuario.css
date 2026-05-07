@@ -1,0 +1,91 @@
+/* RegistroUsuario.css */
+.registro-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f4f7f6;
+  padding: 20px;
+}
+
+.registro-card {
+  background: #ffffff;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+}
+
+.registro-title {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #2d3436;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.input-group {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #636e72;
+  font-size: 0.9rem;
+}
+
+.input-field {
+  padding: 0.8rem;
+  border: 1.5px solid #dfe6e9;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #0984e3;
+  box-shadow: 0 0 0 3px rgba(9, 132, 227, 0.1);
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 0.9rem;
+  background-color: #0984e3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 1rem;
+}
+
+.btn-submit:hover {
+  background-color: #074b81;
+}
+
+/* Mensajes de feedback */
+.message {
+  padding: 0.8rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.error-msg {
+  background-color: #fab1a0;
+  color: #c0392b;
+  border: 1px solid #ff7675;
+}
+
+.success-msg {
+  background-color: #55efc4;
+  color: #00b894;
+  border: 1px solid #00b894;
+}

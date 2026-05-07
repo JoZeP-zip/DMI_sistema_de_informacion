@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Agendamiento de Citas</title>
+  <link rel="stylesheet" href="agendamiento.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <section class="agenda-section">
+    <div class="agenda-container">
+
+      <div class="agenda-header">
+        <h2>AGENDA TU <span>CITA</span></h2>
+        <div class="title-underline"></div>
+        <p>Reserva tu espacio en pocos pasos</p>
+      </div>
+
+      <form class="agenda-form">
+
+        <div class="form-group">
+          <label>Nombre Completo</label>
+          <input type="text" placeholder="Ingresa tu nombre" required>
+        </div>
+
+        <div class="form-group">
+          <label>Correo Electrónico</label>
+          <input type="email" placeholder="ejemplo@email.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="tel" placeholder="Tu número de contacto" required>
+        </div>
+
+        <div class="form-group">
+          <label>Servicio</label>
+          <select required>
+            <option value="">Selecciona un servicio</option>
+            <option>Servicio Básico</option>
+            <option>Servicio Premium</option>
+            <option>Servicio VIP</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" required>
+          </div>
+
+          <div class="form-group">
+            <label>Hora</label>
+            <input type="time" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Mensaje adicional</label>
+          <textarea rows="4" placeholder="Detalles adicionales..."></textarea>
+        </div>
+
+        <button type="submit" class="btn primary large">
+          Confirmar Cita
+        </button>
+
+      </form>
+
+    </div>
+  </section>
+
+</body>
+</html>

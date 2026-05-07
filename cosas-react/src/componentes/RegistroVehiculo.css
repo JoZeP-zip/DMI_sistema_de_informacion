@@ -1,0 +1,132 @@
+:root {
+  --rojo: rgb(187, 27, 27);
+  --rojo-claro: rgb(230, 40, 40);
+  --fondo: #0b0b0b;
+  --card: rgba(18, 18, 18, 0.95);
+  --borde: rgba(255, 255, 255, 0.08);
+  --texto: #eaeaea;
+}
+
+/* ================= GENERAL ================= */
+body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+/* ================= TITULO ================= */
+h1 {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 28px;
+  letter-spacing: 2px;
+}
+
+/* ================= FORM PRINCIPAL ================= */
+form {
+  width: 95%;
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--borde);
+  border-radius: 15px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* inputs ordenados */
+form input {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: white;
+  outline: none;
+  min-width: 160px;
+  transition: 0.3s;
+}
+
+form input:focus {
+  border-color: var(--rojo);
+  box-shadow: 0 0 10px rgba(187, 27, 27, 0.4);
+}
+
+/* ================= BOTON GUARDAR ================= */
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--rojo), var(--rojo-claro));
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+  text-transform: uppercase;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(187, 27, 27, 0.4);
+}
+
+/* ================= BUSCADOR ================= */
+input[type="text"] {
+  display: block;
+  margin: 20px auto;
+  width: 300px;
+  max-width: 90%;
+}
+
+/* ================= TABLA ================= */
+table {
+  width: 95%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+}
+
+/* encabezado */
+th {
+  background: var(--rojo);
+  color: white;
+  padding: 14px;
+  text-align: left;
+}
+
+/* filas */
+td {
+  padding: 12px;
+  border-bottom: 1px solid #222;
+}
+
+tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* ================= ESTADO VACIO ================= */
+td[colspan] {
+  text-align: center;
+  padding: 30px;
+  color: #aaa;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 768px) {
+  form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  form input {
+    width: 100%;
+  }
+}
