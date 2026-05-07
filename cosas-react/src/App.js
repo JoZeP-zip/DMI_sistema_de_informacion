@@ -4,28 +4,33 @@ import RegistroVehiculo from './componentes/RegistroVehiculo.js';
 import Contacto from './componentes/Contacto.js';
 import AgendarCita from './componentes/AgendarCita.js';
 import Catalogo from './componentes/Catalogo.js';
+import Registrodeusuario from './componentes/RegistroUsuario.js';
 
 // Imágenes del carrusel
 const heroSlides = [
-  '/assets/images/carmaroblanco.jpg',
+  '/assets/images/lamborghini.jpg',
   '/assets/images/fotoautos.jpg',
-  '/assets/images/rx8.jpg',
+  '/assets/images/porche.jpg',
 ];
 
+// Componente reutilizable para el botón de volver
+const BackButton = ({ onClick }) => (
+  <button className="btn outline" onClick={onClick}>
+    ← Volver al Inicio
+  </button>
+);
+
 function App() {
-  const [menuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState('inicio');
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  //BLOQUEAR SCROLL
+  // CONTROLAR SCROLL SEGÚN VISTA
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, []);
+    document.body.style.overflow = view === 'inicio' ? 'hidden' : 'auto';
+  }, [view]);
 
-  //CARRUSEL 
+  // CARRUSEL
   useEffect(() => {
     if (view !== 'inicio') return;
     const timer = setInterval(() => {
@@ -34,47 +39,71 @@ function App() {
     return () => clearInterval(timer);
   }, [view]);
 
+  const goToInicio = () => {
+    setView('inicio');
+    setMenuOpen(false);
+  };
 
   return (
     <>
       {/* NAV */}
       <nav className="main-nav">
         <div className="nav-container">
-          <a href="#inicio" className="logo" onClick={() => setView('inicio')}>
-            <img src="/assets/images/LOGOGOTY.png" alt="Disol Motors Logo" style={{ height: '60px', width: 'auto' }} />
+          <a href="#inicio" className="logo" onClick={goToInicio}>
+            <img
+              src="/assets/images/LOGOGOTY.png"
+              alt="Disol Motors Logo"
+              style={{ height: '60px', width: 'auto' }}
+            />
           </a>
 
+          {/* Botón hamburguesa para mobile */}
+          <button
+            className="menu-toggle"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Abrir menú"
+          >
+            ☰
+          </button>
+
           <ul className={`nav-links ${menuOpen ? 'active' : ''}`}>
-            <li><a href="#inicio" onClick={() => setView('inicio')}>Inicio</a></li>
-            
             <li>
-              <a href="#catalogo" onClick={(e) => {
-                e.preventDefault();
-                setView('catalogo');
-              }}>Catálogo</a>
-            </li>
-
-            <li><a href="#galeria">Galería</a></li>
-
-            <li>
-              <a href="#citas" onClick={(e) =>{
-                e.preventDefault();
-                setView('citas');
-              }}>Agendar Cita</a>
+              <a href="#inicio" onClick={() => {
+                goToInicio();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}>
+                Inicio
+              </a>
             </li>
 
             <li>
-              <a href="#contacto" onClick={(e) => {
-                e.preventDefault();
-                setView('contacto');
-              }}>Contacto</a>
+              <a href="#catalogo" onClick={(e) => { e.preventDefault(); setView('catalogo'); setMenuOpen(false); }}>
+                Catálogo
+              </a>
             </li>
 
             <li>
-              <a href="#registro" onClick={(e) => {
-                e.preventDefault();
-                setView('registro');
-              }}>Registrar Vehículos</a>
+              <a href="#citas" onClick={(e) => { e.preventDefault(); setView('citas'); setMenuOpen(false); }}>
+                Agendar Cita
+              </a>
+            </li>
+
+            <li>
+              <a href="#contacto" onClick={(e) => { e.preventDefault(); setView('contacto'); setMenuOpen(false); }}>
+                Contacto
+              </a>
+            </li>
+
+            <li>
+              <a href="#registro-usuario" onClick={(e) => { e.preventDefault(); setView('registro_usuario'); setMenuOpen(false); }}>
+                Registrar Usuario
+              </a>
+            </li>
+
+            <li>
+              <a href="#registro" onClick={(e) => { e.preventDefault(); setView('registro'); setMenuOpen(false); }}>
+                Registrar Vehículos
+              </a>
             </li>
           </ul>
         </div>
@@ -84,19 +113,15 @@ function App() {
       {view === 'citas' && (
         <section className="section no-scroll-section">
           <AgendarCita />
-          <button className="btn outline" onClick={() => setView('inicio')}>
-            ← Volver al Inicio
-          </button>
+          <BackButton onClick={goToInicio} />
         </section>
       )}
 
-      {/* VISTA REGISTRO */}
+      {/* VISTA: REGISTRO DE VEHÍCULO */}
       {view === 'registro' && (
         <section className="section no-scroll-section">
           <RegistroVehiculo />
-          <button className="btn outline" onClick={() => setView('inicio')}>
-            ← Volver
-          </button>
+          <BackButton onClick={goToInicio} />
         </section>
       )}
 
@@ -104,23 +129,27 @@ function App() {
       {view === 'catalogo' && (
         <section className="section no-scroll-section">
           <Catalogo />
-          <button className="btn outline" onClick={() => setView('inicio')}>
-            ← Volver al Inicio
-          </button>
+          <BackButton onClick={goToInicio} />
         </section>
       )}
 
-      {/* VISTA CONTACTO */}
+      {/* VISTA: CONTACTO */}
       {view === 'contacto' && (
         <section className="section no-scroll-section">
           <Contacto />
-          <button className="btn outline" onClick={() => setView('inicio')}>
-            ← Volver
-          </button>
+          <BackButton onClick={goToInicio} />
         </section>
       )}
 
-      {/* VISTA INICIO */}
+      {/* VISTA: REGISTRO DE USUARIO */}
+      {view === 'registro_usuario' && (
+        <section className="section no-scroll-section">
+          <Registrodeusuario />
+          <BackButton onClick={goToInicio} />
+        </section>
+      )}
+
+      {/* VISTA: INICIO */}
       {view === 'inicio' && (
         <>
           {/* HERO */}
