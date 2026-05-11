@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import './styles/App.css';
-import RegistroVehiculo from './componentes/RegistroVehiculo.js';
-import Contacto from './componentes/Contacto.js';
-import AgendarCita from './componentes/AgendarCita.js';
-import Catalogo from './componentes/Catalogo.js';
-import Registrodeusuario from './componentes/RegistroUsuario.js';
+import RegistroVehiculo from './js/RegistroVehiculo.js';
+import Contacto from './js/Contacto.js';
+import AgendarCita from './js/AgendarCita.js';
+import Catalogo from './js/Catalogo.js';
+import Registrodeusuario from './js/RegistroUsuario.js';
+
 
 // Imágenes del carrusel
 const heroSlides = [
-  '/assets/images/lamborghini.jpg',
-  '/assets/images/fotoautos.jpg',
-  '/assets/images/porche.jpg',
+  './assets/images/lamborghini.jpg',
+  './assets/images/fotoautos.jpg',
+  './assets/images/porche.jpg',
 ];
 
 // Componente reutilizable para el botón de volver
@@ -51,7 +52,7 @@ function App() {
         <div className="nav-container">
           <a href="#inicio" className="logo" onClick={goToInicio}>
             <img
-              src="/assets/images/LOGOGOTY.png"
+              src="../assets/images/LOGOGOTY.png"
               alt="Disol Motors Logo"
               style={{ height: '60px', width: 'auto' }}
             />
@@ -154,57 +155,60 @@ function App() {
         <>
           {/* HERO */}
           <header
-            id="inicio"
-            className="hero no-scroll-section"
-            style={{
-              backgroundImage: `url(${heroSlides[currentSlide]})`,
-              transition: 'background-image 0.8s ease-in-out',
-            }}
-          >
-            <div className="overlay"></div>
-            <div className="hero-content">
-              <h1>Disol Motors Injection</h1>
-              <p className="slogan">
-                Rendimiento que se siente • Potencia que se ve
-              </p>
-              <div className="cta-buttons">
-                <a href="#galeria" className="btn primary">Ver Trabajos</a>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '20px' }}>
-                {heroSlides.map((_, i) => (
-                  <span
-                    key={i}
-                    onClick={() => setCurrentSlide(i)}
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '50%',
-                      background: i === currentSlide ? '#fff' : 'rgba(255,255,255,0.4)',
-                      cursor: 'pointer',
-                      display: 'inline-block',
-                      transition: 'background 0.3s',
-                    }}
-                  />
-                ))}
-              </div>
+      id="inicio"
+      className="hero no-scroll-section"
+      style={{
+        backgroundImage: `url(${heroSlides[currentSlide]})`,
+        transition: 'background-image 0.8s ease-in-out',
+      }}
+    >
+      <div className="overlay"></div>
+      <div className="container">                        {/* container :D */}
+        <div className="row justify-content-center">    {/* row XD*/}
+          <div className="col-12 text-center hero-content"> {/* col :/ */}
+            <h1>Disol Motors Injection</h1>
+            <p className="slogan">
+              Rendimiento que se siente • Potencia que se ve
+            </p>
+            <div className="cta-buttons">
+              <a href="#galeria" className="btn primary">Ver Trabajos</a>
             </div>
-          </header>
-
-          {/* GALERÍA */}
-          <section id="galeria" className="section galeria no-scroll-section">
-            <h2>Trabajos Realizados</h2>
-            <div className="gallery-grid">
-              <div className="gallery-item item-1"></div>
-              <div className="gallery-item item-2"></div>
-              <div className="gallery-item item-3"></div>
-              <div className="gallery-item item-4"></div>
-              <div className="gallery-item item-5"></div>
-              <div className="gallery-item item-6"></div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '20px' }}>
+              {heroSlides.map((_, i) => (
+                <span
+                  key={i}
+                  onClick={() => setCurrentSlide(i)}
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: i === currentSlide ? '#fff' : 'rgba(255,255,255,0.4)',
+                    cursor: 'pointer',
+                    display: 'inline-block',
+                    transition: 'background 0.3s',
+                  }}
+                />
+              ))}
             </div>
-          </section>
-        </>
-      )}
+          </div>
+        </div>
+      </div>
+    </header>
 
+    {/* GALERÍA - sin cambios */}
+    <section id="galeria" className="section galeria no-scroll-section">
+      <h2>Trabajos Realizados</h2>
+      <div className="gallery-grid">
+        <div className="gallery-item item-1"></div>
+        <div className="gallery-item item-2"></div>
+        <div className="gallery-item item-3"></div>
+        <div className="gallery-item item-4"></div>
+        <div className="gallery-item item-5"></div>
+        <div className="gallery-item item-6"></div>
+      </div>
+    </section>
+  </>
+)}
       {/* FOOTER */}
       <footer>
         <p>© 2026 Disol Motors Injection</p>

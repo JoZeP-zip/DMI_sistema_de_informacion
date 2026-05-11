@@ -85,15 +85,16 @@ body {
 .menu-toggle { display: none; font-size: 2rem; cursor: pointer; }
 
 /* ====================== HERO ====================== */
-.overlay {
+.hero::before {
+  content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgb(49, 47, 47),
-    rgba(0, 0, 0, 0.5),
-    rgb(49, 47, 47)
+    rgba(53, 48, 48, 0.7) 0%,
+    rgba(0, 0, 0, 0.700) 100%
   );
+  z-index: 0;
 }
 
 .hero {
@@ -108,7 +109,11 @@ body {
   text-align: center;
 }
 
-.hero-content { z-index: 2; padding: 0 5%; }
+.hero-content,
+.container {
+  position: relative;
+  z-index: 1;
+}
 
 .hero h1 {
   font-family: 'Orbitron', sans-serif;
