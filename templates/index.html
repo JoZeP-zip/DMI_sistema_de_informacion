@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vehículos — DMI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -27,158 +28,369 @@
         </div>
     </nav>
 
-    <div class="container">
+    <!-- ===== MODAL DE NOTIFICACIÓN ===== -->
+    <div class="modal fade" id="notifModal" tabindex="-1" aria-labelledby="notifModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" id="notifModalContent">
+                <div class="modal-header border-0 pb-0" id="notifModalHeader">
+                    <h5 class="modal-title fw-bold" id="notifModalLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body pt-2" id="notifModalBody"></div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn" id="notifModalBtn" data-bs-dismiss="modal">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- ===== MENSAJES ===== -->
-        {% if success_msg %}
-            <div class="alert alert-success">✅ {{ success_msg }}</div>
-        {% endif %}
-        {% if error %}
-            <div class="alert alert-error">❌ Error: {{ error }}</div>
-        {% endif %}
+    <div class="container-fluid px-4 mt-3">
+        <div class="row g-4">
 
-        <div class="two-col">
-
-            <!-- ===== COLUMNA IZQUIERDA: FORMULARIOS ===== -->
-            <div class="col-forms">
+            <!-- ===== COLUMNA IZQUIERDA (4/12): FORMULARIOS ===== -->
+            <div class="col-12 col-lg-4">
 
                 <!-- REGISTRO USUARIO -->
-                <div class="card">
-                    <h2> Registrar Usuario</h2>
-                    <form action="/registro" method="post">
-                        <label>Email <input type="email" name="email" required></label>
-                        <label>Password <input type="password" name="password" required></label>
-                        <label>Nombre <input type="text" name="nombre" required></label>
-                        <label>Apellidos <input type="text" name="apellidos" required></label>
-                        <label>Documento <input type="number" name="documento" required></label>
-                        <label>Teléfono <input type="text" name="telefono" required></label>
-                        <label>Usuario <input type="text" name="usuarionombre" required></label>
-                        <button type="submit" class="btn btn-primary">Registrarse</button>
-                    </form>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"> Registrar Usuario</h5>
+                        <form action="/registro" method="post">
+                            <div class="mb-2">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Contraseña</label>
+                                <input type="password" name="password" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" name="nombre" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Apellidos</label>
+                                <input type="text" name="apellidos" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Fecha de Nacimiento</label>
+                                <input type="date" name="fechadenacimiento" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Tipo de Documento</label>
+                                <select name="tipodedocumento" class="form-select" required>
+                                    <option value="" disabled selected>Seleccione un tipo</option>
+                                    <option value="CC">Cédula de Ciudadanía</option>
+                                    <option value="TI">Tarjeta de Identidad</option>
+                                    <option value="CE">Cédula de Extranjería</option>
+                                    <option value="PA">Pasaporte</option>
+                                    <option value="RC">Registro Civil</option>
+                                    <option value="NIT">NIT</option>
+                                    <option value="PEP">Permiso Especial de Permanencia (PEP)</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Documento</label>
+                                <input type="text" name="documento" class="form-control" required pattern="[0-9]+" inputmode="numeric">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Teléfono</label>
+                                <input type="text" name="telefono" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Usuario</label>
+                                <input type="text" name="usuarionombre" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Registrarse</button>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- INICIO SESIÓN -->
-                <div class="card">
-                    <h2> Iniciar Sesión</h2>
-                    <form action="/login" method="post">
-                        <label>Email <input type="email" name="email" required></label>
-                        <label>Password <input type="password" name="password" required></label>
-                        <button type="submit" class="btn btn-primary">Iniciar sesión</button>
-                    </form>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"> Iniciar Sesión</h5>
+                        <form action="/login" method="post">
+                            <div class="mb-2">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" name="password" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- EDITAR / CREAR VEHÍCULO -->
                 {% if vehicle_to_edit %}
-                <div class="card card-edit">
-                    <h2>✏️ Editar Vehículo</h2>
-                    <form action="/vehiculo/editar/{{ vehicle_to_edit[0] }}" method="post">
-                        <label>Código <input type="text" name="codigovehiculo" value="{{ vehicle_to_edit[1] }}" required></label>
-                        <label>Placa <input type="text" name="placa" value="{{ vehicle_to_edit[5] }}" required maxlength="10"></label>
-                        <label>Marca <input type="text" name="marca" value="{{ vehicle_to_edit[8] }}" required></label>
-                        <label>Tipo de vehículo
-                            <select name="tipovehiculos_idtipovehiculos" required>
-                                {% for tipo in tipos %}
-                                    <option value="{{ tipo[0] }}" {% if tipo[0] == vehicle_to_edit[9] %}selected{% endif %}>
-                                        {{ tipo[1] }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label>Descripción <input type="text" name="descripcionvehiculo" value="{{ vehicle_to_edit[2] }}"></label>
-                        <label>Motor <input type="text" name="motor" value="{{ vehicle_to_edit[3] }}"></label>
-                        <label>Asientos <input type="text" name="cantidad_asientos" value="{{ vehicle_to_edit[4] }}"></label>
-                        <label>Capacidad <input type="text" name="capacidad" value="{{ vehicle_to_edit[6] }}"></label>
-                        <label>Modelo <input type="text" name="modelo" value="{{ vehicle_to_edit[7] }}"></label>
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
-                            <a href="/" class="btn btn-danger">Cancelar</a>
-                        </div>
-                    </form>
+                <div class="card border-warning mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">✏️ Editar Vehículo</h5>
+                        <form action="/vehiculo/editar/{{ vehicle_to_edit[0] }}" method="post">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Código</label>
+                                    <input type="text" name="codigovehiculo" class="form-control" value="{{ vehicle_to_edit[1] }}" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Placa</label>
+                                    <input type="text" name="placa" class="form-control" value="{{ vehicle_to_edit[5] }}" required maxlength="10">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Marca</label>
+                                    <input type="text" name="marca" class="form-control" value="{{ vehicle_to_edit[8] }}" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Tipo de vehículo</label>
+                                    <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
+                                        {% for tipo in tipos %}
+                                            <option value="{{ tipo[0] }}" {% if tipo[0] == vehicle_to_edit[9] %}selected{% endif %}>
+                                                {{ tipo[1] }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Descripción</label>
+                                    <input type="text" name="descripcionvehiculo" class="form-control" value="{{ vehicle_to_edit[2] }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Motor</label>
+                                    <input type="text" name="motor" class="form-control" value="{{ vehicle_to_edit[3] }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Asientos</label>
+                                    <input type="text" name="cantidad_asientos" class="form-control" value="{{ vehicle_to_edit[4] }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Capacidad</label>
+                                    <input type="text" name="capacidad" class="form-control" value="{{ vehicle_to_edit[6] }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Modelo</label>
+                                    <input type="text" name="modelo" class="form-control" value="{{ vehicle_to_edit[7] }}">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <button type="submit" class="btn btn-success w-100">💾 Guardar Cambios</button>
+                                <a href="/" class="btn btn-danger w-100">Cancelar</a>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
                 {% else %}
 
-                <div class="card">
-                    <h2>🚘 Registrar Vehículo</h2>
-                    <form action="/vehiculo/nuevo" method="post">
-                        <label>Código <input type="text" name="codigovehiculo" required></label>
-                        <label>Placa <input type="text" name="placa" required maxlength="10"></label>
-                        <label>Marca <input type="text" name="marca" required></label>
-                        <label>Tipo de vehículo
-                            <select name="tipovehiculos_idtipovehiculos" required>
-                                <option value="" disabled selected>Seleccione un tipo</option>
-                                {% for tipo in tipos %}
-                                    <option value="{{ tipo.idtipovehiculos }}">{{ tipo.codigotipovehiculos }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label>Descripción <input type="text" name="descripcionvehiculo"></label>
-                        <label>Motor <input type="text" name="motor"></label>
-                        <label>Asientos <input type="text" name="cantidad_asientos"></label>
-                        <label>Capacidad <input type="text" name="capacidad"></label>
-                        <label>Modelo <input type="text" name="modelo"></label>
-                        <button type="submit" class="btn btn-primary">Guardar Vehículo</button>
-                    </form>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">🚘 Registrar Vehículo</h5>
+                        <form action="/vehiculo/nuevo" method="post">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Código</label>
+                                    <input type="text" name="codigovehiculo" class="form-control" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Placa</label>
+                                    <input type="text" name="placa" class="form-control" required maxlength="10">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Marca</label>
+                                    <input type="text" name="marca" class="form-control" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Tipo de vehículo</label>
+                                    <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
+                                        <option value="" disabled selected>Seleccione un tipo</option>
+                                        {% for tipo in tipos %}
+                                            <option value="{{ tipo.idtipovehiculos }}">{{ tipo.codigotipovehiculos }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Descripción</label>
+                                    <input type="text" name="descripcionvehiculo" class="form-control">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Motor</label>
+                                    <input type="text" name="motor" class="form-control">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Asientos</label>
+                                    <input type="text" name="cantidad_asientos" class="form-control">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Capacidad</label>
+                                    <input type="text" name="capacidad" class="form-control">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Modelo</label>
+                                    <input type="text" name="modelo" class="form-control">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 mt-3">Guardar Vehículo</button>
+                        </form>
+                    </div>
                 </div>
-
                 {% endif %}
             </div>
 
-            <!-- ===== COLUMNA DERECHA: TABLA ===== -->
-            <div class="col-table">
-                <div class="card">
-                    <h2>📋 Listado de Vehículos</h2>
-                    {% if data %}
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Código</th>
-                                    <th>Descripción</th>
-                                    <th>Motor</th>
-                                    <th>Asientos</th>
-                                    <th>Placa</th>
-                                    <th>Capacidad</th>
-                                    <th>Modelo</th>
-                                    <th>Marca</th>
-                                    <th>Tipo ID</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for row in data %}
-                                <tr>
-                                    <td>{{ row[0] }}</td>
-                                    <td>{{ row[1] }}</td>
-                                    <td>{{ row[2] }}</td>
-                                    <td>{{ row[3] }}</td>
-                                    <td>{{ row[4] }}</td>
-                                    <td>{{ row[5] }}</td>
-                                    <td>{{ row[6] }}</td>
-                                    <td>{{ row[7] }}</td>
-                                    <td>{{ row[8] }}</td>
-                                    <td>{{ row[9] }}</td>
-                                    <td class="actions-cell">
-                                        <a href="/vehiculo/editar/{{ row[0] }}" class="btn btn-sm btn-warning">✏️</a>
-                                        <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" style="display:inline;">
-                                            <button type="submit"
-                                                onclick="return confirm('¿Seguro que quieres eliminar este vehículo?')"
-                                                class="btn btn-sm btn-danger">🗑️</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                        <p class="text-muted">No hay vehículos registrados.</p>
-                    {% endif %}
-                </div>
-            </div>
+            <!-- ===== COLUMNA DERECHA (8/12): TABLAS ===== -->
+            <div class="col-12 col-lg-8">
 
+                <!-- TABLA VEHÍCULOS -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">📋 Listado de Vehículos</h5>
+                        {% if data %}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover table-bordered align-middle">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descripción</th>
+                                        <th>Motor</th>
+                                        <th>Asientos</th>
+                                        <th>Placa</th>
+                                        <th>Capacidad</th>
+                                        <th>Modelo</th>
+                                        <th>Marca</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in data %}
+                                    <tr>
+                                        <td>{{ row[1] }}</td>
+                                        <td>{{ row[2] }}</td>
+                                        <td>{{ row[3] }}</td>
+                                        <td>{{ row[4] }}</td>
+                                        <td>{{ row[5] }}</td>
+                                        <td>{{ row[6] }}</td>
+                                        <td>{{ row[9] }}</td>
+                                        <td>{{ row[7] }}</td>
+                                        <td>
+                                            <a href="/vehiculo/editar/{{ row[0] }}" class="btn btn-sm btn-warning">✏️</a>
+                                            <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" style="display:inline;">
+                                                <button type="submit"
+                                                    onclick="return confirm('¿Seguro que quieres eliminar este vehículo?')"
+                                                    class="btn btn-sm btn-danger">🗑️</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                            <p class="text-muted">No hay vehículos registrados.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- TABLA USUARIOS — solo visible para admins -->
+                {% if usuario and usuario.rol == 'admin' %}
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">👤 Gestión de Usuarios y Roles</h5>
+                        {% if usuarios_data %}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover table-bordered align-middle">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Usuario</th>
+                                        <th>Nombre</th>
+                                        <th>Apellidos</th>
+                                        <th>Email</th>
+                                        <th>Rol actual</th>
+                                        <th>Cambiar rol</th>
+                                        <th>Eliminar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in usuarios_data %}
+                                    <tr>
+                                        <td>{{ row[6] }}</td>
+                                        <td>{{ row[1] }}</td>
+                                        <td>{{ row[2] }}</td>
+                                        <td>{{ row[4] }}</td>
+                                        <!-- Columna "Rol actual": muestra badge según valor -->
+                                        <td>
+                                            {% set rol_actual = row[14] if row[14] else 'usuario' %}
+                                            {% if rol_actual == 'admin' %}
+                                                <span class="badge bg-danger">admin</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">usuario</span>
+                                            {% endif %}
+                                        </td>
+                                        <!-- Columna "Cambiar rol": selector + botón en un mini-form -->
+                                        <td>
+                                            <form action="/usuario/rol/{{ row[0] }}" method="post" class="d-flex gap-1">
+                                                <select name="rol" class="form-select form-select-sm" style="width:auto;">
+                                                    <option value="usuario" {% if row[14] != 'admin' %}selected{% endif %}>usuario</option>
+                                                    <option value="admin"   {% if row[14] == 'admin' %}selected{% endif %}>admin</option>
+                                                </select>
+                                                <button type="submit" class="btn btn-sm btn-primary">✔</button>
+                                            </form>
+                                        </td>
+                                        <!-- Columna "Eliminar" -->
+                                        <td>
+                                            <form action="/usuario/eliminar/{{ row[0] }}" method="post" style="display:inline;">
+                                                <button type="submit"
+                                                    onclick="return confirm('¿Eliminar este usuario permanentemente?')"
+                                                    class="btn btn-sm btn-danger">🗑️</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                            <p class="text-muted">No hay usuarios registrados.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function () {
+        const successMsg = {{ success_msg | tojson }};
+        const errorMsg   = {{ error | tojson }};
+
+        if (!successMsg && !errorMsg) return;
+
+        const isSuccess = !!successMsg;
+        const mensaje   = successMsg || errorMsg;
+
+        const content = document.getElementById('notifModalContent');
+        const header  = document.getElementById('notifModalHeader');
+        const label   = document.getElementById('notifModalLabel');
+        const body    = document.getElementById('notifModalBody');
+        const btn     = document.getElementById('notifModalBtn');
+
+        if (isSuccess) {
+            content.style.borderTop = '4px solid #198754';
+            header.style.color      = '#198754';
+            label.textContent       = '✅ Éxito';
+            btn.className           = 'btn btn-success';
+        } else {
+            content.style.borderTop = '4px solid #dc3545';
+            header.style.color      = '#dc3545';
+            label.textContent       = '❌ Error';
+            btn.className           = 'btn btn-danger';
+        }
+
+        body.textContent = mensaje;
+        new bootstrap.Modal(document.getElementById('notifModal')).show();
+    })();
+    </script>
 </body>
 </html>

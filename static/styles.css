@@ -415,3 +415,16 @@ tr:hover td { background: var(--gray-100); }
     .two-col { grid-template-columns: 1fr; }
     .cal-day { min-height: 52px; }
 }
+
+/* ===================================================
+   SCROLL INTERNO EN TABLAS Y LISTAS LARGAS
+   =================================================== */
+.tabla-scroll {
+    max-height: 400px !important;
+    overflow-y: auto !important;
+}
+
+.citas-list {
+    max-height: 500px !important;
+    overflow-y: auto !important;
+}
