@@ -1,0 +1,428 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Barlow+Condensed:ital,wght@0,400;0,600;1,700&family=Barlow:wght@400;500&display=swap');
+ 
+/* ══════════════════════════════════════════
+   DISOL MOTORS — RegistrarUnidad.css
+   Clases: ru-* (namespace)
+══════════════════════════════════════════ */
+ 
+:root {
+  --dm-red:        #CC1B1B;
+  --dm-red-dark:   #A01414;
+  --dm-dark:       #111111;
+  --dm-mid:        #1c1c1c;
+  --dm-panel:      #222222;
+  --dm-panel2:     #2a2a2a;
+  --dm-border:     rgba(255, 255, 255, 0.08);
+  --dm-border-md:  rgba(255, 255, 255, 0.14);
+  --dm-text:       #f0f0f0;
+  --dm-muted:      #888888;
+  --dm-label:      #aaaaaa;
+}
+ 
+/* ── Wrapper / fondo ────────────────────── */
+.ru-wrapper {
+  min-height: 100vh;
+  background: var(--dm-dark);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px 60px;
+  font-family: 'Barlow', sans-serif;
+  color: var(--dm-text);
+}
+ 
+.ru-container {
+  width: 100%;
+  max-width: 760px;
+}
+ 
+/* ── Header ─────────────────────────────── */
+.ru-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+ 
+.ru-icon-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+ 
+.ru-icon-box {
+  width: 44px;
+  height: 44px;
+  background: var(--dm-panel2);
+  border: 1px solid var(--dm-border-md);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--dm-red);
+}
+ 
+.ru-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dm-text);
+  margin: 0 0 6px;
+}
+ 
+.ru-subtitle {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--dm-muted);
+}
+ 
+/* ── Stepper ────────────────────────────── */
+.ru-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 28px;
+}
+ 
+.ru-step-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+ 
+.ru-step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--dm-border-md);
+  background: var(--dm-panel);
+  color: var(--dm-muted);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+ 
+.ru-step-circle.active {
+  border-color: var(--dm-red);
+  background: rgba(204, 27, 27, 0.15);
+  color: var(--dm-red);
+}
+ 
+.ru-step-circle.done {
+  border-color: #1a7a3a;
+  background: rgba(26, 122, 58, 0.15);
+  color: #2db55d;
+}
+ 
+.ru-step-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dm-muted);
+  transition: color 0.2s;
+}
+ 
+.ru-step-label.active { color: var(--dm-red); }
+.ru-step-label.done   { color: #2db55d; }
+ 
+.ru-step-conn {
+  width: 80px;
+  height: 1px;
+  background: var(--dm-border-md);
+  margin: 0 8px;
+  margin-bottom: 22px;
+  transition: background 0.2s;
+}
+ 
+.ru-step-conn.done { background: #1a7a3a; }
+ 
+/* ── Card ───────────────────────────────── */
+.ru-card {
+  background: var(--dm-mid);
+  border: 1px solid var(--dm-border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+ 
+.ru-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--dm-border);
+}
+ 
+.ru-card-head.cliente  { border-left: 3px solid var(--dm-red); }
+.ru-card-head.vehiculo { border-left: 3px solid #1a7a3a; }
+ 
+.ru-head-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: var(--dm-panel2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--dm-red);
+}
+ 
+.ru-card-head.vehiculo .ru-head-icon { color: #2db55d; }
+ 
+.ru-head-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dm-text);
+  margin: 0;
+}
+ 
+/* ── Body / campos ─────────────────────── */
+.ru-body {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+ 
+.ru-section {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--dm-red);
+  margin: 4px 0 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--dm-border);
+}
+ 
+.ru-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+ 
+.ru-row.mb-22 { margin-bottom: 8px; }
+ 
+.ru-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+ 
+.ru-field.empty { visibility: hidden; }
+ 
+.ru-field.w-155 { max-width: 155px; }
+ 
+/* ── Labels ─────────────────────────────── */
+.ru-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dm-label);
+}
+ 
+.ru-req {
+  color: var(--dm-red);
+}
+ 
+/* ── Inputs / Select / Textarea ─────────── */
+.ru-input,
+.ru-select,
+.ru-textarea {
+  background: var(--dm-panel);
+  border: 1px solid var(--dm-border);
+  border-radius: 4px;
+  padding: 9px 12px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  color: var(--dm-text);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+ 
+.ru-input:focus,
+.ru-select:focus,
+.ru-textarea:focus {
+  border-color: var(--dm-red);
+}
+ 
+.ru-input::placeholder,
+.ru-textarea::placeholder {
+  color: #444;
+}
+ 
+.ru-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+ 
+.ru-select option { background: var(--dm-mid); }
+ 
+.ru-textarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
+}
+ 
+.ru-input.uppercase,
+.ru-input.pr-40 { }
+ 
+.ru-input.uppercase { text-transform: uppercase; letter-spacing: 2px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 16px; }
+.ru-input.pr-40     { padding-right: 40px; }
+ 
+/* ── Password wrapper ───────────────────── */
+.ru-pw-wrap {
+  position: relative;
+}
+ 
+.ru-pw-eye {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--dm-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+ 
+.ru-pw-eye:hover { color: var(--dm-text); }
+ 
+/* ── Botones ─────────────────────────────── */
+.ru-btn-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+ 
+.ru-btn-primary {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 10px 26px;
+  border: none;
+  border-radius: 4px;
+  background: var(--dm-red);
+  color: #fff;
+  cursor: pointer;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+ 
+.ru-btn-primary:hover  { background: var(--dm-red-dark); }
+.ru-btn-primary.centered { margin: 0 auto; display: flex; }
+ 
+.ru-btn-secondary {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  border: 1px solid var(--dm-border-md);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dm-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+ 
+.ru-btn-secondary:hover {
+  border-color: #555;
+  color: var(--dm-text);
+}
+ 
+/* ── Pantalla de éxito ─────────────────── */
+.ru-success-box {
+  padding: 48px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+ 
+.ru-success-icon {
+  font-size: 52px;
+  color: #2db55d;
+}
+ 
+.ru-success-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dm-text);
+  margin: 0;
+}
+ 
+.ru-success-text {
+  font-size: 15px;
+  color: var(--dm-label);
+  max-width: 420px;
+  line-height: 1.6;
+  margin: 0;
+}
+ 
+.ru-highlight {
+  color: var(--dm-red);
+  font-weight: 500;
+}
+ 
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 600px) {
+  .ru-row { grid-template-columns: 1fr; }
+ 
+  .ru-field.empty { display: none; }
+  .ru-field.w-155 { max-width: 100%; }
+ 
+  .ru-step-conn { width: 40px; }
+ 
+  .ru-btn-row {
+    flex-direction: column-reverse;
+  }
+  .ru-btn-primary,
+  .ru-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}

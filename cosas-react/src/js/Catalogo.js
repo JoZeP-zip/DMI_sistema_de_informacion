@@ -1,70 +1,199 @@
-import React from 'react';
+import { useState } from "react";
 import '../styles/Catalogo.css';
 
-const Catalogo = () => {
-  // Datos de ejemplo para el catálogo
-  const productos = [
+function App() {
+
+  const [search, setSearch] = useState("");
+  const [cart, setCart] = useState([]);
+
+
+  const addToCart = (product) => {
+  setCart([...cart, product]);
+};
+
+  const products = [
     {
       id: 1,
-      nombre: "Scanner Profesional",
-      categoria: "Diagnóstico",
-      precio: "$150.000",
-      imagen: "https://via.placeholder.com/200x150",
-      descripcion: "Lectura de códigos de error y flujo de datos en tiempo real."
+      name: "Batería Vehículo",
+      price: "$250.000",
+      image: "https://picsum.photos/400/300?1"
     },
     {
       id: 2,
-      nombre: "Limpieza de Inyectores",
-      categoria: "Mantenimiento",
-      precio: "$45.000",
-      imagen: "https://via.placeholder.com/200x150",
-      descripcion: "Servicio por ultrasonido para optimizar el consumo de combustible."
+      name: "Pastillas de Freno",
+      price: "$120.000",
+      image: "https://picsum.photos/400/300?2"
     },
     {
       id: 3,
-      nombre: "Reprogramación ECU",
-      categoria: "Potencia",
-      precio: "$250.000",
-      imagen: "https://via.placeholder.com/200x150",
-      descripcion: "Aumento de HP y torque mediante software especializado."
+      name: "Radiador Completo",
+      price: "$320.000",
+      image: "https://picsum.photos/400/300?3"
     },
     {
       id: 4,
-      nombre: "Kit Filtros de Alto Flujo",
-      categoria: "Performance",
-      precio: "$85.000",
-      imagen: "https://via.placeholder.com/200x150",
-      descripcion: "Mejora la entrada de aire para una mejor respuesta del motor."
+      name: "Kit de Frenos",
+      price: "$450.000",
+      image: "https://picsum.photos/400/300?4"
+    },
+    {
+      id: 5,
+      name: "Aceite Motor 5W-30",
+      price: "$85.000",
+      image: "https://picsum.photos/400/300?5"
+    },
+    {
+      id: 6,
+      name: "Filtro de Aire",
+      price: "$65.000",
+      image: "https://picsum.photos/400/300?6"
     }
   ];
 
   return (
-    <div className="catalogo-container">
-      <header className="catalogo-header">
-        <h2>Catálogo de Servicios y Productos</h2>
-        <p>Todo lo que tu vehículo necesita para rendir al máximo</p>
+
+    <div>
+
+      {/* HEADER */}
+
+      <header className="top-bar">
+
+        <h1 className="logo">
+          <span className="dim">DMI</span>
+          {" "} - DISOL INJECTION MOTORS
+        </h1>
+
+        <button className="cart-btn">
+          🛒 {cart.length}
+        </button>
+
       </header>
 
-      <div className="productos-grid">
-        {productos.map((prod) => (
-          <div key={prod.id} className="producto-card">
-            <div className="producto-imagen">
-              <img src={prod.imagen} alt={prod.nombre} />
-              <span className="categoria-tag">{prod.categoria}</span>
-            </div>
-            <div className="producto-info">
-              <h3>{prod.nombre}</h3>
-              <p>{prod.descripcion}</p>
-              <div className="producto-footer">
-                <span className="precio">{prod.precio}</span>
-                <button className="btn-comprar">Consultar</button>
+      {/* DESTACADOS */}
+
+      <section className="featured-section">
+
+        <h2 className="section-title">
+          Repuestos Destacados
+        </h2>
+
+        <div className="highlight-capsule">
+
+          <div className="carousels-grid">
+
+            <div className="carousel-card">
+              <h3>Kit de Frenos</h3>
+
+              <div className="carousel-wrapper">
+                <img
+                  src="https://picsum.photos/600/400?10"
+                  alt=""
+                />
               </div>
+
             </div>
+
+            <div className="carousel-card">
+              <h3>Aceites y Lubricantes</h3>
+
+              <div className="carousel-wrapper">
+                <img
+                  src="https://picsum.photos/600/400?11"
+                  alt=""
+                />
+              </div>
+
+            </div>
+
+            <div className="carousel-card">
+              <h3>Filtros y Refrigeración</h3>
+
+              <div className="carousel-wrapper">
+                <img
+                  src="https://picsum.photos/600/400?12"
+                  alt=""
+                />
+              </div>
+
+            </div>
+
           </div>
-        ))}
-      </div>
+
+        </div>
+
+      </section>
+
+      {/* PRODUCTOS */}
+
+      <section className="products">
+
+        <h2 className="section-title">
+          Catálogo de Productos
+        </h2>
+
+        {/* BUSCADOR */}
+
+        <div className="search-container">
+
+          <input
+            type="text"
+            placeholder="Buscar repuestos..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
+          />
+
+        </div>
+
+        {/* GRID */}
+
+        <div className="grid">
+
+          {
+            products
+
+            .filter(product =>
+              product.name
+              .toLowerCase()
+              .includes(search.toLowerCase())
+            )
+
+            .map(product => (
+
+              <div
+                className="product-card"
+                key={product.id}
+              >
+
+                <img
+                  src={product.image}
+                  alt={product.name}
+                />
+
+                <div className="info">
+
+                  <h3>{product.name}</h3>
+
+                  <p className="price">
+                    {product.price}
+                  </p>
+                      <button onClick={() => addToCart(product)}>
+                        Agregar
+                      </button>
+
+                </div>
+
+              </div>
+
+            ))
+          }
+
+        </div>
+
+      </section>
+
     </div>
   );
-};
+}
 
-export default Catalogo;
+export default App;

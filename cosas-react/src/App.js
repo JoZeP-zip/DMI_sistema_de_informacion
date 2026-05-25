@@ -1,42 +1,161 @@
 import React, { useEffect, useState } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min';
 import './styles/App.css';
-import RegistroVehiculo from './js/RegistroVehiculo.js';
+
+import RegistroVehiculo from './js/RegistrarUnidad.js';
 import Contacto from './js/Contacto.js';
 import AgendarCita from './js/AgendarCita.js';
 import Catalogo from './js/Catalogo.js';
-import Registrodeusuario from './js/RegistroUsuario.js';
 
 
-// Imágenes del carrusel
+
+// Componente de Login Integrado a la Estética DMI
+const LoginView = ({ onLoginSuccess }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+
+    // SIMULACIÓN DE AUTENTICACIÓN (Reemplázalo luego por tu fetch a la API)
+    if (email === 'admin@dmi.com' && password === 'admin123') {
+      onLoginSuccess({ email, role: 'admin' });
+    } else if (email === 'user@dmi.com' && password === 'user123') {
+      onLoginSuccess({ email, role: 'user' });
+    } else {
+      setError('Credenciales incorrectas. Intenta con admin@dmi.com o user@dmi.com');
+    }
+  };
+
+  return (
+    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+      <h3 className="text-center text-uppercase fw-black mb-4">
+        Control de <span className="text-danger">Acceso</span>
+      </h3>
+      {error && <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger">{error}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="mb-3">
+          <label className="form-label text-muted small fw-bold">CORREO ELECTRÓNICO</label>
+          <input 
+            type="email" 
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required 
+          />
+        </div>
+        <div className="mb-4">
+          <label className="form-label text-muted small fw-bold">CONTRASEÑA</label>
+          <input 
+            type="password" 
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required 
+          />
+        </div>
+        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest">
+          INGRESAR
+        </button>
+      </form>
+    </div>
+  );
+};
+
+// Panel exclusivo para el Administrador
+const DashboardAdmin = () => (
+  <div>
+    <h3 className="text-uppercase fw-black border-bottom border-danger pb-2 mb-4">
+      Panel de <span className="text-danger">Administración</span>
+    </h3>
+    <p className="text-muted">Bienvenido al centro de control de Disol Motors. Desde aquí gestionas todo el taller.</p>
+    <div className="row g-3 mt-2">
+      <div className="col-md-4">
+        <div className="p-3 bg-black border border-secondary text-center">
+          <h5 className="text-danger fw-bold">12</h5>
+          <small className="text-muted">CITAS POR APROBAR</small>
+        </div>
+      </div>
+      <div className="col-md-4">
+        <div className="p-3 bg-black border border-secondary text-center">
+          <h5 className="text-danger fw-bold">45</h5>
+          <small className="text-muted">UNIDADES REGISTRADAS</small>
+        </div>
+      </div>
+      <div className="col-md-4">
+        <div className="p-3 bg-black border border-secondary text-center">
+          <h5 className="text-white fw-bold">Ajustes</h5>
+          <small className="text-muted">CONFIGURACIÓN DEL SISTEMA</small>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Panel exclusivo para el Usuario Común (Cliente)
+const DashboardUsuario = ({ user }) => (
+  <div>
+    <h3 className="text-uppercase fw-black border-bottom border-danger pb-2 mb-4">
+      Mi <span className="text-danger">Garaje</span>
+    </h3>
+    <p>Hola, <span className="text-danger fw-bold">{user.email}</span>. Bienvenido a tu espacio personal.</p>
+    <div className="p-4 bg-black border border-secondary mt-3">
+      <h6 className="fw-bold text-uppercase tracking-widest text-muted mb-3">Estado de tu Vehículo</h6>
+      <p className="mb-1">🚗 **Porsche 911 GT3** — *En Diagnóstico de Inyección*</p>
+      <span className="badge bg-danger rounded-0">TRABAJO EN PROCESO</span>
+    </div>
+  </div>
+);
+
+// --- FIN DE LOS NUEVOS COMPONENTES ---
+
 const heroSlides = [
-  './assets/images/lamborghini.jpg',
-  './assets/images/fotoautos.jpg',
+  './assets/images/Mel.jpg',
+  './assets/images/mundoejecutivo.jpg',
   './assets/images/porche.jpg',
+  './assets/images/mundocarrito.jpg',
+  './assets/images/lamborghini.jpg',
+  './assets/images/galiochicken.jpg',
+  './assets/images/Ambessa_1.jpg',
+  './assets/images/Nasus-y-Renekton.jpg',
+  './assets/images/phanteonpan.jpg',
+  './assets/images/old-skarner.jpg',
+  './assets/images/sionxd.jpg',
 ];
 
-// Componente reutilizable para el botón de volver
 const BackButton = ({ onClick }) => (
-  <button className="btn outline" onClick={onClick}>
-    ← Volver al Inicio
-  </button>
+  <div className="text-center mt-5">
+    <button
+      className="btn btn-danger px-5 py-2 fw-bold shadow hover-grow"
+      onClick={onClick}
+      style={{ borderRadius: '50px' }}
+    >
+      ← VOLVER AL PANEL
+    </button>
+  </div>
 );
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState('inicio');
   const [currentSlide, setCurrentSlide] = useState(0);
+  
+  // NUEVO: Estado global de sesión para controlar los roles
+  const [user, setUser] = useState(null);
 
-  // CONTROLAR SCROLL SEGÚN VISTA
   useEffect(() => {
     document.body.style.overflow = view === 'inicio' ? 'hidden' : 'auto';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view]);
 
-  // CARRUSEL
   useEffect(() => {
     if (view !== 'inicio') return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 4000);
+    }, 5000);
     return () => clearInterval(timer);
   }, [view]);
 
@@ -45,175 +164,200 @@ function App() {
     setMenuOpen(false);
   };
 
-  return (
-    <>
-      {/* NAV */}
-      <nav className="main-nav">
-        <div className="nav-container">
-          <a href="#inicio" className="logo" onClick={goToInicio}>
-            <img
-              src="../assets/images/LOGOGOTY.png"
-              alt="Disol Motors Logo"
-              style={{ height: '60px', width: 'auto' }}
-            />
-          </a>
+  // Manejadores de autenticación
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    // Redirección inteligente inmediata según el rol
+    if (userData.role === 'admin') {
+      setView('admin-dashboard');
+    } else {
+      setView('user-dashboard');
+    }
+  };
 
-          {/* Botón hamburguesa para mobile */}
-          <button
-            className="menu-toggle"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Abrir menú"
-          >
-            ☰
+  const handleLogout = () => {
+    setUser(null);
+    setView('inicio');
+  };
+
+  return (
+    <div className="bg-black text-white min-vh-100 d-flex flex-column">
+
+      {/* NAVBAR */}
+      <nav className="navbar navbar-expand-lg navbar-dark bg-black sticky-top border-bottom border-danger py-3">
+        <div className="container">
+
+          <button className="navbar-brand bg-transparent border-0 p-0" onClick={goToInicio}>
+            <img
+              src="/assets/images/anica (1).png"
+              alt="DMI Logo"
+              className="img-fluid"
+              style={{ height: '50px', objectFit: 'contain' }}
+            />
           </button>
 
-          <ul className={`nav-links ${menuOpen ? 'active' : ''}`}>
-            <li>
-              <a href="#inicio" onClick={() => {
-                goToInicio();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}>
-                Inicio
-              </a>
-            </li>
+          <button className="navbar-toggler border-0" type="button" onClick={() => setMenuOpen(!menuOpen)}>
+            <span className="navbar-toggler-icon"></span>
+          </button>
 
-            <li>
-              <a href="#catalogo" onClick={(e) => { e.preventDefault(); setView('catalogo'); setMenuOpen(false); }}>
-                Catálogo
-              </a>
-            </li>
+          <div className={`collapse navbar-collapse ${menuOpen ? 'show' : ''}`}>
+            <ul className="navbar-nav ms-auto align-items-center gap-3">
 
-            <li>
-              <a href="#citas" onClick={(e) => { e.preventDefault(); setView('citas'); setMenuOpen(false); }}>
-                Agendar Cita
-              </a>
-            </li>
+              {['INICIO', 'CATÁLOGO', 'CITAS', 'CONTACTO'].map((text) => (
+                <li className="nav-item" key={text}>
+                  <button
+                    className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
+                    onClick={() => {
+                      setView(text.toLowerCase().replace('á', 'a'));
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {text}
+                  </button>
+                </li>
+              ))}
 
-            <li>
-              <a href="#contacto" onClick={(e) => { e.preventDefault(); setView('contacto'); setMenuOpen(false); }}>
-                Contacto
-              </a>
-            </li>
+              {/* NUEVO: Accesos rápidos en el menú dinámico según el Rol */}
+              {user && user.role === 'admin' && (
+                <li className="nav-item">
+                  <button className="nav-link text-danger fw-black p-2" onClick={() => setView('admin-dashboard')}>
+                    PANEL ADMIN
+                  </button>
+                </li>
+              )}
+              
+              {user && user.role === 'user' && (
+                <li className="nav-item">
+                  <button className="nav-link text-danger fw-black p-2" onClick={() => setView('user-dashboard')}>
+                    MI GARAGE
+                  </button>
+                </li>
+              )}
 
-            <li>
-              <a href="#registro-usuario" onClick={(e) => { e.preventDefault(); setView('registro_usuario'); setMenuOpen(false); }}>
-                Registrar Usuario
-              </a>
-            </li>
+              <li className="nav-item">
+                <button
+                  className="btn btn-danger px-4 rounded-0 fw-bold shadow-sm"
+                  onClick={() => {
+                    setView('registro');
+                    setMenuOpen(false);
+                  }}
+                >
+                  REGISTRAR UNIDAD
+                </button>
+              </li>
 
-            <li>
-              <a href="#registro" onClick={(e) => { e.preventDefault(); setView('registro'); setMenuOpen(false); }}>
-                Registrar Vehículos
-              </a>
-            </li>
-          </ul>
+              {/* NUEVO: Botón Dinámico de Login / Logout */}
+              <li className="nav-item">
+                {user ? (
+                  <button className="btn btn-outline-light px-3 rounded-0 fw-bold btn-sm" onClick={handleLogout}>
+                    CERRAR SESIÓN
+                  </button>
+                ) : (
+                  <button className="btn btn-outline-danger px-3 rounded-0 fw-bold btn-sm" onClick={() => setView('login')}>
+                    LOGIN
+                  </button>
+                )}
+              </li>
+
+            </ul>
+          </div>
         </div>
       </nav>
 
-      {/* VISTA: AGENDAR CITA */}
-      {view === 'citas' && (
-        <section className="section no-scroll-section">
-          <AgendarCita />
-          <BackButton onClick={goToInicio} />
-        </section>
-      )}
+      {/* CONTENEDOR PRINCIPAL DE COMPONENTES */}
+      <main className="flex-grow-1">
 
-      {/* VISTA: REGISTRO DE VEHÍCULO */}
-      {view === 'registro' && (
-        <section className="section no-scroll-section">
-          <RegistroVehiculo />
-          <BackButton onClick={goToInicio} />
-        </section>
-      )}
+        {view !== 'inicio' && (
+          <section className="container py-5">
+            <div className="row justify-content-center">
+              <div className="col-12 col-xl-10 animate-slide-in">
+                <div className="card bg-dark text-white border-danger border-opacity-50 shadow-lg p-4 p-md-5">
 
-      {/* VISTA: CATÁLOGO */}
-      {view === 'catalogo' && (
-        <section className="section no-scroll-section">
-          <Catalogo />
-          <BackButton onClick={goToInicio} />
-        </section>
-      )}
+                  {view === 'citas' && <AgendarCita />}
+                  {view === 'registro' && <RegistroVehiculo />}
+                  {view === 'catalogo' && <Catalogo />}
+                  {view === 'contacto' && <Contacto />}
+                  
+                  {/* NUEVAS VISTAS CONTROLADAS */}
+                  {view === 'login' && <LoginView onLoginSuccess={handleLoginSuccess} />}
+                  {view === 'admin-dashboard' && <DashboardAdmin />}
+                  {view === 'user-dashboard' && <DashboardUsuario user={user} />}
 
-      {/* VISTA: CONTACTO */}
-      {view === 'contacto' && (
-        <section className="section no-scroll-section">
-          <Contacto />
-          <BackButton onClick={goToInicio} />
-        </section>
-      )}
-
-      {/* VISTA: REGISTRO DE USUARIO */}
-      {view === 'registro_usuario' && (
-        <section className="section no-scroll-section">
-          <Registrodeusuario />
-          <BackButton onClick={goToInicio} />
-        </section>
-      )}
-
-      {/* VISTA: INICIO */}
-      {view === 'inicio' && (
-        <>
-          {/* HERO */}
-          <header
-      id="inicio"
-      className="hero no-scroll-section"
-      style={{
-        backgroundImage: `url(${heroSlides[currentSlide]})`,
-        transition: 'background-image 0.8s ease-in-out',
-      }}
-    >
-      <div className="overlay"></div>
-      <div className="container">                        {/* container :D */}
-        <div className="row justify-content-center">    {/* row XD*/}
-          <div className="col-12 text-center hero-content"> {/* col :/ */}
-            <h1>Disol Motors Injection</h1>
-            <p className="slogan">
-              Rendimiento que se siente • Potencia que se ve
-            </p>
-            <div className="cta-buttons">
-              <a href="#galeria" className="btn primary">Ver Trabajos</a>
+                  <BackButton onClick={goToInicio} />
+                </div>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '20px' }}>
-              {heroSlides.map((_, i) => (
-                <span
-                  key={i}
-                  onClick={() => setCurrentSlide(i)}
-                  style={{
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50%',
-                    background: i === currentSlide ? '#fff' : 'rgba(255,255,255,0.4)',
-                    cursor: 'pointer',
-                    display: 'inline-block',
-                    transition: 'background 0.3s',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
+          </section>
+        )}
 
-    {/* GALERÍA - sin cambios */}
-    <section id="galeria" className="section galeria no-scroll-section">
-      <h2>Trabajos Realizados</h2>
-      <div className="gallery-grid">
-        <div className="gallery-item item-1"></div>
-        <div className="gallery-item item-2"></div>
-        <div className="gallery-item item-3"></div>
-        <div className="gallery-item item-4"></div>
-        <div className="gallery-item item-5"></div>
-        <div className="gallery-item item-6"></div>
-      </div>
-    </section>
-  </>
-)}
-      {/* FOOTER */}
-      <footer>
-        <p>© 2026 Disol Motors Injection</p>
+        {view === 'inicio' && (
+          <>
+            {/* HERO */}
+            <header className="hero-viewport">
+              <div
+                className="hero-background"
+                style={{ backgroundImage: `url(${heroSlides[currentSlide]})` }}
+              ></div>
+              <div className="hero-overlay"></div>
+              <div className="container position-relative z-index-2 text-center animate-fade-up">
+                <h1 className="hero-title">
+                  DISOL <span className="text-danger">MOTORS</span>
+                </h1>
+                <p className="hero-subtitle mb-5">
+                  Mecánica de Precisión • Inyección Electrónica • Performance
+                </p>
+                <div className="cta-wrapper">
+                  <a href="#galeria" className="btn-racing px-5 py-3">
+                    EXPLORAR GALERÍA
+                  </a>
+                </div>
+              </div>
+
+              {/* BARRAS DEL SLIDE */}
+              <div className="slide-progress">
+                {heroSlides.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`progress-bar-item ${i === currentSlide ? 'active' : ''}`}
+                    onClick={() => setCurrentSlide(i)}
+                  ></div>
+                ))}
+              </div>
+            </header>
+
+            {/* GALERÍA */}
+            <section id="galeria" className="py-5 bg-black">
+              <div className="container py-4">
+                <h2 className="text-center mb-5 fw-black text-uppercase">
+                  Proyectos <span className="text-danger">Elite</span>
+                </h2>
+                <div className="row g-3">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="col-6 col-md-4">
+                      <div className="gallery-card border-danger">
+                        <div className={`gallery-img-placeholder bg-dark item-${i}`}>
+                          <div className="gallery-hover-info">
+                            <small>VER DETALLES</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+      </main>
+
+      <footer className="bg-black py-4 border-top border-danger border-opacity-25 text-center">
+        <p className="small text-muted mb-0 tracking-widest">
+          © 2026 <span className="text-danger fw-bold">DMI</span> • HIGH PERFORMANCE SERVICE
+        </p>
       </footer>
-    </>
+
+    </div>
   );
 }
 
