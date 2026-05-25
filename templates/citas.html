@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citas — DMI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* ===== NAVEGACIÓN DE MES ===== */
+        .cal-nav-selects select {
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        /* ===== BADGES DE ESTADO ===== */
+        .badge-pendiente  { background: #fff3cd; color: #856404; }
+        .badge-completada { background: #d1e7dd; color: #0f5132; }
+        .badge-cancelada  { background: #f8d7da; color: #842029; }
+    </style>
+</head>
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar">
+        <span class="navbar-brand"> DMI Vehículos</span>
+        <div class="navbar-links">
+            <a href="/">Vehículos</a>
+            <a href="/citas" class="active">📅 Citas</a>
+        </div>
+        <div class="navbar-user">
+            {% if usuario %}
+                <span class="usuario-nombre"> {{ usuario.nombre }}</span>
+                <form action="/logout" method="post" style="display:inline;">
+                    <button type="submit" class="btn-logout">Cerrar sesión</button>
+                </form>
+            {% else %}
+                <span class="text-muted">No has iniciado sesión</span>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- ===== MODAL DE NOTIFICACIÓN ===== -->
+    <div class="modal fade" id="notifModal" tabindex="-1" aria-labelledby="notifModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" id="notifModalContent">
+                <div class="modal-header border-0 pb-0" id="notifModalHeader">
+                    <h5 class="modal-title fw-bold" id="notifModalLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body pt-2" id="notifModalBody"></div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn" id="notifModalBtn" data-bs-dismiss="modal">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4 mt-3">
+
+        <!-- ===== FILA PRINCIPAL ===== -->
+        <div class="row g-4">
+
+            <!-- ===== COLUMNA IZQUIERDA (4/12): FORMULARIO ===== -->
+            <div class="col-12 col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">📌 Agendar Cita</h5>
+                        <form action="/citas/nueva" method="post">
+                            <div class="mb-2">
+                                <label class="form-label">Vehículo</label>
+                                <select name="vehiculos_idvehiculo" class="form-select" required>
+                                    <option value="" disabled selected>Seleccione un vehículo</option>
+                                    {% for v in vehiculos %}
+                                        <option value="{{ v.idvehiculo }}">{{ v.marca }} — {{ v.placa }} ({{ v.codigovehiculo }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label">Fecha</label>
+                                    <input type="date" name="fecha_cita" class="form-control" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Hora</label>
+                                    <input type="time" name="hora_cita" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Motivo</label>
+                                <select name="motivo" class="form-select" required>
+                                    <option value="" disabled selected>Seleccione motivo</option>
+                                    <option value="Mantenimiento preventivo">Mantenimiento preventivo</option>
+                                    <option value="Revisión técnica">Revisión técnica</option>
+                                    <option value="Reparación">Reparación</option>
+                                    <option value="Cambio de llantas">Cambio de llantas</option>
+                                    <option value="Cambio de aceite">Cambio de aceite</option>
+                                    <option value="Diagnóstico">Diagnóstico</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Observaciones</label>
+                                <textarea name="observaciones" class="form-control" rows="3" placeholder="Observaciones adicionales..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">📌 Agendar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== COLUMNA DERECHA (8/12): CALENDARIO + CITAS ===== -->
+            <div class="col-12 col-lg-8">
+
+                <!-- CALENDARIO -->
+                <div class="card mb-4">
+                    <div class="card-body">
+
+                        <!-- Navegación con dropdowns -->
+                        <div class="d-flex justify-content-center align-items-center gap-2 mb-3 cal-nav-selects">
+                            <select id="sel-mes" onchange="navegarMes()">
+                                {% for i, nombre in [
+                                    (1,'Enero'),(2,'Febrero'),(3,'Marzo'),(4,'Abril'),
+                                    (5,'Mayo'),(6,'Junio'),(7,'Julio'),(8,'Agosto'),
+                                    (9,'Septiembre'),(10,'Octubre'),(11,'Noviembre'),(12,'Diciembre')
+                                ] %}
+                                    <option value="{{ i }}" {% if i == mes %}selected{% endif %}>{{ nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <select id="sel-anio" onchange="navegarMes()">
+                                {% for y in range(anio - 2, anio + 4) %}
+                                    <option value="{{ y }}" {% if y == anio %}selected{% endif %}>{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Días de la semana -->
+                        <div class="cal-weekdays">
+                            <span>Lun</span><span>Mar</span><span>Mié</span>
+                            <span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+                        </div>
+
+                        <div class="cal-grid" id="cal-grid"></div>
+
+                        <script>
+                            const MES  = {{ mes }};
+                            const ANIO = {{ anio }};
+                            const CITAS_DATA = {{ citas | tojson }};
+
+                            function navegarMes() {
+                                const m = document.getElementById('sel-mes').value;
+                                const a = document.getElementById('sel-anio').value;
+                                window.location.href = `/citas?mes=${m}&anio=${a}`;
+                            }
+                        </script>
+                    </div>
+                </div>
+
+                <!-- LISTA DE CITAS DEL MES -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">🗒️ Citas del mes</h5>
+                        {% if citas %}
+                            <div class="citas-list">
+                                {% for c in citas %}
+                                <div class="cita-card estado-{{ c.estado }}">
+                                    <div class="cita-card-top">
+                                        <span class="cita-fecha">📆 {{ c.fecha }} {{ c.hora }}</span>
+                                        <span class="cita-badge estado-badge-{{ c.estado }}">{{ c.estado }}</span>
+                                    </div>
+                                    <div class="cita-vehiculo">🚗 {{ c.marca }} — <strong>{{ c.placa }}</strong> ({{ c.codigovehiculo }})</div>
+                                    <div class="cita-motivo">🔧 {{ c.motivo }}</div>
+                                    {% if c.notas %}
+                                        <div class="cita-obs">📝 {{ c.notas }}</div>
+                                    {% endif %}
+                                    <div class="cita-actions">
+                                        <form action="/citas/estado/{{ c.idcita }}" method="post" style="display:inline;">
+                                            <select name="estado" onchange="this.form.submit()" class="select-estado">
+                                                <option value="pendiente"  {% if c.estado=='pendiente'  %}selected{% endif %}>⏳ Pendiente</option>
+                                                <option value="completada" {% if c.estado=='completada' %}selected{% endif %}>🏁 Completada</option>
+                                                <option value="cancelada"  {% if c.estado=='cancelada'  %}selected{% endif %}>❌ Cancelada</option>
+                                            </select>
+                                        </form>
+                                        <form action="/citas/eliminar/{{ c.idcita }}" method="post" style="display:inline;">
+                                            <button type="submit"
+                                                onclick="return confirm('¿Eliminar esta cita?')"
+                                                class="btn btn-sm btn-danger">🗑️</button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No hay citas para este mes.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- TODAS LAS CITAS -->
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">🔍 Todas las citas</h5>
+
+                        <!-- Filtros -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-12 col-md-5">
+                                <input type="text" id="buscar" class="form-control" placeholder="🔎 Buscar por placa, marca, motivo..." oninput="filtrar()">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select id="filtro-estado" class="form-select" onchange="filtrar()">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pendiente">⏳ Pendiente</option>
+                                    <option value="completada">🏁 Completada</option>
+                                    <option value="cancelada">❌ Cancelada</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <select id="filtro-vehiculo" class="form-select" onchange="filtrar()">
+                                    <option value="">Todos los vehículos</option>
+                                    {% for v in vehiculos %}
+                                        <option value="{{ v.placa }}">{{ v.marca }} — {{ v.placa }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Tabla -->
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover table-bordered align-middle">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Vehículo</th>
+                                        <th>Placa</th>
+                                        <th>Motivo</th>
+                                        <th>Estado</th>
+                                        <th>Notas</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-todas">
+                                    {% for c in todas_citas %}
+                                    <tr data-buscar="{{ c.marca }} {{ c.placa }} {{ c.codigovehiculo }} {{ c.motivo }} {{ c.notas or '' }}"
+                                        data-estado="{{ c.estado }}"
+                                        data-placa="{{ c.placa }}">
+                                        <td>{{ c.fecha }}</td>
+                                        <td>{{ c.hora }}</td>
+                                        <td>{{ c.marca }} ({{ c.codigovehiculo }})</td>
+                                        <td>{{ c.placa }}</td>
+                                        <td>{{ c.motivo }}</td>
+                                        <td>
+                                            <span class="badge rounded-pill badge-{{ c.estado }}">{{ c.estado }}</span>
+                                        </td>
+                                        <td>{{ c.notas or '—' }}</td>
+                                        <td>
+                                            <form action="/citas/estado/{{ c.idcita }}" method="post" style="display:inline;">
+                                                <select name="estado" onchange="this.form.submit()" class="form-select form-select-sm" style="width:auto;display:inline;">
+                                                    <option value="pendiente"  {% if c.estado=='pendiente'  %}selected{% endif %}>⏳</option>
+                                                    <option value="completada" {% if c.estado=='completada' %}selected{% endif %}>🏁</option>
+                                                    <option value="cancelada"  {% if c.estado=='cancelada'  %}selected{% endif %}>❌</option>
+                                                </select>
+                                            </form>
+                                            <form action="/citas/eliminar/{{ c.idcita }}" method="post" style="display:inline;">
+                                                <button type="submit"
+                                                    onclick="return confirm('¿Eliminar esta cita?')"
+                                                    class="btn btn-sm btn-danger">🗑️</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="8" class="text-center text-muted fst-italic">No hay citas registradas.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <p class="text-center text-muted fst-italic" id="sin-resultados" style="display:none;">No se encontraron citas con esos filtros.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    // ===== MODAL DE NOTIFICACIÓN AUTOMÁTICO =====
+    (function () {
+        const successMsg = {{ success_msg | tojson }};
+        const errorMsg   = {{ error | tojson }};
+
+        if (!successMsg && !errorMsg) return;
+
+        const isSuccess  = !!successMsg;
+        const mensaje    = successMsg || errorMsg;
+
+        const content = document.getElementById('notifModalContent');
+        const header  = document.getElementById('notifModalHeader');
+        const label   = document.getElementById('notifModalLabel');
+        const body    = document.getElementById('notifModalBody');
+        const btn     = document.getElementById('notifModalBtn');
+
+        if (isSuccess) {
+            content.style.borderTop = '4px solid #198754';
+            header.style.color      = '#198754';
+            label.textContent       = '✅ Éxito';
+            btn.className           = 'btn btn-success';
+        } else {
+            content.style.borderTop = '4px solid #dc3545';
+            header.style.color      = '#dc3545';
+            label.textContent       = '❌ Error';
+            btn.className           = 'btn btn-danger';
+        }
+
+        body.textContent = mensaje;
+
+        const modal = new bootstrap.Modal(document.getElementById('notifModal'));
+        modal.show();
+    })();
+
+    // ===== CALENDARIO =====
+    (function () {
+        const grid = document.getElementById('cal-grid');
+        if (!grid) return;
+
+        const citasPorDia = {};
+        CITAS_DATA.forEach(c => {
+            const dia = parseInt(c.fecha.split('-')[2]);
+            if (!citasPorDia[dia]) citasPorDia[dia] = [];
+            citasPorDia[dia].push(c);
+        });
+
+        const primerDia = new Date(ANIO, MES - 1, 1).getDay();
+        const offset = (primerDia === 0) ? 6 : primerDia - 1;
+        const diasEnMes = new Date(ANIO, MES, 0).getDate();
+
+        for (let i = 0; i < offset; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'cal-day cal-day-empty';
+            grid.appendChild(empty);
+        }
+
+        const hoy = new Date();
+        for (let d = 1; d <= diasEnMes; d++) {
+            const cell = document.createElement('div');
+            const esHoy = (d === hoy.getDate() && MES === hoy.getMonth() + 1 && ANIO === hoy.getFullYear());
+            cell.className = 'cal-day' + (esHoy ? ' cal-day-today' : '');
+
+            const numEl = document.createElement('span');
+            numEl.className = 'cal-day-num';
+            numEl.textContent = d;
+            cell.appendChild(numEl);
+
+            const lista = citasPorDia[d];
+            if (lista) {
+                lista.forEach(c => {
+                    const chip = document.createElement('div');
+                    chip.className = `cal-chip cal-chip-${c.estado}`;
+                    chip.title = `${c.hora} | ${c.marca} ${c.placa}\n${c.motivo}`;
+                    chip.textContent = `${c.hora.substring(0,5)} ${c.marca}`;
+                    cell.appendChild(chip);
+                });
+            }
+            grid.appendChild(cell);
+        }
+    })();
+
+    // ===== FILTRAR TABLA =====
+    function filtrar() {
+        const texto    = document.getElementById('buscar').value.toLowerCase();
+        const estado   = document.getElementById('filtro-estado').value;
+        const vehiculo = document.getElementById('filtro-vehiculo').value;
+        const filas    = document.querySelectorAll('#tbody-todas tr');
+        let visibles   = 0;
+
+        filas.forEach(fila => {
+            if (!fila.dataset.buscar) return;
+            const okTexto    = !texto    || fila.dataset.buscar.toLowerCase().includes(texto);
+            const okEstado   = !estado   || fila.dataset.estado === estado;
+            const okVehiculo = !vehiculo || fila.dataset.placa  === vehiculo;
+
+            if (okTexto && okEstado && okVehiculo) {
+                fila.style.display = '';
+                visibles++;
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+
+        document.getElementById('sin-resultados').style.display = visibles === 0 ? 'block' : 'none';
+    }
+    </script>
+
+</body>
+</html>
