@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Form, Request, Cookie, HTTPException
+from fastapi import FastAPI, Form, Request, Cookie, HTTPException, Header
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
+from pydantic import BaseModel
 from supabase import create_client
 from dotenv import load_dotenv
 from typing import Optional
@@ -21,10 +23,25 @@ engine = create_engine(DATABASE_URL)
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://musical-bassoon-wrx6qgr9gvp9f7v-3000.app.github.dev",
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 templates.env.cache = None
 
+class LoginJSON(BaseModel):
+    email: str
+    password: str
 
 # ==================== OBTENER USUARIO ====================
 def obtener_usuario(access_token: Optional[str]) -> Optional[dict]:
@@ -149,6 +166,33 @@ async def registro(
     except Exception as e:
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
+
+
+# ==================== LOGIN PARA REACT ====================
+@app.post("/login-react")
+async def login_react(data: LoginJSON):
+    try:
+        res = supabase.auth.sign_in_with_password({"email": data.email, "password": data.password})
+        if not res.user:
+            return JSONResponse({"error": "Credenciales incorrectas"})
+
+        # Obtener rol del usuario
+        user_res = (
+            supabase.schema("dmi")
+            .table("usuarios")
+            .select("usuarionombre, rol")
+            .eq("id", res.user.id)
+            .execute()
+        )
+        rol = user_res.data[0]["rol"] if user_res.data else "usuario"
+
+        return JSONResponse({
+            "email": data.email,
+            "role": rol,
+            "token": res.session.access_token
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)})
 
 # ==================== LOGIN / LOGOUT ====================
 @app.post("/login")
@@ -613,6 +657,39 @@ async def eliminar_usuario(usuario_id: int, access_token: str = Cookie(None)):
         return RedirectResponse(url="/?success=Usuario eliminado correctamente", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
+
+# ==================== STATS PARA EL DASHBOARD ====================
+@app.get("/admin/stats")
+async def admin_stats(authorization: str = Header(None)):
+    if not authorization:
+        return JSONResponse({"error": "No autorizado"}, status_code=403)
+    
+    token = authorization.replace("Bearer ", "")
+    
+    try:
+        payload = jwt.decode(token, options={"verify_signature": False})
+        user_id = payload.get("sub")
+        user_res = supabase.schema("dmi").table("usuarios").select("rol").eq("id", user_id).execute()
+        rol = user_res.data[0]["rol"] if user_res.data else "usuario"
+        
+        if rol != "admin":
+            return JSONResponse({"error": "No autorizado"}, status_code=403)
+    except:
+        return JSONResponse({"error": "Token inválido"}, status_code=403)
+
+    try:
+        with engine.connect() as conn:
+            citas_pendientes = conn.execute(text("SELECT COUNT(*) FROM dmi.citas WHERE estado = 'pendiente'")).scalar()
+            total_vehiculos = conn.execute(text("SELECT COUNT(*) FROM dmi.vehiculos")).scalar()
+            total_usuarios = conn.execute(text("SELECT COUNT(*) FROM dmi.usuarios")).scalar()
+
+        return JSONResponse({
+            "citas_pendientes": citas_pendientes,
+            "total_vehiculos": total_vehiculos,
+            "total_usuarios": total_usuarios,
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # ==================== EJECUCIÓN ====================

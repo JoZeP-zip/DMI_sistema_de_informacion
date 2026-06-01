@@ -16,17 +16,28 @@ const LoginView = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // SIMULACIÓN DE AUTENTICACIÓN (Reemplázalo luego por tu fetch a la API)
-    if (email === 'admin@dmi.com' && password === 'admin123') {
-      onLoginSuccess({ email, role: 'admin' });
-    } else if (email === 'user@dmi.com' && password === 'user123') {
-      onLoginSuccess({ email, role: 'user' });
-    } else {
-      setError('Credenciales incorrectas. Intenta con admin@dmi.com o user@dmi.com');
+    try {
+      const response = await fetch('https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev/login-react', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        setError(data.error);
+      } else {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
+        onLoginSuccess({ email: data.email, role: data.role });
+      }
+    } catch (err) {
+      setError('No se pudo conectar con el servidor.');
     }
   };
 
@@ -66,34 +77,54 @@ const LoginView = ({ onLoginSuccess }) => {
 };
 
 // Panel exclusivo para el Administrador
-const DashboardAdmin = () => (
-  <div>
-    <h3 className="text-uppercase fw-black border-bottom border-danger pb-2 mb-4">
-      Panel de <span className="text-danger">Administración</span>
-    </h3>
-    <p className="text-muted">Bienvenido al centro de control de Disol Motors. Desde aquí gestionas todo el taller.</p>
-    <div className="row g-3 mt-2">
-      <div className="col-md-4">
-        <div className="p-3 bg-black border border-secondary text-center">
-          <h5 className="text-danger fw-bold">12</h5>
-          <small className="text-muted">CITAS POR APROBAR</small>
+const DashboardAdmin = () => {
+  const [stats, setStats] = useState({ citas_pendientes: 0, total_vehiculos: 0, total_usuarios: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+  fetch('https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev/admin/stats', {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`  // 👈 esto
+    }
+  })
+    .then(res => res.json())
+    .then(data => { setStats(data); setLoading(false); })
+    .catch(() => setLoading(false));
+}, []);
+
+  return (
+    <div>
+      <h3 className="text-uppercase fw-black border-bottom border-danger pb-2 mb-4">
+        Panel de <span className="text-danger">Administración</span>
+      </h3>
+      <p className="text-muted">Bienvenido al centro de control de Disol Motors.</p>
+      {loading ? (
+        <p className="text-muted">Cargando estadísticas...</p>
+      ) : (
+        <div className="row g-3 mt-2">
+          <div className="col-md-4">
+            <div className="p-3 bg-black border border-secondary text-center">
+              <h5 className="text-danger fw-bold">{stats.citas_pendientes}</h5>
+              <small className="text-muted">CITAS PENDIENTES</small>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="p-3 bg-black border border-secondary text-center">
+              <h5 className="text-danger fw-bold">{stats.total_vehiculos}</h5>
+              <small className="text-muted">UNIDADES REGISTRADAS</small>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="p-3 bg-black border border-secondary text-center">
+              <h5 className="text-danger fw-bold">{stats.total_usuarios}</h5>
+              <small className="text-muted">USUARIOS REGISTRADOS</small>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="col-md-4">
-        <div className="p-3 bg-black border border-secondary text-center">
-          <h5 className="text-danger fw-bold">45</h5>
-          <small className="text-muted">UNIDADES REGISTRADAS</small>
-        </div>
-      </div>
-      <div className="col-md-4">
-        <div className="p-3 bg-black border border-secondary text-center">
-          <h5 className="text-white fw-bold">Ajustes</h5>
-          <small className="text-muted">CONFIGURACIÓN DEL SISTEMA</small>
-        </div>
-      </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // Panel exclusivo para el Usuario Común (Cliente)
 const DashboardUsuario = ({ user }) => (
@@ -226,7 +257,7 @@ function App() {
                 </li>
               )}
               
-              {user && user.role === 'user' && (
+              {user && user.role === 'usuario' && (
                 <li className="nav-item">
                   <button className="nav-link text-danger fw-black p-2" onClick={() => setView('user-dashboard')}>
                     MI GARAGE
