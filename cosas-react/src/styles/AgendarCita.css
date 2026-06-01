@@ -1,0 +1,313 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Barlow+Condensed:wght@400;600&family=Barlow:wght@400;500&display=swap');
+ 
+/* ══════════════════════════════════════════
+   DISOL MOTORS — AgendarCita.css
+══════════════════════════════════════════ */
+ 
+:root {
+  --dm-red:       #e63946;
+  --dm-red-dark:  #A01414;
+  --dm-dark:      #111111;
+  --dm-mid:       #1c1c1c;
+  --dm-panel:     #222222;
+  --dm-panel2:    #2a2a2a;
+  --dm-border:    rgba(255, 255, 255, 0.08);
+  --dm-border-md: rgba(255, 255, 255, 0.14);
+  --dm-text:      #f0f0f0;
+  --dm-muted:     #888888;
+  --dm-label:     #aaaaaa;
+}
+ 
+/* ── Wrapper ─────────────────────────────── */
+.agendar-cita-wrapper {
+  min-height: 100vh;
+  background: var(--dm-dark);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px 60px;
+  font-family: 'Barlow', sans-serif;
+  color: var(--dm-text);
+}
+ 
+/* ── Section ─────────────────────────────── */
+.section.agendar-cita {
+  width: 100%;
+  max-width: 600px;
+}
+ 
+/* ── Section title / header ──────────────── */
+.section-title {
+  text-align: center;
+  margin-bottom: 28px;
+}
+ 
+.ac-icon-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+ 
+.ac-icon-box {
+  width: 44px;
+  height: 44px;
+  background: var(--dm-panel2);
+  border: 1px solid var(--dm-border-md);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+ 
+.section-title h2 {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dm-text);
+  margin: 0 0 6px;
+}
+ 
+.section-title p {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--dm-muted);
+  margin: 0;
+}
+ 
+/* ── Card ─────────────────────────────────── */
+.cita-card {
+  background: var(--dm-mid);
+  border: 1px solid var(--dm-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+ 
+/* ── Card head ───────────────────────────── */
+.cita-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--dm-border);
+  border-left: 3px solid var(--dm-red);
+}
+ 
+.cita-head-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: var(--dm-panel2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+ 
+.cita-head-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dm-text);
+  margin: 0;
+}
+ 
+/* ── Form ─────────────────────────────────── */
+.cita-form {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+ 
+/* ── Section divider label ───────────────── */
+.ac-section {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--dm-red);
+  margin: 4px 0 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--dm-border);
+}
+ 
+/* ── Form group ──────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+ 
+.form-group.no-mb { margin-bottom: 0; }
+ 
+.form-group label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dm-label);
+}
+ 
+.ac-req { color: var(--dm-red); }
+ 
+/* ── Form row (2 columnas) ───────────────── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+ 
+/* ── Inputs / select / textarea ──────────── */
+.cita-form input,
+.cita-form select,
+.cita-form textarea {
+  background: var(--dm-panel);
+  border: 1px solid var(--dm-border);
+  border-radius: 4px;
+  padding: 9px 12px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  color: var(--dm-text);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+ 
+.cita-form input:focus,
+.cita-form select:focus,
+.cita-form textarea:focus {
+  border-color: var(--dm-red);
+}
+ 
+.cita-form input::placeholder,
+.cita-form textarea::placeholder {
+  color: #444;
+}
+ 
+.cita-form select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+ 
+.cita-form select option { background: var(--dm-mid); }
+ 
+.cita-form textarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
+}
+ 
+/* ── Botones ─────────────────────────────── */
+.btn-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+ 
+.btn.primary {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 10px 26px;
+  border: none;
+  border-radius: 4px;
+  background: var(--dm-red);
+  color: #fff;
+  cursor: pointer;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  transition: background 0.15s;
+}
+ 
+.btn.primary:hover { background: var(--dm-red-dark); }
+ 
+.btn.secondary {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  border: 1px solid var(--dm-border-md);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dm-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+ 
+.btn.secondary:hover {
+  border-color: #555;
+  color: var(--dm-text);
+}
+ 
+/* ── Pantalla confirmada ─────────────────── */
+.cita-confirmada {
+  padding: 48px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+ 
+.success-icon {
+  font-size: 52px;
+  line-height: 1;
+}
+ 
+.cita-confirmada h2 {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dm-text);
+  margin: 0;
+}
+ 
+.cita-confirmada p {
+  font-size: 15px;
+  color: var(--dm-label);
+  max-width: 380px;
+  line-height: 1.6;
+  margin: 0;
+}
+ 
+.highlight {
+  color: var(--dm-red);
+  font-weight: 500;
+}
+ 
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 500px) {
+  .form-row { grid-template-columns: 1fr; }
+ 
+  .btn-row {
+    flex-direction: column-reverse;
+  }
+  .btn.primary,
+  .btn.secondary {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}

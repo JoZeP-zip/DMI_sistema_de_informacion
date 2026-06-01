@@ -1,283 +1,187 @@
-/* ====================== RESET & VARIABLES ====================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-:root {
-  --rojo-fuerte:    #a8202b;
-  --rojo-oscuro:    #5a0f1e;
-  --rojo-claro:     #b11e1e;
-  --blanco:         #ffffff;
-  --negro-fondo:    #0a0a0a;
-  --gris-card:      #191919;
-  
-  --gradiente-rojo: linear-gradient(135deg, var(--rojo-oscuro) 0%, var(--rojo-fuerte) 50%, var(--rojo-claro) 100%);
-  --sombra-roja:    0 12px 35px rgba(208, 12, 12, 0.28);
-  --transicion:     all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-  --visible-items:  3; /* Variable crítica para el carrusel */
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'Roboto Condensed', sans-serif;
-  background: var(--negro-fondo);
-  color: var(--blanco);
-  line-height: 1.6;
-  overflow-x: hidden;
-}
-
-/* ====================== NAVEGACIÓN ====================== */
-.main-nav {
-  position: fixed;
-  top: 0; width: 100%; z-index: 1000;
-  background: rgba(10, 10, 10, 0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(208, 12, 12, 0.15);
-}
-
-.nav-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1rem 5%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  color: var(--rojo-fuerte);
-  font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
-  font-weight: 700;
-  text-decoration: none;
-  letter-spacing: 2px;
-}
-
-.nav-links {
-  list-style: none;
-  display: flex;
-  gap: 2.5rem;
-}
-
-.nav-links a {
-  color: white;
-  text-decoration: none;
-  font-size: 1rem;
+/* =============================================
+   HERO — Viewport & Background
+   ============================================= */
+ 
+.hero-viewport {
+  height: 90vh;
   position: relative;
-  transition: var(--transicion);
-}
-
-.nav-links a:hover { color: var(--rojo-claro); }
-
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  width: 0; height: 2px; bottom: -5px; left: 0;
-  background: var(--rojo-fuerte);
-  transition: width 0.3s ease;
-}
-
-.nav-links a:hover::after { width: 100%; }
-
-.menu-toggle { display: none; font-size: 2rem; cursor: pointer; }
-
-/* ====================== HERO ====================== */
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgb(49, 47, 47),
-    rgba(0, 0, 0, 0.5),
-    rgb(49, 47, 47)
-  );
-}
-
-.hero {
-  position: relative;
-  height: 100vh;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
 }
-
-.hero-content { z-index: 2; padding: 0 5%; }
-
-.hero h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(3.5rem, 10vw, 9rem);
-  text-shadow: 0 0 30px rgb(131, 8, 8);
-  line-height: 1;
-}
-
-.hero h1 span { color: var(--rojo-fuerte); }
-
-.slogan {
-  font-size: clamp(1.2rem, 4vw, 2.5rem);
-  margin: 1.5rem 0 2.5rem;
-  font-weight: 300;
-}
-
-.btn {
-  display: inline-block;
-  padding: 1rem 2.5rem;
-  margin: 0.5rem;
-  text-decoration: none;
-  font-weight: 700;
-  border-radius: 50px;
-  transition: var(--transicion);
-  border: 2px solid transparent;
-}
-
-.btn.primary {
-  background: var(--rojo-fuerte);
-  color: white;
-  box-shadow: var(--sombra-roja);
-}
-
-.btn.primary:hover {
-  transform: translateY(-5px);
-  background: var(--rojo-claro);
-}
-
-.btn.outline {
-  border-color: var(--blanco);
-  color: var(--blanco);
-}
-
-.btn.outline:hover {
-  border-color: var(--rojo-claro);
-  color: var(--rojo-claro);
-  background: rgba(255,255,255,0.05);
-}
-
-/* ====================== SECCIONES & CARRUSEL ====================== */
-.section {
-  padding: 8rem 5%;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.section-title { text-align: center; margin-bottom: 4rem; }
-
-.section-title h2 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(2.5rem, 6vw, 4.5rem);
-  color: var(--rojo-fuerte);
-}
-
-.carousel-track {
-  display: flex;
-  gap: 20px;
-  transition: transform 0.4s ease;
-}
-
-.service-card {
-  flex: 0 0 calc((100% / var(--visible-items)) - 15px);
-  background: var(--gris-card);
-  border: 1px solid rgba(208,12,12,0.1);
-  border-radius: 15px;
-  padding: 3rem 2rem;
-  text-align: center;
-  transition: var(--transicion);
-}
-
-.service-card:hover {
-  border-color: var(--rojo-claro);
-  transform: translateY(-10px);
-  box-shadow: var(--sombra-roja);
-}
-
-.icon { font-size: 3.5rem; color: var(--rojo-claro); margin-bottom: 1rem; }
-
-/* ====================== GALERÍA ====================== */
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.2rem;
-}
-
-.gallery-item {
-  aspect-ratio: 4/3;
-  background-size: cover;
-  background-position: center;
-  border-radius: 12px;
-  transition: all 0.6s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.gallery-item:hover {
-  transform: scale(1.06);
-  box-shadow: var(--sombra-dura);
-}
-
-.gallery-item::after {
-  content: '';
+ 
+.hero-background {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(208,12,12,0.7), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.5s;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.1); /* Efecto Ken Burns */
+  transition: transform 8s ease;
 }
-
-.gallery-item:hover::after { 
-  opacity: 1; 
+ 
+.hero-viewport:hover .hero-background {
+  transform: scale(1);
 }
-
-/* Imágenes de galería */
-.item-1 { background-image: url('https://d3bmp4azzreq60.cloudfront.net/fit-in/600x600/vendetunave/images/vehiculos/69a5fa604b5b2.webp'); }
-.item-2 { background-image: url('https://i.redd.it/a-mazda-rx-8-converted-to-look-like-hans-rx-7-in-tokyo-drift-v0-qsphvzp6y8mf1.jpg?width=4000&format=pjpg&auto=webp&s=2e3a2c757eb08fac707efcac6a053c82eff70ff1'); }
-.item-3 { background-image: url('https://acnews.blob.core.windows.net/imggallery/800x600/GAZ_3294341a35014da09cf6ba78f325b574.jpg'); }
-.item-4 { background-image: url('https://motos.honda.com.co/images/cms/banner-CMX-500-Rebel.png'); }
-.item-5 { background-image: url('https://mundomotor.bike/wp-content/uploads/2024/09/vs-futbol-68-1.webp'); }
-.item-6 { background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5vA_B-UKtiXPZh94HavRFlq3qefkah35VTQ&s'); }
-
-
-/* ====================== CONTACTO & FOOTER ====================== */
-.contact-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 3rem;
+ 
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.9) 100%);
 }
-
-.contact-form { display: flex; flex-direction: column; gap: 1rem; }
-
-.contact-form input, .contact-form textarea {
-  padding: 1rem;
-  background: #111;
-  border: 1px solid #333;
+ 
+ 
+/* =============================================
+   HERO — Tipografía
+   ============================================= */
+ 
+.hero-title {
+  font-size: clamp(3rem, 10vw, 6rem);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+}
+ 
+.hero-subtitle {
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  color: #ccc;
+}
+ 
+ 
+/* =============================================
+   HERO — Progress Bars
+   ============================================= */
+ 
+.slide-progress {
+  position: absolute;
+  bottom: 30px;
+  display: flex;
+  gap: 15px;
+}
+ 
+.progress-bar-item {
+  width: 60px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  position: relative;
+}
+ 
+.progress-bar-item.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: #e63946;
+  animation: progressFill 5s linear;
+}
+ 
+@keyframes progressFill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+ 
+ 
+/* =============================================
+   NAVEGACIÓN
+   ============================================= */
+ 
+.nav-hover-red:hover {
+  color: #e63946 !important;
+  text-shadow: 0 0 10px rgba(230, 57, 70, 0.5);
+}
+ 
+ 
+/* =============================================
+   BOTÓN — Racing Style
+   ============================================= */
+ 
+.btn-racing {
+  display: inline-block;
+  background: #e63946;
   color: white;
-  border-radius: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  border: none;
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+  transition: background 0.3s, transform 0.3s;
+}
+ 
+.btn-racing:hover {
+  background: #ff4d5a;
+  transform: skewX(-5deg) scale(1.05);
+}
+ 
+ 
+/* =============================================
+   GALERÍA — Cards
+   ============================================= */
+ 
+/* --- AGREGA O BUSCA ESTO JUSTO ARRIBA DE .item-1 --- */
+.gallery-card {
+    position: relative;
+    aspect-ratio: 4/3;       /* Esto le da la forma de cuadro */
+    overflow: hidden;
+    
+    /* ESTO ES LO QUE ACOMODA EL TAMAÑO */
+    background-size: cover;      /* Llena el cuadro sin deformar */
+    background-position: center; /* Centra la imagen */
+    background-repeat: no-repeat;
+    
+    transition: 0.3s;
+}
+ 
+.gallery-card:hover {
+  border-left-color: #e63946;
+  transform: translateX(5px);
 }
 
-.contact-form input:focus { outline: none; border-color: var(--rojo-fuerte); }
-
-footer {
-  padding: 3rem;
-  text-align: center;
-  border-top: 1px solid #222;
+/* Placeholder interno */
+.gallery-img-placeholder {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-/* ====================== RESPONSIVE ====================== */
-@media (max-width: 1024px) { 
-  :root { 
-    --visible-items: 2; 
-  } 
+ 
+/* Overlay al hacer hover */
+.gallery-hover-info {
+  position: absolute;
+  inset: 0;
+  background: rgba(230, 57, 70, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
 }
-
-@media (max-width: 768px) {
-  :root { 
-    --visible-items: 1; 
-  }
-  .nav-links { display: none; }
-  .menu-toggle { display: block; }
-  .hero h1 { letter-spacing: 2px; }
+ 
+.gallery-card:hover .gallery-hover-info {
+  opacity: 1;
 }
+ 
+ 
+/* =============================================
+   ANIMACIONES
+   ============================================= */
+ 
+.animate-fade-up {
+  animation: fadeUp 1s ease-out forwards;
+}
+ 
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+ 
+ 
+/* =============================================
+   UTILIDADES
+   ============================================= */
+ 
+.fw-black { font-weight: 900; }
