@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración — DMI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* sidebar específico de esta página */
+        .cfg-layout   { display: flex; min-height: calc(100vh - 56px); gap: 0; }
+        .cfg-sidebar  {
+            width: 220px; flex-shrink: 0;
+            background: var(--navy);
+            padding: 1.25rem 0;
+            position: sticky; top: 56px;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
+        }
+        .cfg-sidebar .sec-label {
+            font-size: .68rem; font-weight: 700; letter-spacing: .1em;
+            text-transform: uppercase; color: var(--gray-500);
+            padding: .9rem 1.2rem .3rem;
+        }
+        .cfg-sidebar a {
+            display: flex; align-items: center; gap: .5rem;
+            padding: .5rem 1.2rem;
+            color: var(--gray-200); font-size: .83rem; font-weight: 500;
+            text-decoration: none; border-left: 3px solid transparent;
+            transition: background .15s, color .15s;
+        }
+        .cfg-sidebar a:hover { background: rgba(255,255,255,.07); color: var(--white); }
+        .cfg-sidebar a.active {
+            color: var(--white); border-left-color: var(--accent);
+            background: rgba(255,255,255,.1);
+        }
+        .cfg-main { flex: 1; padding: 1.75rem 2rem; background: #dce3f0; overflow-y: auto; }
+
+        /* panel switching */
+        .cfg-panel  { display: none; }
+        .cfg-panel.active { display: block; }
+
+        /* card title underline */
+        .card-title { font-size: 1rem; font-weight: 700; color: var(--navy);
+                      border-bottom: 2px solid var(--gray-200); padding-bottom: .5rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar">
+    <span class="navbar-brand">DMI Sistema</span>
+    <div class="navbar-links">
+        <a href="/">Vehículos</a>
+        <a href="/citas">Citas</a>
+        <a href="/configuracion" class="active">Configuración</a>
+    </div>
+    <div class="navbar-user">
+        {% if usuario %}
+            <span class="usuario-nombre">{{ usuario.nombre }}</span>
+            <form action="/logout" method="post" style="display:inline;">
+                <button type="submit" class="btn-logout">Cerrar sesión</button>
+            </form>
+        {% else %}
+            <span class="text-muted">No has iniciado sesión</span>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- ===== MODAL NOTIFICACIÓN ===== -->
+<div class="modal fade" id="notifModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" id="notifModalContent">
+            <div class="modal-header border-0 pb-0" id="notifModalHeader">
+                <h5 class="modal-title fw-bold" id="notifModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2" id="notifModalBody"></div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn" id="notifModalBtn" data-bs-dismiss="modal">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cfg-layout">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="cfg-sidebar">
+        <div class="sec-label">Catálogos</div>
+        <a href="#" class="active" onclick="show('ciudades',this)">Ciudades</a>
+        <a href="#" onclick="show('tipovehiculos',this)">Tipo Vehículos</a>
+        <a href="#" onclick="show('metodopago',this)">Métodos de Pago</a>
+        <a href="#" onclick="show('productoprecio',this)">Precios Producto</a>
+        <a href="#" onclick="show('serviciosprecio',this)">Precios Servicio</a>
+
+        <div class="sec-label">Operación</div>
+        <a href="#" onclick="show('inventario',this)">Inventario</a>
+        <a href="#" onclick="show('oficinas',this)">Oficinas</a>
+        <a href="#" onclick="show('servicios',this)">Servicios</a>
+        <a href="#" onclick="show('tiporeparacion',this)">Tipo Reparación</a>
+
+        <div class="sec-label">Comercial</div>
+        <a href="#" onclick="show('pedidos',this)">Pedidos</a>
+        <a href="#" onclick="show('productos',this)">Productos</a>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <main class="cfg-main">
+
+        <!-- ═══════════ CIUDADES ═══════════ -->
+        <div class="cfg-panel active" id="panel-ciudades">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">🏙 Nueva Ciudad</h5>
+                            <form action="/config/ciudades/nueva" method="post">
+                                <label class="form-label">Código Ciudad</label>
+                                <input type="text" name="codigo_ciudad" class="form-control mb-2" placeholder="001" required>
+                                <label class="form-label">Ciudad</label>
+                                <input type="text" name="descripcion_ciudad" class="form-control mb-2" placeholder="Bogotá" required>
+                                <label class="form-label">Código Postal</label>
+                                <input type="text" name="codigo_postal" class="form-control mb-3" placeholder="110111" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar Ciudad</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Ciudades Registradas</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>N</th><th>Código</th><th>Ciudad</th><th>Cód. Postal</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for c in ciudades %}
+                                        <tr>
+                                            <td>{{ c.idciudades }}</td>
+                                            <td>{{ c.codigo_ciudad }}</td>
+                                            <td>{{ c.descripcion_ciudad }}</td>
+                                            <td>{{ c.codigo_postal }}</td>
+                                            <td>
+                                                <form action="/config/ciudades/eliminar/{{ c.idciudades }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar ciudad?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="5" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ TIPO VEHÍCULOS ═══════════ -->
+        <div class="cfg-panel" id="panel-tipovehiculos">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">🚗 Nuevo Tipo de Vehículo</h5>
+                            <form action="/config/tipovehiculos/nuevo" method="post">
+                                <label class="form-label">Código</label>
+                                <input type="text" name="codigotipovehiculos" class="form-control mb-2" placeholder="TV001" required>
+                                <label class="form-label">Vehiculo</label>
+                                <input type="text" name="descripciontipovehiculos" class="form-control mb-2" placeholder="Avion" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar Tipo</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Tipos Registrados</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle"> 
+                                    <thead class="table-dark">
+                                        <tr><th>N</th><th>Código</th><th>Vehiculo<th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for t in tipovehiculos %}
+                                        <tr>
+                                            <td>{{ t.idtipovehiculos }}</td>
+                                            <td>{{ t.codigotipovehiculos }}</td>
+                                            <td>{{ t.vehiculo }}</td>
+                                            <td>
+                                                <form action="/config/tipovehiculos/eliminar/{{ t.idtipovehiculos }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar tipo?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="6" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ MÉTODO DE PAGO ═══════════ -->
+        <div class="cfg-panel" id="panel-metodopago">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">💳 Nuevo Método de Pago</h5>
+                            <form action="/config/metodopago/nuevo" method="post">
+                                <label class="form-label">Código</label>
+                                <input type="text" name="codigompago" class="form-control mb-2" placeholder="MP001" required>
+                                <label class="form-label">Descripción</label>
+                                <input type="text" name="descripcionmpago" class="form-control mb-3" placeholder="Tarjeta de crédito" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Métodos Registrados</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for m in metodospago %}
+                                        <tr>
+                                            <td>{{ m.idmetodopago }}</td>
+                                            <td>{{ m.codigompago }}</td>
+                                            <td>{{ m.descripcionmpago }}</td>
+                                            <td>
+                                                <form action="/config/metodopago/eliminar/{{ m.idmetodopago }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="4" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ PRECIO PRODUCTO ═══════════ -->
+        <div class="cfg-panel" id="panel-productoprecio">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">🏷 Nuevo Precio de Producto</h5>
+                            <form action="/config/productoprecio/nuevo" method="post">
+                                <label class="form-label">Código</label>
+                                <input type="text" name="codigoproductoprecio" class="form-control mb-2" placeholder="PP001" required>
+                                <label class="form-label">Nombre del Producto</label>
+                                <input type="text" name="descripcionprprecio" class="form-control mb-2" placeholder="Aceite sintético 5W30" required>
+                                <label class="form-label">Valor ($)</label>
+                                <input type="number" name="valor" class="form-control mb-3" placeholder="80000" min="0" step="0.01" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Precios Registrados</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Nombre Producto</th><th>Valor</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in productosprecios %}
+                                        <tr>
+                                            <td>{{ p.idproductoprecio }}</td>
+                                            <td>{{ p.codigoproductoprecio }}</td>
+                                            <td>{{ p.descripcionprprecio }}</td>
+                                            <td>${{ "{:,.0f}".format(p.valor) if p.valor else '—' }}</td>
+                                            <td>
+                                                <form action="/config/productoprecio/eliminar/{{ p.idproductoprecio }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="5" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ PRECIO SERVICIO ═══════════ -->
+        <div class="cfg-panel" id="panel-serviciosprecio">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">🏷 Nuevo Precio de Servicio</h5>
+                            <form action="/config/serviciosprecio/nuevo" method="post">
+                                <label class="form-label">Código</label>
+                                <input type="text" name="codigoserviciosprecio" class="form-control mb-2" placeholder="SP001" required>
+                                <label class="form-label">Descripción</label>
+                                <input type="text" name="descripcionserviciosprecio" class="form-control mb-3" placeholder="Cambio de aceite — $80.000" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Precios de Servicio Registrados</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for s in serviciosprecios %}
+                                        <tr>
+                                            <td>{{ s.idserviciosprecio }}</td>
+                                            <td>{{ s.codigoserviciosprecio }}</td>
+                                            <td>{{ s.descripcionserviciosprecio }}</td>
+                                            <td>
+                                                <form action="/config/serviciosprecio/eliminar/{{ s.idserviciosprecio }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="4" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ INVENTARIO ═══════════ -->
+        <div class="cfg-panel" id="panel-inventario">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📦 Nuevo Ítem de Inventario</h5>
+                            <form action="/config/inventario/nuevo" method="post">
+                                <label class="form-label">Código Inventario</label>
+                                <input type="text" name="codigoinventario" class="form-control mb-2" placeholder="INV001" required>
+                                <label class="form-label">Descripción</label>
+                                <input type="text" name="descripcioninventario" class="form-control mb-2" placeholder="Filtro de aire Honda" required>
+                                <label class="form-label">Pedido (ID)</label>
+                                <input type="number" name="pedido_idpedido" class="form-control mb-3" placeholder="1" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Inventario Registrado</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Pedido</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in inventario %}
+                                        <tr>
+                                            <td>{{ i.idinventario }}</td>
+                                            <td>{{ i.codigoinventario }}</td>
+                                            <td>{{ i.descripcioninventario }}</td>
+                                            <td>{{ i.pedido_idpedido }}</td>
+                                            <td>
+                                                <form action="/config/inventario/eliminar/{{ i.idinventario }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="5" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ OFICINAS ═══════════ -->
+        <div class="cfg-panel" id="panel-oficinas">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">🏢 Nueva Oficina</h5>
+                            <form action="/config/oficinas/nueva" method="post">
+                                <label class="form-label">Código Oficina</label>
+                                <input type="text" name="codigo_oficina" class="form-control mb-2" placeholder="OF001" required>
+                                <label class="form-label">Dirección</label>
+                                <input type="text" name="direccion" class="form-control mb-2" placeholder="Cra 7 # 32-16" required>
+                                <label class="form-label">Teléfono</label>
+                                <input type="text" name="telefono_oficina" class="form-control mb-2" placeholder="601 234 5678" required>
+                                <label class="form-label">Descripción</label>
+                                <input type="text" name="descripcionof" class="form-control mb-2" placeholder="Sede Norte" required>
+                                <label class="form-label">Ciudad</label>
+                                <select name="ciudades_idciudades" class="form-select mb-2" required>
+                                    <option value="">— Seleccionar —</option>
+                                    {% for c in ciudades %}
+                                    <option value="{{ c.idciudades }}">{{ c.descripcion_ciudad }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label class="form-label">Inventario (ID)</label>
+                                <input type="number" name="inventario_idinventario" class="form-control mb-3" placeholder="1" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar Oficina</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Oficinas Registradas</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Dirección</th><th>Teléfono</th><th>Descripción</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for o in oficinas %}
+                                        <tr>
+                                            <td>{{ o.idoficinas }}</td>
+                                            <td>{{ o.codigo_oficina }}</td>
+                                            <td>{{ o.direccion }}</td>
+                                            <td>{{ o.telefono_oficina }}</td>
+                                            <td>{{ o.descripcionof }}</td>
+                                            <td>
+                                                <form action="/config/oficinas/eliminar/{{ o.idoficinas }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar oficina?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="6" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ SERVICIOS ═══════════ -->
+        <div class="cfg-panel" id="panel-servicios">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">🔧 Nuevo Servicio</h5>
+                            <form action="/config/servicios/nuevo" method="post">
+                                <label class="form-label">Código Servicio</label>
+                                <input type="text" name="codigoservicio" class="form-control mb-2" placeholder="SRV001" required>
+                                <label class="form-label">Descripción</label>
+                                <input type="text" name="descripcionservicio" class="form-control mb-2" placeholder="Cambio de aceite" required>
+                                <label class="form-label">Pedido (ID)</label>
+                                <input type="number" name="pedido_idpedido" class="form-control mb-3" placeholder="1" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar Servicio</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Servicios Registrados</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Pedido</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for s in servicios %}
+                                        <tr>
+                                            <td>{{ s.idservicios }}</td>
+                                            <td>{{ s.codigoservicio }}</td>
+                                            <td>{{ s.descripcionservicio }}</td>
+                                            <td>{{ s.pedido_idpedido }}</td>
+                                            <td>
+                                                <form action="/config/servicios/eliminar/{{ s.idservicios }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar servicio?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="5" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ TIPO REPARACIÓN ═══════════ -->
+        <div class="cfg-panel" id="panel-tiporeparacion">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">🔩 Nuevo Tipo de Reparación</h5>
+                            <form action="/config/tiporeparacion/nuevo" method="post">
+                                <label class="form-label">Código</label>
+                                <input type="text" name="codigotiporeparacion" class="form-control mb-2" placeholder="TR001" required>
+                                <label class="form-label">Descripción</label>
+                                <input type="text" name="descripciontiporeparacion" class="form-control mb-2" placeholder="Reparación de frenos" required>
+                                <label class="form-label">Servicio</label>
+                                <select name="servicios_idservicios" class="form-select mb-2" required>
+                                    <option value="">— Seleccionar —</option>
+                                    {% for s in servicios %}
+                                    <option value="{{ s.idservicios }}">{{ s.codigoservicio }} — {{ s.descripcionservicio }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label class="form-label">Pedido (ID)</label>
+                                <input type="number" name="pedido_idpedido" class="form-control mb-3" placeholder="1" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Tipos de Reparación</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Servicio</th><th>Pedido</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for r in tiporeparacion %}
+                                        <tr>
+                                            <td>{{ r.idtiporeparacion }}</td>
+                                            <td>{{ r.codigotiporeparacion }}</td>
+                                            <td>{{ r.descripciontiporeparacion }}</td>
+                                            <td>{{ r.servicios_idservicios }}</td>
+                                            <td>{{ r.pedido_idpedido }}</td>
+                                            <td>
+                                                <form action="/config/tiporeparacion/eliminar/{{ r.idtiporeparacion }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="6" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ PEDIDOS ═══════════ -->
+        <div class="cfg-panel" id="panel-pedidos">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">🛒 Nuevo Pedido</h5>
+                            <form action="/config/pedidos/nuevo" method="post">
+                                <label class="form-label">Código Pedido</label>
+                                <input type="text" name="codigopedido" class="form-control mb-2" placeholder="PED001" required>
+                                <label class="form-label">Fecha</label>
+                                <input type="date" name="fecha" class="form-control mb-2" required>
+                                <label class="form-label">Fecha Cita</label>
+                                <input type="datetime-local" name="fecha_cita" class="form-control mb-2" required>
+                                <label class="form-label">Método de Pago</label>
+                                <select name="metodopago_idmetodopago" class="form-select mb-2" required>
+                                    <option value="">— Seleccionar —</option>
+                                    {% for m in metodospago %}
+                                    <option value="{{ m.idmetodopago }}">{{ m.descripcionmpago }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label class="form-label">Estado</label>
+                                <select name="estado" class="form-select mb-2">
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="en proceso">En proceso</option>
+                                    <option value="completado">Completado</option>
+                                    <option value="cancelado">Cancelado</option>
+                                </select>
+                                <label class="form-label">Oficina</label>
+                                <select name="oficinas_idoficinas" class="form-select mb-2">
+                                    <option value="">— Sin oficina —</option>
+                                    {% for o in oficinas %}
+                                    <option value="{{ o.idoficinas }}">{{ o.descripcionof }} ({{ o.codigo_oficina }})</option>
+                                    {% endfor %}
+                                </select>
+                                <label class="form-label">Descripción</label>
+                                <textarea name="descripcion" class="form-control mb-3" rows="2" placeholder="Detalles del pedido..."></textarea>
+                                <button type="submit" class="btn btn-primary w-100">Crear Pedido</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Pedidos Registrados</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Fecha</th><th>Estado</th><th>Método Pago</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in pedidos %}
+                                        <tr>
+                                            <td>{{ p.idpedido }}</td>
+                                            <td>{{ p.codigopedido }}</td>
+                                            <td>{{ p.fecha }}</td>
+                                            <td>
+                                                {% if p.estado == 'completado' %}
+                                                    <span class="badge bg-success">{{ p.estado }}</span>
+                                                {% elif p.estado == 'cancelado' %}
+                                                    <span class="badge bg-danger">{{ p.estado }}</span>
+                                                {% elif p.estado == 'en proceso' %}
+                                                    <span class="badge bg-warning text-dark">{{ p.estado }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ p.estado }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ p.metodopago_idmetodopago }}</td>
+                                            <td>
+                                                <form action="/config/pedidos/eliminar/{{ p.idpedido }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar pedido?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="6" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════ PRODUCTOS ═══════════ -->
+        <div class="cfg-panel" id="panel-productos">
+            <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Nuevo Producto</h5>
+                            <form action="/config/productos/nuevo" method="post">
+                                <label class="form-label">Código Producto</label>
+                                <input type="text" name="codigoproductos" class="form-control mb-2" placeholder="PROD001" required>
+                                <label class="form-label">Descripción</label>
+                                <input type="text" name="descripcionproductos" class="form-control mb-2" placeholder="Filtro de aceite Bosch" required>
+                                <label class="form-label">Precio Producto</label>
+                                <select name="productoprecio_idproductoprecio" class="form-select mb-2" required>
+                                    <option value="">— Seleccionar —</option>
+                                    {% for pp in productosprecios %}
+                                    <option value="{{ pp.idproductoprecio }}">{{ pp.descripcionprprecio }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label class="form-label">Pedido (ID)</label>
+                                <input type="number" name="pedido_idpedido" class="form-control mb-3" placeholder="1" required>
+                                <button type="submit" class="btn btn-primary w-100">Guardar Producto</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">📋 Productos Registrados</h5>
+                            <div class="table-wrap tabla-scroll">
+                                <table class="table table-hover table-bordered align-middle">
+                                    <thead class="table-dark">
+                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Precio (nombre)</th><th>Valor</th><th>Pedido</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for prod in productos %}
+                                        <tr>
+                                            <td>{{ prod.idproductos }}</td>
+                                            <td>{{ prod.codigoproductos }}</td>
+                                            <td>{{ prod.descripcionproductos }}</td>
+                                            <td>{{ prod.descripcionprprecio or '—' }}</td>
+                                            <td>${{ "{:,.0f}".format(prod.valor_precio) if prod.valor_precio else '—' }}</td>
+                                            <td>{{ prod.pedido_idpedido }}</td>
+                                            <td>
+                                                <form action="/config/productos/eliminar/{{ prod.idproductos }}" method="post" style="display:inline">
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar producto?')">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="7" class="text-muted text-center">Sin registros</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function show(panelKey, linkEl) {
+        // ocultar todos los paneles
+        document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('active'));
+        // mostrar el seleccionado
+        document.getElementById('panel-' + panelKey).classList.add('active');
+        // actualizar sidebar
+        document.querySelectorAll('.cfg-sidebar a').forEach(a => a.classList.remove('active'));
+        linkEl.classList.add('active');
+        return false;
+    }
+
+    // Modal de notificación
+    (function () {
+        const successMsg = {{ success_msg | tojson }};
+        const errorMsg   = {{ error | tojson }};
+        if (!successMsg && !errorMsg) return;
+        const isSuccess = !!successMsg;
+        const content = document.getElementById('notifModalContent');
+        const header  = document.getElementById('notifModalHeader');
+        const label   = document.getElementById('notifModalLabel');
+        const body    = document.getElementById('notifModalBody');
+        const btn     = document.getElementById('notifModalBtn');
+        if (isSuccess) {
+            content.style.borderTop = '4px solid #198754';
+            header.style.color = '#198754';
+            label.textContent  = '✅ Éxito';
+            btn.className      = 'btn btn-success';
+        } else {
+            content.style.borderTop = '4px solid #dc3545';
+            header.style.color = '#dc3545';
+            label.textContent  = '❌ Error';
+            btn.className      = 'btn btn-danger';
+        }
+        body.textContent = successMsg || errorMsg;
+        new bootstrap.Modal(document.getElementById('notifModal')).show();
+    })();
+</script>
+</body>
+</html>
