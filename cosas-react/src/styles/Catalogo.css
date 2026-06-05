@@ -1144,4 +1144,24 @@ body{
 .admin-nav-btn.active{
   background:red;
   box-shadow:0 0 18px rgba(255,0,0,0.65);
+
+
+  .btn-pagar {
+  width: 100%;
+  margin-top: 15px;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: #c40000;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-pagar:hover {
+  background: #ff0000;
+  transform: translateY(-2px);
+}
 }

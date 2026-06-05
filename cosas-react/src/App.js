@@ -128,7 +128,7 @@ function App() {
   
   // NUEVO: Estado global de sesión para controlar los roles
   const [user, setUser] = useState(null);
-  // 🆕 SE COLOCA AQUÍ:
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
@@ -154,6 +154,16 @@ function App() {
   }, [view]);
 
   useEffect(() => {
+  const handlePopState = (e) => {
+    if (!e.state || !e.state.section) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.history.replaceState(null, '', '/');  // 👈 replaceState va AQUÍ
+    }
+  };
+  window.addEventListener('popstate', handlePopState);
+  return () => window.removeEventListener('popstate', handlePopState);
+}, []);
+  useEffect(() => {
     if (view !== 'inicio') return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
@@ -167,6 +177,9 @@ function App() {
     setView(user.role === 'admin' ? 'admin-dashboard' : 'user-dashboard');
   } else {
     setView('inicio');
+    // Si ya estamos en inicio, hacer scroll al top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.history.replaceState(null, '', '/');
   }
 };
 
@@ -211,18 +224,23 @@ function App() {
             <ul className="navbar-nav ms-auto align-items-center gap-3">
 
               {['INICIO', 'CATÁLOGO', 'CITAS', 'CONTACTO'].map((text) => (
-                <li className="nav-item" key={text}>
-                  <button
-                    className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
-                    onClick={() => {
-                      setView(text.toLowerCase().replace('á', 'a'));
-                      setMenuOpen(false);
-                    }}
-                  >
-                    {text}
-                  </button>
-                </li>
-              ))}
+  <li className="nav-item" key={text}>
+    <button
+      className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
+      onClick={() => {
+        const v = text.toLowerCase().replace('á', 'a');
+        setView(v);
+        if (v === 'inicio') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.history.replaceState(null, '', '/');
+        }
+        setMenuOpen(false);
+      }}
+    >
+      {text}
+    </button>
+  </li>
+))}
 
               {/* NUEVO: Accesos rápidos en el menú dinámico según el Rol */}
               {user && user.role === 'admin' && (
@@ -314,9 +332,15 @@ function App() {
                   Mecánica de Precisión • Inyección Electrónica • Performance
                 </p>
                 <div className="cta-wrapper">
-                  <a href="#galeria" className="btn-racing px-5 py-3">
-                    EXPLORAR GALERÍA
-                  </a>
+                  <button
+  className="btn-racing px-5 py-3"
+  onClick={() => {
+    window.history.pushState({ section: 'galeria' }, '', '#galeria');
+    document.getElementById('galeria').scrollIntoView({ behavior: 'smooth' });
+  }}
+>
+  EXPLORAR GALERÍA
+</button>
                 </div>
               </div>
 
