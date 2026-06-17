@@ -29,7 +29,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # en producción pon la URL de React
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,7 +42,6 @@ templates.env.cache = None
 
 # ==================== OBTENER USUARIO ====================
 def obtener_usuario(access_token: Optional[str]) -> Optional[dict]:
-    """Decodifica el JWT y retorna dict con id, nombre y rol, o None si falla."""
     if not access_token:
         return None
     try:
@@ -68,10 +67,9 @@ def obtener_usuario(access_token: Optional[str]) -> Optional[dict]:
     return None
 
 
-# ==================== HELPERS DE PERMISOS ====================  ← NUEVO BLOQUE
+# ==================== HELPERS DE PERMISOS ====================
 
 def es_admin(usuario: Optional[dict]) -> bool:
-    """Retorna True si el usuario autenticado tiene rol admin."""
     return usuario is not None and usuario.get("rol") == "admin"
 
 def redirigir_sin_permiso(destino: str = "/") -> RedirectResponse:
@@ -195,7 +193,7 @@ async def logout():
     return response
 
 
-# ==================== PROMOVER A ADMIN (protegido por clave) ====================  
+# ==================== PROMOVER A ADMIN ====================
 
 @app.post("/admin/promover")
 async def promover_admin(
@@ -203,15 +201,10 @@ async def promover_admin(
     secret: str = Form(...),       
     access_token: str = Cookie(None),
 ):
-    """
-    Permite a un admin existente (o al primer setup) promover a otro usuario.
-    Requiere la ADMIN_SECRET definida en .env para evitar uso no autorizado.
-    """
     if secret != ADMIN_SECRET:
         return RedirectResponse(url="/?error=Clave secreta incorrecta", status_code=302)
 
     try:
-        # Actualizar en la tabla dmi.usuarios
         supabase.schema("dmi").table("usuarios") \
             .update({"rol": "admin"}) \
             .eq("id", usuario_id) \
@@ -222,7 +215,7 @@ async def promover_admin(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== CREAR VEHÍCULO   ====================
+# ==================== CREAR VEHÍCULO ====================
 @app.post("/vehiculo/nuevo")
 async def crear_vehiculo(
     access_token: str = Cookie(None),
@@ -239,7 +232,6 @@ async def crear_vehiculo(
     usuario = obtener_usuario(access_token)
     if not usuario:
         return RedirectResponse(url="/?error=Debes iniciar sesión", status_code=302)
-    # ← Cualquier usuario autenticado puede crear vehículos (permiso permitido)
 
     try:
         with engine.connect() as conn:
@@ -267,7 +259,6 @@ async def crear_vehiculo(
             )
             nuevo_id = result.fetchone()[0]   
 
-         
             conn.execute(
                 text("UPDATE dmi.usuarios SET vehiculos_idvehiculo = :vid WHERE id = :uid"),
                 {"vid": nuevo_id, "uid": usuario["id"]},
@@ -279,13 +270,12 @@ async def crear_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== FORMULARIO EDITAR ====================
+# ==================== FORMULARIO EDITAR VEHÍCULO ====================
 @app.get("/vehiculo/editar/{vehiculo_id}", response_class=HTMLResponse)
 async def editar_vehiculo_form(
     request: Request, vehiculo_id: int, access_token: str = Cookie(None)
 ):
     usuario = obtener_usuario(access_token)
-
 
     if not es_admin(usuario):
         return redirigir_sin_permiso()
@@ -336,7 +326,6 @@ async def actualizar_vehiculo(
 ):
     usuario = obtener_usuario(access_token)
 
-   
     if not es_admin(usuario):
         return redirigir_sin_permiso()
 
@@ -491,7 +480,6 @@ async def crear_cita(
     motivo: str = Form(...),
     observaciones: Optional[str] = Form(None),
 ):
-    
     if not access_token:
         return RedirectResponse(url="/citas?error=Debes iniciar sesión", status_code=302)
 
@@ -570,7 +558,6 @@ async def cambiar_estado_cita(
         return RedirectResponse(url=f"/citas?error={str(e)}", status_code=302)
 
 
-
 # ==================== EDITAR ROL DE USUARIO (solo admin) ====================
 @app.post("/usuario/rol/{usuario_id}")
 async def cambiar_rol_usuario(
@@ -605,7 +592,6 @@ async def eliminar_usuario(usuario_id: int, access_token: str = Cookie(None)):
         return redirigir_sin_permiso()
 
     try:
-        
         user_res = (
             supabase.schema("dmi")
             .table("usuarios")
@@ -620,7 +606,6 @@ async def eliminar_usuario(usuario_id: int, access_token: str = Cookie(None)):
             )
             conn.commit()
 
-        
         if user_res.data and user_res.data[0].get("id"):
             supabase.auth.admin.delete_user(user_res.data[0]["id"])
 
@@ -670,11 +655,6 @@ async def api_citas():
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-# ==================== INFORMACION IMPORTANTE!!! ====================
-# Devido al tiempo y solicitud de la profe
-# El 80% de los metodos desde este mensaje hacia abajo, estan hechos con IA, una disculpa por la incompetencia :(
-
-
 # ── GET /configuracion ────────────────────────────────────────────
 @app.get("/configuracion", response_class=HTMLResponse)
 async def configuracion(request: Request, access_token: str = Cookie(None)):
@@ -700,7 +680,9 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
         "tiporeparacion":   [],
         "pedidos":          [],
         "productos":        [],
+        "movimientos":      [],   # ← Se llenará abajo
     }
+
 
 
     try:
@@ -714,16 +696,34 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
             ctx["productosprecios"] = fetch("SELECT * FROM dmi.productoprecio ORDER BY idproductoprecio")
             ctx["serviciosprecios"] = fetch("SELECT * FROM dmi.serviciosprecio ORDER BY idserviciosprecio")
             ctx["inventario"]       = fetch("SELECT * FROM dmi.inventario ORDER BY idinventario")
-            ctx["oficinas"]         = fetch("SELECT * FROM dmi.oficinas ORDER BY idoficinas")
-            ctx["servicios"]        = fetch("SELECT * FROM dmi.servicios ORDER BY idservicios")
+            ctx["oficinas"] = fetch("""
+                SELECT o.*, i.codigoinventario, i.descripcioninventario 
+                FROM dmi.oficinas o
+                LEFT JOIN dmi.inventario i ON i.idinventario = o.inventario_idinventario
+                ORDER BY o.idoficinas
+            """)
+            ctx["servicios"] = fetch("""
+                SELECT s.*, sp.descripcionserviciosprecio, sp.precioserviciosprecio 
+                FROM dmi.servicios s
+                LEFT JOIN dmi.serviciosprecio sp ON sp.idserviciosprecio = s.serviciosprecio_idserviciosprecio
+                ORDER BY s.idservicios
+            """)
             ctx["tiporeparacion"]   = fetch("SELECT * FROM dmi.tiporeparacion ORDER BY idtiporeparacion")
             ctx["pedidos"]          = fetch("SELECT * FROM dmi.pedido ORDER BY idpedido DESC LIMIT 50")
-            ctx["productos"]        = fetch("SELECT * FROM dmi.productos ORDER BY idproductos")
-            ctx["productos"] = fetch("""SELECT p.*, pp.descripcionprprecio, pp.valor AS valor_precio
+            ctx["productos"]        = fetch("""SELECT p.*, pp.descripcionprprecio, pp.valor AS valor_precio
                                         FROM dmi.productos p
                                         LEFT JOIN dmi.productoprecio pp ON pp.idproductoprecio = p.productoprecio_idproductoprecio
                                         ORDER BY p.idproductos
                                     """)
+
+            # ← ESTA ES LA LÍNEA QUE FALTABA
+            ctx["movimientos"] = fetch("""
+                SELECT m.*, i.codigoinventario, i.descripcioninventario 
+                FROM dmi.movimientos_inventario m
+                LEFT JOIN dmi.inventario i ON i.idinventario = m.inventario_id
+                ORDER BY m.fecha DESC 
+                LIMIT 50
+            """)
 
     except Exception as e:
         ctx["error"] = str(e)
@@ -736,7 +736,7 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  CIUDADES
+#  CIUDADES — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/ciudades/nueva")
@@ -764,6 +764,33 @@ async def crear_ciudad(
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
 
+@app.post("/config/ciudades/editar/{ciudad_id}")
+async def editar_ciudad(
+    ciudad_id: int,
+    access_token: str = Cookie(None),
+    codigo_ciudad: int = Form(...),
+    descripcion_ciudad: str = Form(...),
+    codigo_postal: str = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.ciudades
+                    SET codigo_ciudad = :codigo, descripcion_ciudad = :descripcion, codigo_postal = :postal
+                    WHERE idciudades = :id
+                """),
+                {"codigo": codigo_ciudad, "descripcion": descripcion_ciudad, "postal": codigo_postal, "id": ciudad_id},
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Ciudad actualizada correctamente", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
 @app.post("/config/ciudades/eliminar/{ciudad_id}")
 async def eliminar_ciudad(ciudad_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -779,16 +806,14 @@ async def eliminar_ciudad(ciudad_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  TIPO VEHÍCULOS
+#  TIPO VEHÍCULOS — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/tipovehiculos/nuevo")
 async def crear_tipovehiculo(
     access_token: str = Cookie(None),
     codigotipovehiculos: str = Form(...),
-    descripciontipovehiculos: str = Form(...),
-    motor: str = Form(...),
-    tipovehiculoscol: str = Form(...),
+    vehiculo: str = Form(...),
 ):
     usuario = obtener_usuario(access_token)
     if not es_admin(usuario):
@@ -798,18 +823,47 @@ async def crear_tipovehiculo(
             conn.execute(
                 text("""
                     INSERT INTO dmi.tipovehiculos
-                        (codigotipovehiculos, descripciontipovehiculos, motor, tipovehiculoscol)
-                    VALUES (:codigo, :descripcion, :motor, :col)
+                        (codigotipovehiculos, vehiculo)
+                    VALUES (:codigo, :vehiculo)
                 """),
                 {
                     "codigo":      codigotipovehiculos,
-                    "descripcion": descripciontipovehiculos,
-                    "motor":       motor,
-                    "col":         tipovehiculoscol,
+                    "vehiculo": vehiculo
                 },
             )
             conn.commit()
         return RedirectResponse(url="/configuracion?success=Tipo de vehículo creado", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
+@app.post("/config/tipovehiculos/editar/{tipo_id}")
+async def editar_tipovehiculo(
+    tipo_id: int,
+    access_token: str = Cookie(None),
+    codigotipovehiculos: str = Form(...),
+    vehiculo: str = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.tipovehiculos
+                    SET codigotipovehiculos = :codigo,
+                        vehiculos = :vehiculo,
+                    WHERE idtipovehiculos = :id
+                """),
+                {
+                    "codigo":      codigotipovehiculos,
+                    "vehiculo": vehiculo,
+                    "id":          tipo_id,
+                },
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Tipo de vehículo actualizado", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
@@ -829,7 +883,7 @@ async def eliminar_tipovehiculo(tipo_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  MÉTODO DE PAGO
+#  MÉTODO DE PAGO — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/metodopago/nuevo")
@@ -853,6 +907,32 @@ async def crear_metodopago(
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
 
+@app.post("/config/metodopago/editar/{mp_id}")
+async def editar_metodopago(
+    mp_id: int,
+    access_token: str = Cookie(None),
+    codigompago: str = Form(...),
+    descripcionmpago: str = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.metodopago
+                    SET codigompago = :codigo, descripcionmpago = :desc
+                    WHERE idmetodopago = :id
+                """),
+                {"codigo": codigompago, "desc": descripcionmpago, "id": mp_id},
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Método de pago actualizado", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
 @app.post("/config/metodopago/eliminar/{mp_id}")
 async def eliminar_metodopago(mp_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -868,7 +948,7 @@ async def eliminar_metodopago(mp_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  PRECIO PRODUCTO
+#  PRECIO PRODUCTO — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/productoprecio/nuevo")
@@ -896,6 +976,33 @@ async def crear_productoprecio(
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
 
+@app.post("/config/productoprecio/editar/{pp_id}")
+async def editar_productoprecio(
+    pp_id: int,
+    access_token: str = Cookie(None),
+    codigoproductoprecio: str = Form(...),
+    descripcionprprecio: str = Form(...),
+    valor: float = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.productoprecio
+                    SET codigoproductoprecio = :codigo, descripcionprprecio = :desc, valor = :valor
+                    WHERE idproductoprecio = :id
+                """),
+                {"codigo": codigoproductoprecio, "desc": descripcionprprecio, "valor": valor, "id": pp_id},
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Precio de producto actualizado", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
 @app.post("/config/productoprecio/eliminar/{pp_id}")
 async def eliminar_productoprecio(pp_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -911,7 +1018,7 @@ async def eliminar_productoprecio(pp_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  PRECIO SERVICIO
+#  PRECIO SERVICIO — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/serviciosprecio/nuevo")
@@ -919,6 +1026,7 @@ async def crear_serviciosprecio(
     access_token: str = Cookie(None),
     codigoserviciosprecio: str = Form(...),
     descripcionserviciosprecio: str = Form(...),
+    precioserviciosprecio: str = Form(...)
 ):
     usuario = obtener_usuario(access_token)
     if not es_admin(usuario):
@@ -927,13 +1035,42 @@ async def crear_serviciosprecio(
         with engine.connect() as conn:
             conn.execute(
                 text("""
-                    INSERT INTO dmi.serviciosprecio (codigoserviciosprecio, descripcionserviciosprecio)
-                    VALUES (:codigo, :desc)
+                    INSERT INTO dmi.serviciosprecio (codigoserviciosprecio, descripcionserviciosprecio, precioserviciosprecio)
+                    VALUES (:codigo, :desc, :precio)
                 """),
-                {"codigo": codigoserviciosprecio, "desc": descripcionserviciosprecio},
+                {"codigo": codigoserviciosprecio, "desc": descripcionserviciosprecio, "precio": precioserviciosprecio},
             )
             conn.commit()
         return RedirectResponse(url="/configuracion?success=Precio de servicio creado", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
+@app.post("/config/serviciosprecio/editar/{sp_id}")
+async def editar_serviciosprecio(
+    sp_id: int,
+    access_token: str = Cookie(None),
+    codigoserviciosprecio: str = Form(...),
+    descripcionserviciosprecio: str = Form(...),
+    precioserviciosprecio: str = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.serviciosprecio
+                    SET codigoserviciosprecio = :codigo,
+                        descripcionserviciosprecio = :desc,
+                        precioserviciosprecio = :precio
+                    WHERE idserviciosprecio = :id
+                """),
+                {"codigo": codigoserviciosprecio, "desc": descripcionserviciosprecio, "precio": precioserviciosprecio, "id": sp_id},
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Precio de servicio actualizado", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
@@ -953,7 +1090,7 @@ async def eliminar_serviciosprecio(sp_id: int, access_token: str = Cookie(None))
 
 
 # ══════════════════════════════════════════════════════════════════
-#  INVENTARIO
+#  INVENTARIO — CRUD completo (NIIF compliant)
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/inventario/nuevo")
@@ -961,7 +1098,54 @@ async def crear_inventario(
     access_token: str = Cookie(None),
     codigoinventario: str = Form(...),
     descripcioninventario: str = Form(...),
-    pedido_idpedido: int = Form(...),
+    cantidad: float = Form(0),
+    costo_unitario: float = Form(0),
+    unidad_medida: str = Form("UND"),
+    estado: str = Form("activo"),
+    pedido_idpedido: Optional[int] = Form(None),   # ← Muy importante
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    INSERT INTO dmi.inventario 
+                    (codigoinventario, descripcioninventario, cantidad, 
+                     costo_unitario, unidad_medida, estado, pedido_idpedido)
+                    VALUES 
+                    (:codigo, :desc, :cant, :costo, :unidad, :estado, :pedido)
+                """),
+                {
+                    "codigo": codigoinventario,
+                    "desc": descripcioninventario,
+                    "cant": cantidad,
+                    "costo": costo_unitario,
+                    "unidad": unidad_medida,
+                    "estado": estado,
+                    "pedido": pedido_idpedido,
+                }
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Ítem creado correctamente", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={str(e)}", status_code=302)
+
+
+@app.post("/config/inventario/editar/{inv_id}")
+async def editar_inventario(
+    inv_id: int,
+    access_token: str = Cookie(None),
+    codigoinventario: str = Form(...),
+    descripcioninventario: str = Form(...),
+    cantidad: float = Form(...),
+    costo_unitario: float = Form(...),
+    unidad_medida: str = Form("UND"),
+    estado: str = Form("activo"),
+    pedido_idpedido: Optional[int] = Form(None),
+    oficinas_idoficinas: Optional[int] = Form(None),
 ):
     usuario = obtener_usuario(access_token)
     if not es_admin(usuario):
@@ -970,19 +1154,38 @@ async def crear_inventario(
         with engine.connect() as conn:
             conn.execute(
                 text("""
-                    INSERT INTO dmi.inventario (codigoinventario, descripcioninventario, pedido_idpedido)
-                    VALUES (:codigo, :desc, :pedido)
+                    UPDATE dmi.inventario SET
+                        codigoinventario = :codigo,
+                        descripcioninventario = :desc,
+                        cantidad = :cant,
+                        costo_unitario = :costo,
+                        unidad_medida = :unidad,
+                        estado = :estado,
+                        pedido_idpedido = :pedido,
+                        oficinas_idoficinas = :oficina
+                    WHERE idinventario = :id
                 """),
-                {"codigo": codigoinventario, "desc": descripcioninventario, "pedido": pedido_idpedido},
+                {
+                    "codigo": codigoinventario,
+                    "desc": descripcioninventario,
+                    "cant": cantidad,
+                    "costo": costo_unitario,
+                    "unidad": unidad_medida,
+                    "estado": estado,
+                    "pedido": pedido_idpedido,
+                    "oficina": oficinas_idoficinas,
+                    "id": inv_id,
+                },
             )
             conn.commit()
-        return RedirectResponse(url="/configuracion?success=Ítem de inventario creado", status_code=302)
+        return RedirectResponse(url="/configuracion?success=Ítem actualizado", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
 
 @app.post("/config/inventario/eliminar/{inv_id}")
 async def eliminar_inventario(inv_id: int, access_token: str = Cookie(None)):
+    # ... (mismo que tenías)
     usuario = obtener_usuario(access_token)
     if not es_admin(usuario):
         return redirigir_sin_permiso("/configuracion")
@@ -993,10 +1196,69 @@ async def eliminar_inventario(inv_id: int, access_token: str = Cookie(None)):
         return RedirectResponse(url="/configuracion?success=Ítem eliminado", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+    
+
 
 
 # ══════════════════════════════════════════════════════════════════
-#  OFICINAS
+#  MOVIMIENTOS DE INVENTARIO
+# ══════════════════════════════════════════════════════════════════
+
+@app.post("/config/movimientos/nuevo")
+async def crear_movimiento(
+    access_token: str = Cookie(None),
+    inventario_id: int = Form(...),
+    tipo_movimiento: str = Form(...),
+    cantidad: float = Form(...),
+    costo_unitario: Optional[float] = Form(None),
+    motivo: Optional[str] = Form(None),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+
+    try:
+        with engine.connect() as conn:
+            # Registrar movimiento
+            conn.execute(
+                text("""
+                    INSERT INTO dmi.movimientos_inventario 
+                    (inventario_id, tipo_movimiento, cantidad, costo_unitario, motivo, usuario_id)
+                    VALUES (:inv_id, :tipo, :cant, :costo, :motivo, :uid)
+                """),
+                {
+                    "inv_id": inventario_id,
+                    "tipo": tipo_movimiento,
+                    "cant": cantidad,
+                    "costo": costo_unitario,
+                    "motivo": motivo,
+                    "uid": usuario["id"]
+                }
+            )
+            
+            # Actualizar stock
+            if tipo_movimiento == "entrada":
+                conn.execute(
+                    text("UPDATE dmi.inventario SET cantidad = cantidad + :cant WHERE idinventario = :id"),
+                    {"cant": cantidad, "id": inventario_id}
+                )
+            else:  # salida o ajuste
+                conn.execute(
+                    text("UPDATE dmi.inventario SET cantidad = cantidad - :cant WHERE idinventario = :id"),
+                    {"cant": cantidad, "id": inventario_id}
+                )
+            
+            conn.commit()
+            
+        return RedirectResponse(url="/configuracion?success=Movimiento registrado correctamente", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={str(e)}", status_code=302)
+
+
+
+    
+# ══════════════════════════════════════════════════════════════════
+#  OFICINAS — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/oficinas/nueva")
@@ -1036,6 +1298,49 @@ async def crear_oficina(
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
 
+@app.post("/config/oficinas/editar/{of_id}")
+async def editar_oficina(
+    of_id: int,
+    access_token: str = Cookie(None),
+    codigo_oficina: str = Form(...),
+    direccion: str = Form(...),
+    telefono_oficina: str = Form(...),
+    descripcionof: str = Form(...),
+    ciudades_idciudades: int = Form(...),
+    inventario_idinventario: int = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.oficinas
+                    SET codigo_oficina = :codigo,
+                        direccion = :dir,
+                        telefono_oficina = :tel,
+                        descripcionof = :desc,
+                        ciudades_idciudades = :ciudad,
+                        inventario_idinventario = :inv
+                    WHERE idoficinas = :id
+                """),
+                {
+                    "codigo":   codigo_oficina,
+                    "dir":      direccion,
+                    "tel":      telefono_oficina,
+                    "desc":     descripcionof,
+                    "ciudad":   ciudades_idciudades,
+                    "inv":      inventario_idinventario,
+                    "id":       of_id,
+                },
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Oficina actualizada correctamente", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
 @app.post("/config/oficinas/eliminar/{of_id}")
 async def eliminar_oficina(of_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -1051,11 +1356,42 @@ async def eliminar_oficina(of_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  SERVICIOS
+#  SERVICIOS — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/servicios/nuevo")
 async def crear_servicio(
+    access_token: str = Cookie(None),
+    codigoservicio: str = Form(...),
+    descripcionservicio: str = Form(...),
+    serviciosprecio_idserviciosprecio: int = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    INSERT INTO dmi.servicios 
+                    (codigoservicio, descripcionservicio, serviciosprecio_idserviciosprecio)
+                    VALUES (:codigo, :desc, :precio)
+                """),
+                {
+                    "codigo": codigoservicio,
+                    "desc": descripcionservicio,
+                    "precio": serviciosprecio_idserviciosprecio,
+                }
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Servicio creado correctamente", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={str(e)}", status_code=302)
+
+
+@app.post("/config/servicios/editar/{srv_id}")
+async def editar_servicio(
+    srv_id: int,
     access_token: str = Cookie(None),
     codigoservicio: str = Form(...),
     descripcionservicio: str = Form(...),
@@ -1068,13 +1404,14 @@ async def crear_servicio(
         with engine.connect() as conn:
             conn.execute(
                 text("""
-                    INSERT INTO dmi.servicios (codigoservicio, descripcionservicio, pedido_idpedido)
-                    VALUES (:codigo, :desc, :pedido)
+                    UPDATE dmi.servicios
+                    SET codigoservicio = :codigo, descripcionservicio = :desc, pedido_idpedido = :pedido
+                    WHERE idservicios = :id
                 """),
-                {"codigo": codigoservicio, "desc": descripcionservicio, "pedido": pedido_idpedido},
+                {"codigo": codigoservicio, "desc": descripcionservicio, "pedido": pedido_idpedido, "id": srv_id},
             )
             conn.commit()
-        return RedirectResponse(url="/configuracion?success=Servicio creado correctamente", status_code=302)
+        return RedirectResponse(url="/configuracion?success=Servicio actualizado correctamente", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
@@ -1094,7 +1431,7 @@ async def eliminar_servicio(srv_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  TIPO REPARACIÓN
+#  TIPO REPARACIÓN — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/tiporeparacion/nuevo")
@@ -1130,6 +1467,43 @@ async def crear_tiporeparacion(
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
 
+@app.post("/config/tiporeparacion/editar/{tr_id}")
+async def editar_tiporeparacion(
+    tr_id: int,
+    access_token: str = Cookie(None),
+    codigotiporeparacion: str = Form(...),
+    descripciontiporeparacion: str = Form(...),
+    servicios_idservicios: int = Form(...),
+    pedido_idpedido: int = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.tiporeparacion
+                    SET codigotiporeparacion = :codigo,
+                        descripciontiporeparacion = :desc,
+                        servicios_idservicios = :srv,
+                        pedido_idpedido = :pedido
+                    WHERE idtiporeparacion = :id
+                """),
+                {
+                    "codigo":  codigotiporeparacion,
+                    "desc":    descripciontiporeparacion,
+                    "srv":     servicios_idservicios,
+                    "pedido":  pedido_idpedido,
+                    "id":      tr_id,
+                },
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Tipo de reparación actualizado", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
 @app.post("/config/tiporeparacion/eliminar/{tr_id}")
 async def eliminar_tiporeparacion(tr_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -1145,7 +1519,7 @@ async def eliminar_tiporeparacion(tr_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  PEDIDOS
+#  PEDIDOS — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/pedidos/nuevo")
@@ -1189,6 +1563,53 @@ async def crear_pedido(
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
 
+@app.post("/config/pedidos/editar/{ped_id}")
+async def editar_pedido(
+    ped_id: int,
+    access_token: str = Cookie(None),
+    codigopedido: str = Form(...),
+    fecha: str = Form(...),
+    fecha_cita: str = Form(...),
+    metodopago_idmetodopago: int = Form(...),
+    estado: str = Form("pendiente"),
+    descripcion: Optional[str] = Form(None),
+    oficinas_idoficinas: Optional[str] = Form(None),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        oficina_val = int(oficinas_idoficinas) if oficinas_idoficinas else None
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.pedido
+                    SET codigopedido = :codigo,
+                        fecha = :fecha,
+                        fecha_cita = CAST(:fcita AS timestamptz),
+                        metodopago_idmetodopago = :mp,
+                        estado = :estado,
+                        descripcion = :desc,
+                        oficinas_idoficinas = :oficina
+                    WHERE idpedido = :id
+                """),
+                {
+                    "codigo":  codigopedido,
+                    "fecha":   fecha,
+                    "fcita":   fecha_cita,
+                    "mp":      metodopago_idmetodopago,
+                    "estado":  estado,
+                    "desc":    descripcion,
+                    "oficina": oficina_val,
+                    "id":      ped_id,
+                },
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Pedido actualizado correctamente", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
 @app.post("/config/pedidos/eliminar/{ped_id}")
 async def eliminar_pedido(ped_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -1204,7 +1625,7 @@ async def eliminar_pedido(ped_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  PRODUCTOS
+#  PRODUCTOS — CRUD completo
 # ══════════════════════════════════════════════════════════════════
 
 @app.post("/config/productos/nuevo")
@@ -1240,6 +1661,43 @@ async def crear_producto(
         return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
 
 
+@app.post("/config/productos/editar/{prod_id}")
+async def editar_producto(
+    prod_id: int,
+    access_token: str = Cookie(None),
+    codigoproductos: str = Form(...),
+    descripcionproductos: str = Form(...),
+    productoprecio_idproductoprecio: int = Form(...),
+    pedido_idpedido: int = Form(...),
+):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text("""
+                    UPDATE dmi.productos
+                    SET codigoproductos = :codigo,
+                        descripcionproductos = :desc,
+                        productoprecio_idproductoprecio = :precio,
+                        pedido_idpedido = :pedido
+                    WHERE idproductos = :id
+                """),
+                {
+                    "codigo":  codigoproductos,
+                    "desc":    descripcionproductos,
+                    "precio":  productoprecio_idproductoprecio,
+                    "pedido":  pedido_idpedido,
+                    "id":      prod_id,
+                },
+            )
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Producto actualizado correctamente", status_code=302)
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={e}", status_code=302)
+
+
 @app.post("/config/productos/eliminar/{prod_id}")
 async def eliminar_producto(prod_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -1255,7 +1713,7 @@ async def eliminar_producto(prod_id: int, access_token: str = Cookie(None)):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  APIs JSON para las nuevas entidades
+#  APIs JSON
 # ══════════════════════════════════════════════════════════════════
 
 @app.get("/api/ciudades")

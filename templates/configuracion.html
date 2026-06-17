@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
     <style>
-        /* sidebar específico de esta página */
         .cfg-layout   { display: flex; min-height: calc(100vh - 56px); gap: 0; }
         .cfg-sidebar  {
             width: 220px; flex-shrink: 0;
@@ -35,14 +34,11 @@
             background: rgba(255,255,255,.1);
         }
         .cfg-main { flex: 1; padding: 1.75rem 2rem; background: #dce3f0; overflow-y: auto; }
-
-        /* panel switching */
         .cfg-panel  { display: none; }
         .cfg-panel.active { display: block; }
-
-        /* card title underline */
         .card-title { font-size: 1rem; font-weight: 700; color: var(--navy);
                       border-bottom: 2px solid var(--gray-200); padding-bottom: .5rem; margin-bottom: 1rem; }
+        .btn-edit { white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -53,7 +49,7 @@
     <div class="navbar-links">
         <a href="/">Vehículos</a>
         <a href="/citas">Citas</a>
-        <a href="/configuracion" class="active">Configuración</a>
+        <a href="/configuracion" class="active">Panel de Administrador</a>
     </div>
     <div class="navbar-user">
         {% if usuario %}
@@ -83,6 +79,346 @@
     </div>
 </div>
 
+<!-- ================================================================
+     MODALES DE EDICIÓN — uno por entidad
+     ================================================================ -->
+
+<!-- EDITAR CIUDAD -->
+<div class="modal fade" id="modalEditCiudad" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Ciudad</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditCiudad" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código Ciudad</label>
+                    <input type="number" name="codigo_ciudad" id="editCiudadCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Ciudad</label>
+                    <input type="text" name="descripcion_ciudad" id="editCiudadDesc" class="form-control mb-2" required>
+                    <label class="form-label">Código Postal</label>
+                    <input type="text" name="codigo_postal" id="editCiudadPostal" class="form-control" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR TIPO VEHÍCULO -->
+<div class="modal fade" id="modalEditTipoVehiculo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Tipo de Vehículo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditTipoVehiculo" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigotipovehiculos" id="editTVCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Vehículo</label>
+                    <input type="text" name="vehiculo" id="editTVVehiculo" class="form-control mb-2" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR MÉTODO DE PAGO -->
+<div class="modal fade" id="modalEditMetodoPago" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Método de Pago</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditMetodoPago" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigompago" id="editMPCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Metodo</label>
+                    <input type="text" name="descripcionmpago" id="editMPDesc" class="form-control" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR PRECIO PRODUCTO -->
+<div class="modal fade" id="modalEditPrecioProducto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Precio de Producto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditPrecioProducto" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigoproductoprecio" id="editPPCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Nombre del Producto</label>
+                    <input type="text" name="descripcionprprecio" id="editPPDesc" class="form-control mb-2" required>
+                    <label class="form-label">Valor ($)</label>
+                    <input type="number" name="valor" id="editPPValor" class="form-control" step="0.01" min="0" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR PRECIO SERVICIO -->
+<div class="modal fade" id="modalEditPrecioServicio" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Precio de Servicio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditPrecioServicio" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigoserviciosprecio" id="editSPCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Servicio</label>
+                    <input type="text" name="descripcionserviciosprecio" id="editSPDesc" class="form-control mb-2" required>
+                    <label class="form-label">Valor ($)</label>
+                    <input type="text" name="precioserviciosprecio" id="editSPValor" class="form-control" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR INVENTARIO -->
+<div class="modal fade" id="modalEditInventario" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Ítem de Inventario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditInventario" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código Inventario</label>
+                    <input type="text" name="codigoinventario" id="editInvCodigo" class="form-control mb-2" required>
+
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="descripcioninventario" id="editInvDesc" class="form-control mb-2" required>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" name="cantidad" id="editInvCantidad" class="form-control mb-2" step="0.01">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Costo Unitario ($)</label>
+                            <input type="number" name="costo_unitario" id="editInvCosto" class="form-control mb-2" step="0.01">
+                        </div>
+                    </div>
+
+                    <label class="form-label">Unidad de Medida</label>
+                    <select name="unidad_medida" id="editInvUnidad" class="form-select mb-2">
+                        <option value="UND">UND</option>
+                        <option value="LT">Litros</option>
+                        <option value="KG">Kilogramos</option>
+                        <option value="PZ">Piezas</option>
+                    </select>
+
+                    <label class="form-label">Estado</label>
+                    <select name="estado" id="editInvEstado" class="form-select mb-2">
+                        <option value="activo">Activo</option>
+                        <option value="en_uso">En uso</option>
+                        <option value="obsoleto">Obsoleto</option>
+                        <option value="dañado">Dañado</option>
+                    </select>
+
+                    <label class="form-label">Pedido (ID)</label>
+                    <input type="number" name="pedido_idpedido" id="editInvPedido" class="form-control mb-2">
+
+                    <label class="form-label">Oficina</label>
+                    <select name="oficinas_idoficinas" id="editInvOficina" class="form-select">
+                        <option value="">— Sin asignar —</option>
+                        {% for o in oficinas %}
+                        <option value="{{ o.idoficinas }}">{{ o.codigo_oficina }} - {{ o.descripcionof }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR OFICINA -->
+<div class="modal fade" id="modalEditOficina" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Oficina</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditOficina" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código Oficina</label>
+                    <input type="text" name="codigo_oficina" id="editOfCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Dirección</label>
+                    <input type="text" name="direccion" id="editOfDir" class="form-control mb-2" required>
+                    <label class="form-label">Teléfono</label>
+                    <input type="text" name="telefono_oficina" id="editOfTel" class="form-control mb-2" required>
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="descripcionof" id="editOfDesc" class="form-control mb-2" required>
+                    <label class="form-label">Ciudad</label>
+                    <select name="ciudades_idciudades" id="editOfCiudad" class="form-select mb-2" required>
+                        <option value="">— Seleccionar —</option>
+                        {% for c in ciudades %}
+                        <option value="{{ c.idciudades }}">{{ c.descripcion_ciudad }}</option>
+                        {% endfor %}
+                    </select>
+                    <label class="form-label">Inventario (ID)</label>
+                    <input type="number" name="inventario_idinventario" id="editOfInv" class="form-control" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR SERVICIO -->
+<div class="modal fade" id="modalEditServicio" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Servicio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditServicio" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código Servicio</label>
+                    <input type="text" name="codigoservicio" id="editSrvCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="descripcionservicio" id="editSrvDesc" class="form-control mb-2" required>
+                    <label class="form-label">Pedido (ID)</label>
+                    <input type="number" name="pedido_idpedido" id="editSrvPedido" class="form-control" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR TIPO REPARACIÓN -->
+<div class="modal fade" id="modalEditTipoReparacion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Tipo de Reparación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditTipoReparacion" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigotiporeparacion" id="editTRCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="descripciontiporeparacion" id="editTRDesc" class="form-control mb-2" required>
+                    <label class="form-label">Servicio</label>
+                    <select name="servicios_idservicios" id="editTRServicio" class="form-select mb-2" required>
+                        <option value="">— Seleccionar —</option>
+                        {% for s in servicios %}
+                        <option value="{{ s.idservicios }}">{{ s.codigoservicio }} — {{ s.descripcionservicio }}</option>
+                        {% endfor %}
+                    </select>
+                    <label class="form-label">Pedido (ID)</label>
+                    <input type="number" name="pedido_idpedido" id="editTRPedido" class="form-control" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR PEDIDO -->
+<div class="modal fade" id="modalEditPedido" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Pedido</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditPedido" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código Pedido</label>
+                    <input type="text" name="codigopedido" id="editPedCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Fecha</label>
+                    <input type="date" name="fecha" id="editPedFecha" class="form-control mb-2" required>
+                    <label class="form-label">Fecha Cita</label>
+                    <input type="datetime-local" name="fecha_cita" id="editPedFechaCita" class="form-control mb-2" required>
+                    <label class="form-label">Método de Pago</label>
+                    <select name="metodopago_idmetodopago" id="editPedMP" class="form-select mb-2" required>
+                        <option value="">— Seleccionar —</option>
+                        {% for m in metodospago %}
+                        <option value="{{ m.idmetodopago }}">{{ m.descripcionmpago }}</option>
+                        {% endfor %}
+                    </select>
+                    <label class="form-label">Estado</label>
+                    <select name="estado" id="editPedEstado" class="form-select mb-2">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en proceso">En proceso</option>
+                        <option value="completado">Completado</option>
+                        <option value="cancelado">Cancelado</option>
+                    </select>
+                    <label class="form-label">Oficina</label>
+                    <select name="oficinas_idoficinas" id="editPedOficina" class="form-select mb-2">
+                        <option value="">— Sin oficina —</option>
+                        {% for o in oficinas %}
+                        <option value="{{ o.idoficinas }}">{{ o.descripcionof }} ({{ o.codigo_oficina }})</option>
+                        {% endfor %}
+                    </select>
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" id="editPedDescripcion" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDITAR PRODUCTO -->
+<div class="modal fade" id="modalEditProducto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">✏️ Editar Producto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="formEditProducto" method="post">
+                <div class="modal-body">
+                    <label class="form-label">Código Producto</label>
+                    <input type="text" name="codigoproductos" id="editProdCodigo" class="form-control mb-2" required>
+                    <label class="form-label">Descripción</label>
+                    <input type="text" name="descripcionproductos" id="editProdDesc" class="form-control mb-2" required>
+                    <label class="form-label">Precio Producto</label>
+                    <select name="productoprecio_idproductoprecio" id="editProdPrecio" class="form-select mb-2" required>
+                        <option value="">— Seleccionar —</option>
+                        {% for pp in productosprecios %}
+                        <option value="{{ pp.idproductoprecio }}">{{ pp.descripcionprprecio }}</option>
+                        {% endfor %}
+                    </select>
+                    <label class="form-label">Pedido (ID)</label>
+                    <input type="number" name="pedido_idpedido" id="editProdPedido" class="form-control" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+
 <div class="cfg-layout">
 
     <!-- ===== SIDEBAR ===== -->
@@ -96,6 +432,7 @@
 
         <div class="sec-label">Operación</div>
         <a href="#" onclick="show('inventario',this)">Inventario</a>
+        <a href="#" onclick="show('movimientos',this)">Movimientos de Inventario</a>
         <a href="#" onclick="show('oficinas',this)">Oficinas</a>
         <a href="#" onclick="show('servicios',this)">Servicios</a>
         <a href="#" onclick="show('tiporeparacion',this)">Tipo Reparación</a>
@@ -143,7 +480,11 @@
                                             <td>{{ c.codigo_ciudad }}</td>
                                             <td>{{ c.descripcion_ciudad }}</td>
                                             <td>{{ c.codigo_postal }}</td>
-                                            <td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditCiudad({{ c.idciudades }}, '{{ c.codigo_ciudad }}', '{{ c.descripcion_ciudad }}', '{{ c.codigo_postal }}')">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/ciudades/eliminar/{{ c.idciudades }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar ciudad?')">🗑️</button>
                                                 </form>
@@ -171,8 +512,8 @@
                             <form action="/config/tipovehiculos/nuevo" method="post">
                                 <label class="form-label">Código</label>
                                 <input type="text" name="codigotipovehiculos" class="form-control mb-2" placeholder="TV001" required>
-                                <label class="form-label">Vehiculo</label>
-                                <input type="text" name="descripciontipovehiculos" class="form-control mb-2" placeholder="Avion" required>
+                                <label class="form-label">Vehículo</label>
+                                <input type="text" name="descripciontipovehiculos" class="form-control mb-2" placeholder="Avión" required>
                                 <button type="submit" class="btn btn-primary w-100">Guardar Tipo</button>
                             </form>
                         </div>
@@ -183,9 +524,9 @@
                         <div class="card-body">
                             <h5 class="card-title">📋 Tipos Registrados</h5>
                             <div class="table-wrap tabla-scroll">
-                                <table class="table table-hover table-bordered align-middle"> 
+                                <table class="table table-hover table-bordered align-middle">
                                     <thead class="table-dark">
-                                        <tr><th>N</th><th>Código</th><th>Vehiculo<th>Acciones</th></tr>
+                                        <tr><th>N</th><th>Código</th><th>Vehículo</th><th>Acciones</th></tr>
                                     </thead>
                                     <tbody>
                                         {% for t in tipovehiculos %}
@@ -193,14 +534,18 @@
                                             <td>{{ t.idtipovehiculos }}</td>
                                             <td>{{ t.codigotipovehiculos }}</td>
                                             <td>{{ t.vehiculo }}</td>
-                                            <td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditTipoVehiculo({{ t.idtipovehiculos }}, '{{ t.codigotipovehiculos }}', '{{ t.descripciontipovehiculos or '' }}', '{{ t.motor or '' }}', '{{ t.tipovehiculoscol or '' }}')">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/tipovehiculos/eliminar/{{ t.idtipovehiculos }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar tipo?')">🗑️</button>
                                                 </form>
                                             </td>
                                         </tr>
                                         {% else %}
-                                        <tr><td colspan="6" class="text-muted text-center">Sin registros</td></tr>
+                                        <tr><td colspan="4" class="text-muted text-center">Sin registros</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -243,7 +588,11 @@
                                             <td>{{ m.idmetodopago }}</td>
                                             <td>{{ m.codigompago }}</td>
                                             <td>{{ m.descripcionmpago }}</td>
-                                            <td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditMetodoPago({{ m.idmetodopago }}, '{{ m.codigompago }}', '{{ m.descripcionmpago }}')">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/metodopago/eliminar/{{ m.idmetodopago }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
                                                 </form>
@@ -296,7 +645,11 @@
                                             <td>{{ p.codigoproductoprecio }}</td>
                                             <td>{{ p.descripcionprprecio }}</td>
                                             <td>${{ "{:,.0f}".format(p.valor) if p.valor else '—' }}</td>
-                                            <td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditPrecioProducto({{ p.idproductoprecio }}, '{{ p.codigoproductoprecio }}', '{{ p.descripcionprprecio }}', {{ p.valor or 0 }})">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/productoprecio/eliminar/{{ p.idproductoprecio }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
                                                 </form>
@@ -324,8 +677,10 @@
                             <form action="/config/serviciosprecio/nuevo" method="post">
                                 <label class="form-label">Código</label>
                                 <input type="text" name="codigoserviciosprecio" class="form-control mb-2" placeholder="SP001" required>
-                                <label class="form-label">Descripción</label>
-                                <input type="text" name="descripcionserviciosprecio" class="form-control mb-3" placeholder="Cambio de aceite — $80.000" required>
+                                <label class="form-label">Servicio</label>
+                                <input type="text" name="descripcionserviciosprecio" class="form-control mb-3" placeholder="Cambio de aceite" required>
+                                <label class="form-label">Valor ($)</label>
+                                <input type="text" name="precioserviciosprecio" class="form-control mb-3" placeholder="200.000$" required>
                                 <button type="submit" class="btn btn-primary w-100">Guardar</button>
                             </form>
                         </div>
@@ -338,7 +693,7 @@
                             <div class="table-wrap tabla-scroll">
                                 <table class="table table-hover table-bordered align-middle">
                                     <thead class="table-dark">
-                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Acciones</th></tr>
+                                        <tr><th>ID</th><th>Código</th><th>Servicio</th><th>Precio</th><th>Acciones</th></tr>
                                     </thead>
                                     <tbody>
                                         {% for s in serviciosprecios %}
@@ -346,14 +701,19 @@
                                             <td>{{ s.idserviciosprecio }}</td>
                                             <td>{{ s.codigoserviciosprecio }}</td>
                                             <td>{{ s.descripcionserviciosprecio }}</td>
-                                            <td>
+                                            <td>{{ s.precioserviciosprecio }}</td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditPrecioServicio({{ s.idserviciosprecio }}, '{{ s.codigoserviciosprecio }}', '{{ s.descripcionserviciosprecio }}', '{{ s.precioserviciosprecio }}')">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/serviciosprecio/eliminar/{{ s.idserviciosprecio }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
                                                 </form>
                                             </td>
                                         </tr>
                                         {% else %}
-                                        <tr><td colspan="4" class="text-muted text-center">Sin registros</td></tr>
+                                        <tr><td colspan="5" class="text-muted text-center">Sin registros</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -367,46 +727,99 @@
         <!-- ═══════════ INVENTARIO ═══════════ -->
         <div class="cfg-panel" id="panel-inventario">
             <div class="row g-4">
-                <div class="col-12 col-lg-4">
+                <div class="col-12 col-lg-5">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">📦 Nuevo Ítem de Inventario</h5>
-                            <form action="/config/inventario/nuevo" method="post">
-                                <label class="form-label">Código Inventario</label>
-                                <input type="text" name="codigoinventario" class="form-control mb-2" placeholder="INV001" required>
-                                <label class="form-label">Descripción</label>
-                                <input type="text" name="descripcioninventario" class="form-control mb-2" placeholder="Filtro de aire Honda" required>
-                                <label class="form-label">Pedido (ID)</label>
-                                <input type="number" name="pedido_idpedido" class="form-control mb-3" placeholder="1" required>
-                                <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                            <h5 class="card-title">📦 Nuevo Inventario</h5>
+                            <form action="/config/inventario/nuevo" method="post" id="form-inventario">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Código </label>
+                                        <input type="text" name="codigoinventario" class="form-control mb-2" placeholder="INV-001" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Unidad</label>
+                                        <select name="unidad_medida" class="form-select mb-2">
+                                            <option value="UND">UND</option>
+                                            <option value="LT">Litros</option>
+                                            <option value="KG">Kilogramos</option>
+                                            <option value="PZ">Piezas</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <label class="form-label">Descripción </label>
+                                <input type="text" name="descripcioninventario" class="form-control mb-2" placeholder="Filtro de aceite Honda CR-V" required>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Cantidad </label>
+                                        <input type="number" name="cantidad" id="cantidad" class="form-control mb-2" min="0" step="0.01" value="1" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Costo Unitario ($) </label>
+                                        <input type="number" name="costo_unitario" id="costo_unitario" class="form-control mb-2" min="0" step="0.01" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Valor Total</label>
+                                        <input type="text" id="valor_total" class="form-control mb-2 bg-light" readonly>
+                                    </div>
+                                </div>
+
+                                <label class="form-label">Estado</label>
+                                <select name="estado" class="form-select mb-3">
+                                    <option value="activo">Activo</option>
+                                    <option value="en_uso">En uso</option>
+                                    <option value="obsoleto">Obsoleto</option>
+                                    <option value="dañado">Dañado</option>
+                                </select>
+
+                                <label class="form-label">Pedido Relacionado (ID) - Opcional</label>
+                                <input type="number" name="pedido_idpedido" class="form-control mb-3" placeholder="Dejar vacío si no aplica">
+
+                                <button type="submit" class="btn btn-primary w-100">Guardar Ítem de Inventario</button>
                             </form>
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-lg-8">
+
+                <div class="col-12 col-lg-7">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">📋 Inventario Registrado</h5>
                             <div class="table-wrap tabla-scroll">
-                                <table class="table table-hover table-bordered align-middle">
+                                <table class="table table-hover table-bordered">
                                     <thead class="table-dark">
-                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Pedido</th><th>Acciones</th></tr>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Descripción</th>
+                                            <th>Und</th>
+                                            <th class="text-end">Cantidad</th>
+                                            <th class="text-end">Costo U.</th>
+                                            <th class="text-end">Total</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         {% for i in inventario %}
                                         <tr>
-                                            <td>{{ i.idinventario }}</td>
-                                            <td>{{ i.codigoinventario }}</td>
+                                            <td><strong>{{ i.codigoinventario }}</strong></td>
                                             <td>{{ i.descripcioninventario }}</td>
-                                            <td>{{ i.pedido_idpedido }}</td>
+                                            <td>{{ i.unidad_medida or 'UND' }}</td>
+                                            <td class="text-end fw-medium">{{ (i.cantidad | int) if i.cantidad is not none else 0 }}</td>
+                                        <td class="text-end">${{ "{:,.2f}".format(i.costo_unitario) if i.costo_unitario else '—' }}</td>
+                                        <td class="text-end fw-bold">${{ "{:,.2f}".format((i.cantidad or 0) * (i.costo_unitario or 0)) }}</td>
+                                            <td><span class="badge bg-success">{{ i.estado or 'activo' }}</span></td>
                                             <td>
+                                                <button class="btn btn-sm btn-warning" onclick="abrirEditInventario({{ i.idinventario }}, '{{ i.codigoinventario }}', '{{ i.descripcioninventario }}', {{ i.cantidad or 0 }}, {{ i.costo_unitario or 0 }}, '{{ i.unidad_medida or '' }}', '{{ i.estado or 'activo' }}')">✏️</button>
                                                 <form action="/config/inventario/eliminar/{{ i.idinventario }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
                                                 </form>
                                             </td>
                                         </tr>
                                         {% else %}
-                                        <tr><td colspan="5" class="text-muted text-center">Sin registros</td></tr>
+                                        <tr><td colspan="8" class="text-center text-muted py-4">Sin ítems de inventario</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -416,6 +829,88 @@
                 </div>
             </div>
         </div>
+
+
+
+        <!-- ═══════════ MOVIMIENTOS DE INVENTARIO ═══════════ -->
+        <div class="cfg-panel" id="panel-movimientos">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">📋 Historial de Movimientos de Inventario</h5>
+                    
+                    <!-- Formulario para registrar movimiento manual -->
+                    <div class="mb-4 border p-3 bg-light rounded">
+                        <h6>Registrar Movimiento Manual</h6>
+                        <form action="/config/movimientos/nuevo" method="post" class="row g-3">
+                            <div class="col-md-3">
+                                <select name="inventario_id" class="form-select" required>
+                                    <option value="">Seleccionar producto</option>
+                                    {% for i in inventario %}
+                                    <option value="{{ i.idinventario }}">{{ i.codigoinventario }} - {{ i.descripcioninventario }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select name="tipo_movimiento" class="form-select" required>
+                                    <option value="entrada">Entrada</option>
+                                    <option value="salida">Salida</option>
+                                    <option value="ajuste">Ajuste</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" name="cantidad" class="form-control" placeholder="Cantidad" step="0.01" required>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" name="costo_unitario" class="form-control" placeholder="Costo Unit." step="0.01">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" name="motivo" class="form-control" placeholder="Motivo / Referencia">
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success">Registrar Movimiento</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="table-wrap tabla-scroll">
+                    <table class="table table-hover table-bordered align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Ítem</th>
+                                <th>Tipo</th>
+                                <th class="text-end">Cantidad</th>
+                                <th class="text-end">Costo Unit.</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in movimientos %}
+                            <tr>
+                                <td>{{ m.fecha.strftime('%Y-%m-%d %H:%M') if m.fecha else '—' }}</td>
+                                <td>{{ m.codigoinventario }} - {{ m.descripcioninventario }}</td>
+                                <td>
+                                    <span class="badge {% if m.tipo_movimiento == 'entrada' %}bg-success{% elif m.tipo_movimiento == 'salida' %}bg-danger{% else %}bg-warning{% endif %}">
+                                        {{ m.tipo_movimiento.upper() }}
+                                    </span>
+                                </td>
+                                <td class="text-end fw-medium">
+                                    {{ m.cantidad | int if (m.cantidad is not none and m.cantidad % 1 == 0) else m.cantidad }}
+                                </td>
+                                <td class="text-end">${{ "{:,.2f}".format(m.costo_unitario) if m.costo_unitario else '—' }}</td>
+                                <td>{{ m.motivo or '—' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="7" class="text-center text-muted py-4">No hay movimientos registrados aún</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 
         <!-- ═══════════ OFICINAS ═══════════ -->
         <div class="cfg-panel" id="panel-oficinas">
@@ -427,12 +922,16 @@
                             <form action="/config/oficinas/nueva" method="post">
                                 <label class="form-label">Código Oficina</label>
                                 <input type="text" name="codigo_oficina" class="form-control mb-2" placeholder="OF001" required>
+
                                 <label class="form-label">Dirección</label>
                                 <input type="text" name="direccion" class="form-control mb-2" placeholder="Cra 7 # 32-16" required>
+
                                 <label class="form-label">Teléfono</label>
                                 <input type="text" name="telefono_oficina" class="form-control mb-2" placeholder="601 234 5678" required>
+
                                 <label class="form-label">Descripción</label>
                                 <input type="text" name="descripcionof" class="form-control mb-2" placeholder="Sede Norte" required>
+
                                 <label class="form-label">Ciudad</label>
                                 <select name="ciudades_idciudades" class="form-select mb-2" required>
                                     <option value="">— Seleccionar —</option>
@@ -440,13 +939,22 @@
                                     <option value="{{ c.idciudades }}">{{ c.descripcion_ciudad }}</option>
                                     {% endfor %}
                                 </select>
-                                <label class="form-label">Inventario (ID)</label>
-                                <input type="number" name="inventario_idinventario" class="form-control mb-3" placeholder="1" required>
+
+                                <!-- ← CAMBIO IMPORTANTE -->
+                                <label class="form-label">Inventario Asignado</label>
+                                <select name="inventario_idinventario" class="form-select mb-3" required>
+                                    <option value="">— Seleccionar Inventario —</option>
+                                    {% for i in inventario %}
+                                    <option value="{{ i.idinventario }}">{{ i.codigoinventario }} - {{ i.descripcioninventario }}</option>
+                                    {% endfor %}
+                                </select>
+
                                 <button type="submit" class="btn btn-primary w-100">Guardar Oficina</button>
                             </form>
                         </div>
                     </div>
                 </div>
+
                 <div class="col-12 col-lg-8">
                     <div class="card">
                         <div class="card-body">
@@ -454,7 +962,15 @@
                             <div class="table-wrap tabla-scroll">
                                 <table class="table table-hover table-bordered align-middle">
                                     <thead class="table-dark">
-                                        <tr><th>ID</th><th>Código</th><th>Dirección</th><th>Teléfono</th><th>Descripción</th><th>Acciones</th></tr>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Código</th>
+                                            <th>Dirección</th>
+                                            <th>Teléfono</th>
+                                            <th>Descripción</th>
+                                            <th>Inventario</th>
+                                            <th>Acciones</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         {% for o in oficinas %}
@@ -464,14 +980,19 @@
                                             <td>{{ o.direccion }}</td>
                                             <td>{{ o.telefono_oficina }}</td>
                                             <td>{{ o.descripcionof }}</td>
-                                            <td>
+                                            <td>{{ o.codigoinventario or '—' }} - {{ o.descripcioninventario or 'Sin asignar' }}</td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditOficina({{ o.idoficinas }}, '{{ o.codigo_oficina }}', '{{ o.direccion }}', '{{ o.telefono_oficina }}', '{{ o.descripcionof }}', {{ o.ciudades_idciudades or 0 }}, {{ o.inventario_idinventario or 0 }})">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/oficinas/eliminar/{{ o.idoficinas }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar oficina?')">🗑️</button>
                                                 </form>
                                             </td>
                                         </tr>
                                         {% else %}
-                                        <tr><td colspan="6" class="text-muted text-center">Sin registros</td></tr>
+                                        <tr><td colspan="7" class="text-muted text-center">Sin registros</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -485,46 +1006,68 @@
         <!-- ═══════════ SERVICIOS ═══════════ -->
         <div class="cfg-panel" id="panel-servicios">
             <div class="row g-4">
-                <div class="col-12 col-lg-4">
+                <div class="col-12 col-lg-5">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">🔧 Nuevo Servicio</h5>
                             <form action="/config/servicios/nuevo" method="post">
                                 <label class="form-label">Código Servicio</label>
-                                <input type="text" name="codigoservicio" class="form-control mb-2" placeholder="SRV001" required>
-                                <label class="form-label">Descripción</label>
-                                <input type="text" name="descripcionservicio" class="form-control mb-2" placeholder="Cambio de aceite" required>
-                                <label class="form-label">Pedido (ID)</label>
-                                <input type="number" name="pedido_idpedido" class="form-control mb-3" placeholder="1" required>
+                                <input type="text" name="codigoservicio" class="form-control mb-2" placeholder="SRV-001" required>
+
+                                <label class="form-label">Descripción del Servicio</label>
+                                <input type="text" name="descripcionservicio" class="form-control mb-3" 
+                                    placeholder="Cambio de aceite y filtro" required>
+
+                                <label class="form-label">Precio del Servicio</label>
+                                <select name="serviciosprecio_idserviciosprecio" class="form-select mb-3" required>
+                                    <option value="">— Seleccionar Precio —</option>
+                                    {% for sp in serviciosprecios %}
+                                    <option value="{{ sp.idserviciosprecio }}">
+                                        {{ sp.descripcionserviciosprecio }} — ${{ sp.precioserviciosprecio }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+
                                 <button type="submit" class="btn btn-primary w-100">Guardar Servicio</button>
                             </form>
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-lg-8">
+
+                <div class="col-12 col-lg-7">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">📋 Servicios Registrados</h5>
                             <div class="table-wrap tabla-scroll">
                                 <table class="table table-hover table-bordered align-middle">
                                     <thead class="table-dark">
-                                        <tr><th>ID</th><th>Código</th><th>Descripción</th><th>Pedido</th><th>Acciones</th></tr>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Descripción</th>
+                                            <th>Precio</th>
+                                            <th>Acciones</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         {% for s in servicios %}
                                         <tr>
-                                            <td>{{ s.idservicios }}</td>
-                                            <td>{{ s.codigoservicio }}</td>
+                                            <td><strong>{{ s.codigoservicio }}</strong></td>
                                             <td>{{ s.descripcionservicio }}</td>
-                                            <td>{{ s.pedido_idpedido }}</td>
+                                            <td class="fw-bold text-success">
+                                                ${{ s.precioserviciosprecio or '—' }}
+                                            </td>
                                             <td>
+                                                <button class="btn btn-sm btn-warning" 
+                                                    onclick="abrirEditServicio({{ s.idservicios }}, '{{ s.codigoservicio }}', '{{ s.descripcionservicio }}', {{ s.serviciosprecio_idserviciosprecio or 'null' }})">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/servicios/eliminar/{{ s.idservicios }}" method="post" style="display:inline">
-                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar servicio?')">🗑️</button>
+                                                    <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
                                                 </form>
                                             </td>
                                         </tr>
                                         {% else %}
-                                        <tr><td colspan="5" class="text-muted text-center">Sin registros</td></tr>
+                                        <tr><td colspan="4" class="text-center text-muted py-4">No hay servicios registrados</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -578,7 +1121,11 @@
                                             <td>{{ r.descripciontiporeparacion }}</td>
                                             <td>{{ r.servicios_idservicios }}</td>
                                             <td>{{ r.pedido_idpedido }}</td>
-                                            <td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditTipoReparacion({{ r.idtiporeparacion }}, '{{ r.codigotiporeparacion }}', '{{ r.descripciontiporeparacion }}', {{ r.servicios_idservicios }}, {{ r.pedido_idpedido }})">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/tiporeparacion/eliminar/{{ r.idtiporeparacion }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar?')">🗑️</button>
                                                 </form>
@@ -665,7 +1212,11 @@
                                                 {% endif %}
                                             </td>
                                             <td>{{ p.metodopago_idmetodopago }}</td>
-                                            <td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditPedido({{ p.idpedido }}, '{{ p.codigopedido }}', '{{ p.fecha }}', '{{ p.fecha_cita or '' }}', {{ p.metodopago_idmetodopago }}, '{{ p.estado }}', {{ p.oficinas_idoficinas or 'null' }}, '{{ p.descripcion or '' }}')">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/pedidos/eliminar/{{ p.idpedido }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar pedido?')">🗑️</button>
                                                 </form>
@@ -727,7 +1278,11 @@
                                             <td>{{ prod.descripcionprprecio or '—' }}</td>
                                             <td>${{ "{:,.0f}".format(prod.valor_precio) if prod.valor_precio else '—' }}</td>
                                             <td>{{ prod.pedido_idpedido }}</td>
-                                            <td>
+                                            <td class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-warning btn-edit"
+                                                    onclick="abrirEditProducto({{ prod.idproductos }}, '{{ prod.codigoproductos }}', '{{ prod.descripcionproductos }}', {{ prod.productoprecio_idproductoprecio }}, {{ prod.pedido_idpedido }})">
+                                                    ✏️
+                                                </button>
                                                 <form action="/config/productos/eliminar/{{ prod.idproductos }}" method="post" style="display:inline">
                                                     <button class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar producto?')">🗑️</button>
                                                 </form>
@@ -750,18 +1305,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // ── Panel switcher ──────────────────────────────────────────────
     function show(panelKey, linkEl) {
-        // ocultar todos los paneles
         document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('active'));
-        // mostrar el seleccionado
         document.getElementById('panel-' + panelKey).classList.add('active');
-        // actualizar sidebar
         document.querySelectorAll('.cfg-sidebar a').forEach(a => a.classList.remove('active'));
         linkEl.classList.add('active');
         return false;
     }
 
-    // Modal de notificación
+    // ── Notif modal ─────────────────────────────────────────────────
     (function () {
         const successMsg = {{ success_msg | tojson }};
         const errorMsg   = {{ error | tojson }};
@@ -786,6 +1339,141 @@
         body.textContent = successMsg || errorMsg;
         new bootstrap.Modal(document.getElementById('notifModal')).show();
     })();
+
+    // ── Helpers para abrir modales de edición ───────────────────────
+
+    function abrirEditCiudad(id, codigo, descripcion, postal) {
+        document.getElementById('formEditCiudad').action = '/config/ciudades/editar/' + id;
+        document.getElementById('editCiudadCodigo').value  = codigo;
+        document.getElementById('editCiudadDesc').value    = descripcion;
+        document.getElementById('editCiudadPostal').value  = postal;
+        new bootstrap.Modal(document.getElementById('modalEditCiudad')).show();
+    }
+
+    function abrirEditTipoVehiculo(id, codigo, vehiculo) {
+        document.getElementById('formEditTipoVehiculo').action = '/config/tipovehiculos/editar/' + id;
+        document.getElementById('editTVCodigo').value = codigo;
+        document.getElementById('editTVVehiculo').value   = vehiculo;
+        new bootstrap.Modal(document.getElementById('modalEditTipoVehiculo')).show();
+    }
+
+    function abrirEditMetodoPago(id, codigo, desc) {
+        document.getElementById('formEditMetodoPago').action = '/config/metodopago/editar/' + id;
+        document.getElementById('editMPCodigo').value = codigo;
+        document.getElementById('editMPDesc').value   = desc;
+        new bootstrap.Modal(document.getElementById('modalEditMetodoPago')).show();
+    }
+
+    function abrirEditPrecioProducto(id, codigo, desc, valor) {
+        document.getElementById('formEditPrecioProducto').action = '/config/productoprecio/editar/' + id;
+        document.getElementById('editPPCodigo').value = codigo;
+        document.getElementById('editPPDesc').value   = desc;
+        document.getElementById('editPPValor').value  = valor;
+        new bootstrap.Modal(document.getElementById('modalEditPrecioProducto')).show();
+    }
+
+    function abrirEditPrecioServicio(id, codigo, desc, valor) {
+        document.getElementById('formEditPrecioServicio').action = '/config/serviciosprecio/editar/' + id;
+        document.getElementById('editSPCodigo').value = codigo;
+        document.getElementById('editSPDesc').value   = desc;
+        document.getElementById('editSPValor').value  = valor;
+        new bootstrap.Modal(document.getElementById('modalEditPrecioServicio')).show();
+    }
+
+    function abrirEditInventario(id, codigo, desc, pedido) {
+        document.getElementById('formEditInventario').action = '/config/inventario/editar/' + id;
+        document.getElementById('editInvCodigo').value  = codigo;
+        document.getElementById('editInvDesc').value    = desc;
+        document.getElementById('editInvPedido').value  = pedido;
+        new bootstrap.Modal(document.getElementById('modalEditInventario')).show();
+    }
+
+    function abrirEditOficina(id, codigo, dir, tel, desc, ciudad, inv) {
+        document.getElementById('formEditOficina').action = '/config/oficinas/editar/' + id;
+        document.getElementById('editOfCodigo').value  = codigo;
+        document.getElementById('editOfDir').value     = dir;
+        document.getElementById('editOfTel').value     = tel;
+        document.getElementById('editOfDesc').value    = desc;
+        document.getElementById('editOfInv').value     = inv;
+        const sel = document.getElementById('editOfCiudad');
+        for (let opt of sel.options) { opt.selected = (parseInt(opt.value) === ciudad); }
+        new bootstrap.Modal(document.getElementById('modalEditOficina')).show();
+    }
+
+    function abrirEditServicio(id, codigo, desc, pedido) {
+        document.getElementById('formEditServicio').action = '/config/servicios/editar/' + id;
+        document.getElementById('editSrvCodigo').value  = codigo;
+        document.getElementById('editSrvDesc').value    = desc;
+        document.getElementById('editSrvPedido').value  = pedido;
+        new bootstrap.Modal(document.getElementById('modalEditServicio')).show();
+    }
+
+    function abrirEditTipoReparacion(id, codigo, desc, srvId, pedido) {
+        document.getElementById('formEditTipoReparacion').action = '/config/tiporeparacion/editar/' + id;
+        document.getElementById('editTRCodigo').value  = codigo;
+        document.getElementById('editTRDesc').value    = desc;
+        document.getElementById('editTRPedido').value  = pedido;
+        const sel = document.getElementById('editTRServicio');
+        for (let opt of sel.options) { opt.selected = (parseInt(opt.value) === srvId); }
+        new bootstrap.Modal(document.getElementById('modalEditTipoReparacion')).show();
+    }
+
+    function abrirEditPedido(id, codigo, fecha, fechaCita, mp, estado, oficina, desc) {
+        document.getElementById('formEditPedido').action = '/config/pedidos/editar/' + id;
+        document.getElementById('editPedCodigo').value      = codigo;
+        document.getElementById('editPedFecha').value       = fecha;
+        // Normalizar datetime-local (quitar segundos y zona si viene del servidor)
+        document.getElementById('editPedFechaCita').value   = fechaCita ? fechaCita.substring(0,16) : '';
+        document.getElementById('editPedDescripcion').value = desc;
+
+        const selMP = document.getElementById('editPedMP');
+        for (let opt of selMP.options) { opt.selected = (parseInt(opt.value) === mp); }
+
+        const selEst = document.getElementById('editPedEstado');
+        for (let opt of selEst.options) { opt.selected = (opt.value === estado); }
+
+        const selOf = document.getElementById('editPedOficina');
+        for (let opt of selOf.options) { opt.selected = (oficina !== null && parseInt(opt.value) === oficina); }
+
+        new bootstrap.Modal(document.getElementById('modalEditPedido')).show();
+    }
+
+    function abrirEditProducto(id, codigo, desc, precioId, pedido) {
+        document.getElementById('formEditProducto').action = '/config/productos/editar/' + id;
+        document.getElementById('editProdCodigo').value  = codigo;
+        document.getElementById('editProdDesc').value    = desc;
+        document.getElementById('editProdPedido').value  = pedido;
+        const sel = document.getElementById('editProdPrecio');
+        for (let opt of sel.options) { opt.selected = (parseInt(opt.value) === precioId); }
+        new bootstrap.Modal(document.getElementById('modalEditProducto')).show();
+    }
+
+    // Cálculo automático valor total (nuevo)
+    document.getElementById('form-inventario').addEventListener('input', function() {
+        const cant = parseFloat(document.getElementById('cantidad').value) || 0;
+        const costo = parseFloat(document.getElementById('costo_unitario').value) || 0;
+        document.getElementById('valor_total').value = (cant * costo).toLocaleString('es-CO', {minimumFractionDigits: 2});
+    });
+
+    // Actualizar función de edición de inventario
+    function abrirEditInventario(id, codigo, desc, cantidad, costo, unidad, estado, pedido, oficina) {
+        document.getElementById('formEditInventario').action = '/config/inventario/editar/' + id;
+        
+        document.getElementById('editInvCodigo').value = codigo;
+        document.getElementById('editInvDesc').value = desc;
+        document.getElementById('editInvCantidad').value = cantidad;
+        document.getElementById('editInvCosto').value = costo;
+        document.getElementById('editInvUnidad').value = unidad || 'UND';
+        document.getElementById('editInvEstado').value = estado || 'activo';
+        document.getElementById('editInvPedido').value = pedido || '';
+        
+        const selOf = document.getElementById('editInvOficina');
+        for (let opt of selOf.options) {
+            opt.selected = (oficina !== null && parseInt(opt.value) === oficina);
+        }
+        
+        new bootstrap.Modal(document.getElementById('modalEditInventario')).show();
+    }
 </script>
 </body>
 </html>
