@@ -7,6 +7,7 @@ import RegistroVehiculo from './js/RegistrarUnidad.js';
 import Contacto from './js/Contacto.js';
 import AgendarCita from './js/AgendarCita.js';
 import Catalogo from './js/Catalogo.js';
+import DashboardAdmin from './js/DashboardAdmin.js';
 
 
 
@@ -34,6 +35,7 @@ const LoginView = ({ onLoginSuccess }) => {
       } else {
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.role);
+        localStorage.setItem("email", data.email);
         onLoginSuccess({ email: data.email, role: data.role });
       }
     } catch (err) {
@@ -76,56 +78,6 @@ const LoginView = ({ onLoginSuccess }) => {
   );
 };
 
-// Panel exclusivo para el Administrador
-const DashboardAdmin = () => {
-  const [stats, setStats] = useState({ citas_pendientes: 0, total_vehiculos: 0, total_usuarios: 0 });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-  fetch('https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev/admin/stats', {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`  // 👈 esto
-    }
-  })
-    .then(res => res.json())
-    .then(data => { setStats(data); setLoading(false); })
-    .catch(() => setLoading(false));
-}, []);
-
-  return (
-    <div>
-      <h3 className="text-uppercase fw-black border-bottom border-danger pb-2 mb-4">
-        Panel de <span className="text-danger">Administración</span>
-      </h3>
-      <p className="text-muted">Bienvenido al centro de control de Disol Motors.</p>
-      {loading ? (
-        <p className="text-muted">Cargando estadísticas...</p>
-      ) : (
-        <div className="row g-3 mt-2">
-          <div className="col-md-4">
-            <div className="p-3 bg-black border border-secondary text-center">
-              <h5 className="text-danger fw-bold">{stats.citas_pendientes}</h5>
-              <small className="text-muted">CITAS PENDIENTES</small>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="p-3 bg-black border border-secondary text-center">
-              <h5 className="text-danger fw-bold">{stats.total_vehiculos}</h5>
-              <small className="text-muted">UNIDADES REGISTRADAS</small>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="p-3 bg-black border border-secondary text-center">
-              <h5 className="text-danger fw-bold">{stats.total_usuarios}</h5>
-              <small className="text-muted">USUARIOS REGISTRADOS</small>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 // Panel exclusivo para el Usuario Común (Cliente)
 const DashboardUsuario = ({ user }) => (
   <div>
@@ -157,14 +109,14 @@ const heroSlides = [
   './assets/images/sionxd.jpg',
 ];
 
-const BackButton = ({ onClick }) => (
+const BackButton = ({ onClick, user }) => (
   <div className="text-center mt-5">
     <button
       className="btn btn-danger px-5 py-2 fw-bold shadow hover-grow"
       onClick={onClick}
       style={{ borderRadius: '50px' }}
     >
-      ← VOLVER AL PANEL
+      {user ? '← VOLVER AL PANEL' : '← VOLVER AL INICIO'}
     </button>
   </div>
 );
@@ -178,10 +130,39 @@ function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    const email = localStorage.getItem("email");
+
+    if (token && role && email) {
+      setUser({ email, role });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (view === 'admin-dashboard' && (!user || user.role !== 'admin')) {
+      setView('login');
+    }
+    if (view === 'user-dashboard' && (!user || user.role !== 'usuario')) {
+      setView('login');
+    }
+  }, [view, user]);
+
+  useEffect(() => {
     document.body.style.overflow = view === 'inicio' ? 'hidden' : 'auto';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view]);
 
+  useEffect(() => {
+  const handlePopState = (e) => {
+    if (!e.state || !e.state.section) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.history.replaceState(null, '', '/');  // 👈 replaceState va AQUÍ
+    }
+  };
+  window.addEventListener('popstate', handlePopState);
+  return () => window.removeEventListener('popstate', handlePopState);
+}, []);
   useEffect(() => {
     if (view !== 'inicio') return;
     const timer = setInterval(() => {
@@ -191,9 +172,16 @@ function App() {
   }, [view]);
 
   const goToInicio = () => {
+  setMenuOpen(false);
+  if (user) {
+    setView(user.role === 'admin' ? 'admin-dashboard' : 'user-dashboard');
+  } else {
     setView('inicio');
-    setMenuOpen(false);
-  };
+    // Si ya estamos en inicio, hacer scroll al top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.history.replaceState(null, '', '/');
+  }
+};
 
   // Manejadores de autenticación
   const handleLoginSuccess = (userData) => {
@@ -207,9 +195,10 @@ function App() {
   };
 
   const handleLogout = () => {
-    setUser(null);
-    setView('inicio');
-  };
+  localStorage.clear(); // 🆕 Se agrega esta línea antes de limpiar el estado
+  setUser(null);
+  setView('inicio');
+};
 
   return (
     <div className="bg-black text-white min-vh-100 d-flex flex-column">
@@ -235,18 +224,23 @@ function App() {
             <ul className="navbar-nav ms-auto align-items-center gap-3">
 
               {['INICIO', 'CATÁLOGO', 'CITAS', 'CONTACTO'].map((text) => (
-                <li className="nav-item" key={text}>
-                  <button
-                    className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
-                    onClick={() => {
-                      setView(text.toLowerCase().replace('á', 'a'));
-                      setMenuOpen(false);
-                    }}
-                  >
-                    {text}
-                  </button>
-                </li>
-              ))}
+  <li className="nav-item" key={text}>
+    <button
+      className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
+      onClick={() => {
+        const v = text.toLowerCase().replace('á', 'a');
+        setView(v);
+        if (v === 'inicio') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.history.replaceState(null, '', '/');
+        }
+        setMenuOpen(false);
+      }}
+    >
+      {text}
+    </button>
+  </li>
+))}
 
               {/* NUEVO: Accesos rápidos en el menú dinámico según el Rol */}
               {user && user.role === 'admin' && (
@@ -314,7 +308,7 @@ function App() {
                   {view === 'admin-dashboard' && <DashboardAdmin />}
                   {view === 'user-dashboard' && <DashboardUsuario user={user} />}
 
-                  <BackButton onClick={goToInicio} />
+                  <BackButton onClick={goToInicio} user={user}/>
                 </div>
               </div>
             </div>
@@ -338,9 +332,15 @@ function App() {
                   Mecánica de Precisión • Inyección Electrónica • Performance
                 </p>
                 <div className="cta-wrapper">
-                  <a href="#galeria" className="btn-racing px-5 py-3">
-                    EXPLORAR GALERÍA
-                  </a>
+                  <button
+  className="btn-racing px-5 py-3"
+  onClick={() => {
+    window.history.pushState({ section: 'galeria' }, '', '#galeria');
+    document.getElementById('galeria').scrollIntoView({ behavior: 'smooth' });
+  }}
+>
+  EXPLORAR GALERÍA
+</button>
                 </div>
               </div>
 
