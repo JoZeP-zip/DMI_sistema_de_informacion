@@ -185,3 +185,30 @@
    ============================================= */
  
 .fw-black { font-weight: 900; }
+
+/* ==========================================================================
+   DISEÑO PERSONALIZADO PARA EL SCROLL DE LA GALERÍA (DMI STYLE)
+   ========================================================================== */
+
+/* 1. Define el ancho total de la barra de scroll */
+.custom-gallery-scroll::-webkit-scrollbar {
+  width: 8px; /* Un grosor fino y elegante */
+}
+
+/* 2. El fondo de la barra (el carril por donde se mueve) */
+.custom-gallery-scroll::-webkit-scrollbar-track {
+  background: #000000; /* Negro absoluto para que se fusione con el fondo */
+  border-left: 1px solid rgba(220, 53, 69, 0.15); /* Una sutil línea roja divisoria */
+}
+
+/* 3. La barra deslizable (la pieza que arrastras con el mouse) */
+.custom-gallery-scroll::-webkit-scrollbar-thumb {
+  background: #dc3545; /* Rojo oficial de Bootstrap / DMI */
+  border-radius: 4px; /* Bordes ligeramente suavizados para el agarre visual */
+}
+
+/* 4. Efecto cuando el usuario pasa el mouse por encima del scroll */
+.custom-gallery-scroll::-webkit-scrollbar-thumb:hover {
+  background: #b52a37; /* Un rojo un poco más oscuro al hacer hover */
+  cursor: pointer;
+}

@@ -9,8 +9,6 @@ import AgendarCita from './js/AgendarCita.js';
 import Catalogo from './js/Catalogo.js';
 import DashboardAdmin from './js/DashboardAdmin.js';
 
-
-
 // Componente de Login Integrado a la Estética DMI
 const LoginView = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
@@ -96,17 +94,9 @@ const DashboardUsuario = ({ user }) => (
 // --- FIN DE LOS NUEVOS COMPONENTES ---
 
 const heroSlides = [
-  './assets/images/Mel.jpg',
-  './assets/images/mundoejecutivo.jpg',
-  './assets/images/porche.jpg',
-  './assets/images/mundocarrito.jpg',
-  './assets/images/lamborghini.jpg',
-  './assets/images/galiochicken.jpg',
-  './assets/images/Ambessa_1.jpg',
-  './assets/images/Nasus-y-Renekton.jpg',
-  './assets/images/phanteonpan.jpg',
-  './assets/images/old-skarner.jpg',
-  './assets/images/sionxd.jpg',
+  './assets/images/motorlike.jpg',
+  './assets/images/contactos.jpg',
+  './assets/images/servicios.jpg',
 ];
 
 const BackButton = ({ onClick, user }) => (
@@ -125,9 +115,10 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState('inicio');
   const [currentSlide, setCurrentSlide] = useState(0);
-  
-  // NUEVO: Estado global de sesión para controlar los roles
   const [user, setUser] = useState(null);
+
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -154,15 +145,16 @@ function App() {
   }, [view]);
 
   useEffect(() => {
-  const handlePopState = (e) => {
-    if (!e.state || !e.state.section) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      window.history.replaceState(null, '', '/');  // 👈 replaceState va AQUÍ
-    }
-  };
-  window.addEventListener('popstate', handlePopState);
-  return () => window.removeEventListener('popstate', handlePopState);
-}, []);
+    const handlePopState = (e) => {
+      if (!e.state || !e.state.section) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.history.replaceState(null, '', '/');  // 👈 replaceState va AQUÍ
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   useEffect(() => {
     if (view !== 'inicio') return;
     const timer = setInterval(() => {
@@ -172,16 +164,16 @@ function App() {
   }, [view]);
 
   const goToInicio = () => {
-  setMenuOpen(false);
-  if (user) {
-    setView(user.role === 'admin' ? 'admin-dashboard' : 'user-dashboard');
-  } else {
-    setView('inicio');
-    // Si ya estamos en inicio, hacer scroll al top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    window.history.replaceState(null, '', '/');
-  }
-};
+    setMenuOpen(false);
+    if (user) {
+      setView(user.role === 'admin' ? 'admin-dashboard' : 'user-dashboard');
+    } else {
+      setView('inicio');
+      // Si ya estamos en inicio, hacer scroll al top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.history.replaceState(null, '', '/');
+    }
+  };
 
   // Manejadores de autenticación
   const handleLoginSuccess = (userData) => {
@@ -195,10 +187,10 @@ function App() {
   };
 
   const handleLogout = () => {
-  localStorage.clear(); // 🆕 Se agrega esta línea antes de limpiar el estado
-  setUser(null);
-  setView('inicio');
-};
+    localStorage.clear(); 
+    setUser(null);
+    setView('inicio');
+  };
 
   return (
     <div className="bg-black text-white min-vh-100 d-flex flex-column">
@@ -209,7 +201,7 @@ function App() {
 
           <button className="navbar-brand bg-transparent border-0 p-0" onClick={goToInicio}>
             <img
-              src="/assets/images/anica (1).png"
+              src="/assets/images/logoempresaXD.png"
               alt="DMI Logo"
               className="img-fluid"
               style={{ height: '50px', objectFit: 'contain' }}
@@ -224,23 +216,23 @@ function App() {
             <ul className="navbar-nav ms-auto align-items-center gap-3">
 
               {['INICIO', 'CATÁLOGO', 'CITAS', 'CONTACTO'].map((text) => (
-  <li className="nav-item" key={text}>
-    <button
-      className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
-      onClick={() => {
-        const v = text.toLowerCase().replace('á', 'a');
-        setView(v);
-        if (v === 'inicio') {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          window.history.replaceState(null, '', '/');
-        }
-        setMenuOpen(false);
-      }}
-    >
-      {text}
-    </button>
-  </li>
-))}
+                <li className="nav-item" key={text}>
+                  <button
+                    className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
+                    onClick={() => {
+                      const v = text.toLowerCase().replace('á', 'a');
+                      setView(v);
+                      if (v === 'inicio') {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        window.history.replaceState(null, '', '/');
+                      }
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {text}
+                  </button>
+                </li>
+              ))}
 
               {/* NUEVO: Accesos rápidos en el menú dinámico según el Rol */}
               {user && user.role === 'admin' && (
@@ -333,14 +325,14 @@ function App() {
                 </p>
                 <div className="cta-wrapper">
                   <button
-  className="btn-racing px-5 py-3"
-  onClick={() => {
-    window.history.pushState({ section: 'galeria' }, '', '#galeria');
-    document.getElementById('galeria').scrollIntoView({ behavior: 'smooth' });
-  }}
->
-  EXPLORAR GALERÍA
-</button>
+                    className="btn-racing px-5 py-3"
+                    onClick={() => {
+                      window.history.pushState({ section: 'galeria' }, '', '#galeria');
+                      document.getElementById('galeria').scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    EXPLORAR GALERÍA
+                  </button>
                 </div>
               </div>
 
@@ -356,26 +348,222 @@ function App() {
               </div>
             </header>
 
-            {/* GALERÍA */}
+            {/* CUADRÍCULA DE IMÁGENES CON SCROLL INTERNO Y MODAL CON CARRUSEL */}
             <section id="galeria" className="py-5 bg-black">
               <div className="container py-4">
                 <h2 className="text-center mb-5 fw-black text-uppercase">
                   Proyectos <span className="text-danger">Elite</span>
                 </h2>
-                <div className="row g-3">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="col-6 col-md-4">
-                      <div className="gallery-card border-danger">
-                        <div className={`gallery-img-placeholder bg-dark item-${i}`}>
+
+                {/* Contenedor con scroll para la cuadrícula */}
+                <div 
+                  className="pe-2 custom-gallery-scroll" 
+                  style={{ maxHeight: '460px', overflowY: 'auto', overflowX: 'hidden' }}
+                >
+                  <div className="row g-3">
+                    {[
+                      { 
+                        // RESTRUCTURADO: Ahora maneja un arreglo de 3 imágenes para el carrusel
+                        imagenes: [
+                          '/assets/images/mundoejecutivo.jpg', 
+                          '/assets/images/mundocarrito.jpg', 
+                          '/assets/images/porche.jpg'
+                        ], 
+                        titulo: 'Mundo Ejecutivo', 
+                        descripcion: 'Optimización de software y diagnóstico computarizado para flotas empresariales.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/mundocarrito.jpg'
+                        ], 
+                        titulo: 'Porsche 911 GT3', 
+                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/Ambessa_1.jpg'
+                        ], 
+                        titulo: 'Lamborghini Aventador', 
+                        descripcion: 'Mantenimiento de alta precisión en el sistema de admisión y mapeo de ECU para rendimiento extremo.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/mundocarrito.jpg', 
+                          '/assets/images/mundoejecutivo.jpg', 
+                          '/assets/images/Mel.jpg'
+                        ], 
+                        titulo: 'Diagnóstico General', 
+                        descripcion: 'Escaneo completo de módulos electrónicos mediante tecnología OBD-II de última generación.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/Mel.jpg', 
+                          '/assets/images/Ambessa_1.jpg', 
+                          '/assets/images/porche.jpg'
+                        ], 
+                        titulo: 'Proyecto Mel', 
+                        descripcion: 'Ajustes personalizados de alto rendimiento y restauración de componentes críticos del motor.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/Ambessa_1.jpg', 
+                          '/assets/images/Mel.jpg', 
+                          '/assets/images/lamborghini.jpg'
+                        ], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificación y ensamble de sistemas de inyección a medida para competencia.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/mundocarrito.jpg'
+                        ], 
+                        titulo: 'Porsche 911 GT3', 
+                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/mundocarrito.jpg'
+                        ], 
+                        titulo: 'Porsche 911 GT3', 
+                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/mundocarrito.jpg'
+                        ], 
+                        titulo: 'Porsche 911 GT3', 
+                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/mundocarrito.jpg'
+                        ], 
+                        titulo: 'Porsche 911 GT3', 
+                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/mundocarrito.jpg'
+                        ], 
+                        titulo: 'Porsche 911 GT3', 
+                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/mundocarrito.jpg'
+                        ], 
+                        titulo: 'Porsche 911 GT3', 
+                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
+                      },
+                      { 
+                        imagenes: [
+                          '/assets/images/porche.jpg', 
+                          '/assets/images/lamborghini.jpg', 
+                          '/assets/images/mundocarrito.jpg'
+                        ], 
+                        titulo: 'Porsche 911 GT3', 
+                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
+                      }
+                    ].map((proyecto, index) => (
+                      <div key={index} className="col-6 col-md-4">
+                        <div 
+                          className="gallery-card border-danger position-relative overflow-hidden shadow" 
+                          style={{ aspectRatio: '16/9', cursor: 'pointer' }}
+                          onClick={() => {
+                            setSelectedProject(proyecto);
+                            setShowModal(true);
+                          }}
+                        >
+                          {/* Muestra la primera imagen del arreglo como portada en la cuadrícula */}
+                          <img 
+                            src={proyecto.imagenes[0]} 
+                            alt={proyecto.titulo} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          
                           <div className="gallery-hover-info">
                             <small>VER DETALLES</small>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
+
+              {/* INTERFAZ EMERGENTE (MODAL REFORMADO CON CARRUSEL DE 3 IMÁGENES) */}
+              {showModal && selectedProject && (
+                <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 1050 }}>
+                  <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-content bg-dark text-white border border-danger rounded-0 shadow-lg">
+                      
+                      <div className="modal-header border-bottom border-danger border-opacity-50">
+                        <h5 className="modal-title fw-black text-uppercase">
+                          Detalles del <span className="text-danger">Proyecto</span>
+                        </h5>
+                        <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
+                      </div>
+
+                      <div className="modal-body p-4">
+                        
+                        {/* NUEVO: PEQUEÑO CARRUSEL DE 3 IMÁGENES */}
+                        <div id="carouselProjectDetails" className="carousel slide mb-3 border border-secondary" data-bs-ride="carousel" style={{ aspectRatio: '16/9' }}>
+                          <div className="carousel-inner h-100">
+                            {selectedProject.imagenes.map((imgUrl, idx) => (
+                              <div key={idx} className={`carousel-item h-100 ${idx === 0 ? 'active' : ''}`}>
+                                <img 
+                                  src={imgUrl} 
+                                  className="d-block w-100 h-100" 
+                                  alt={`Slide ${idx + 1}`} 
+                                  style={{ objectFit: 'cover' }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Flecha Izquierda */}
+                          <button className="carousel-control-prev" type="button" data-bs-target="#carouselProjectDetails" data-bs-slide="prev">
+                            <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span className="visually-hidden">Anterior</span>
+                          </button>
+                          
+                          {/* Flecha Derecha */}
+                          <button className="carousel-control-next" type="button" data-bs-target="#carouselProjectDetails" data-bs-slide="next">
+                            <span className="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span className="visually-hidden">Siguiente</span>
+                          </button>
+                        </div>
+
+                        <h4 className="fw-bold text-uppercase tracking-wider mb-2 text-danger">{selectedProject.titulo}</h4>
+                        <p className="text-muted small mb-0">{selectedProject.descripcion}</p>
+                      </div>
+
+                      <div className="modal-footer border-top border-danger border-opacity-25">
+                        <button type="button" className="btn btn-danger rounded-0 fw-bold px-4" onClick={() => setShowModal(false)}>
+                          CERRAR
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
           </>
         )}
@@ -384,7 +572,7 @@ function App() {
 
       <footer className="bg-black py-4 border-top border-danger border-opacity-25 text-center">
         <p className="small text-muted mb-0 tracking-widest">
-          © 2026 <span className="text-danger fw-bold">DMI</span> • HIGH PERFORMANCE SERVICE
+          © 2026 <span className="bg-black py-4 border-top border-danger border-opacity-25 text-center">DMI</span> • HIGH PERFORMANCE SERVICE
         </p>
       </footer>
 
