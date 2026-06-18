@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import '../styles/AgendarCita.css';
 
-const AgendarCita = () => {
+const AgendarCita = ({ onNeedLogin }) => {  // ← recibe función del padre
   const [confirmado, setConfirmado] = useState(false);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     vehiculo: '', fecha: '', hora: '', motivo: '', observacion: '',
   });
@@ -12,13 +14,56 @@ const AgendarCita = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCita = (e) => {
+  const handleCita = async (e) => {
     e.preventDefault();
-    setConfirmado(true);
+
+    // 🔒 Verificar si el usuario está logueado
+    const token = localStorage.getItem('token');
+    if (!token) {
+      onNeedLogin(); // ← avisa al App.js que mande al login
+      return;
+    }
+
+    setCargando(true);
+    setError(null);
+
+    try {
+      const resVehiculo = await fetch(
+        `http://localhost:8800/vehiculos/placa/${formData.vehiculo}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      if (!resVehiculo.ok) throw new Error('No se encontró un vehículo con esa placa');
+      const vehiculo = await resVehiculo.json();
+
+      const resCita = await fetch('http://localhost:8800/citas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          vehiculos_idvehiculo: vehiculo.idvehiculo,
+          fecha: formData.fecha,
+          hora: formData.hora,
+          motivo: formData.motivo,
+          estado: 'pendiente',
+          notas: formData.observacion,
+        }),
+      });
+      if (!resCita.ok) throw new Error('Error al agendar la cita, intenta de nuevo');
+
+      setConfirmado(true);
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
   };
 
   const handleNuevaCita = () => {
     setConfirmado(false);
+    setError(null);
     setFormData({ vehiculo: '', fecha: '', hora: '', motivo: '', observacion: '' });
   };
 
@@ -88,12 +133,18 @@ const AgendarCita = () => {
                     value={formData.observacion} onChange={handleChange} rows={4} />
                 </div>
 
+                {error && (
+                  <p style={{ color: '#e53e3e', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                    ⚠️ {error}
+                  </p>
+                )}
+
                 <div className="btn-row">
                   <button type="button" className="btn secondary" onClick={handleNuevaCita}>
                     ↺ Limpiar
                   </button>
-                  <button type="submit" className="btn primary">
-                    ✓ Confirmar cita
+                  <button type="submit" className="btn primary" disabled={cargando}>
+                    {cargando ? '⏳ Agendando...' : '✓ Confirmar cita'}
                   </button>
                 </div>
               </form>

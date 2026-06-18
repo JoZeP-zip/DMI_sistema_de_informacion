@@ -76,22 +76,90 @@ const LoginView = ({ onLoginSuccess }) => {
   );
 };
 
-// Panel exclusivo para el Usuario Común (Cliente)
-const DashboardUsuario = ({ user }) => (
-  <div>
-    <h3 className="text-uppercase fw-black border-bottom border-danger pb-2 mb-4">
-      Mi <span className="text-danger">Garaje</span>
-    </h3>
-    <p>Hola, <span className="text-danger fw-bold">{user.email}</span>. Bienvenido a tu espacio personal.</p>
-    <div className="p-4 bg-black border border-secondary mt-3">
-      <h6 className="fw-bold text-uppercase tracking-widest text-muted mb-3">Estado de tu Vehículo</h6>
-      <p className="mb-1">🚗 **Porsche 911 GT3** — *En Diagnóstico de Inyección*</p>
-      <span className="badge bg-danger rounded-0">TRABAJO EN PROCESO</span>
-    </div>
-  </div>
-);
+// Panel para el Usuario Común con Tabla de Gestión de Citas
+const DashboardUsuario = ({ user }) => {
+  const [citas, setCitas] = useState([
+    { id: 1, fecha: '2026-06-25', hora: '09:00 AM', vehiculo: 'Porsche 911 GT3', servicio: 'Calibración de Inyección', estado: 'En Espera' },
+    { id: 2, fecha: '2026-06-12', hora: '02:30 PM', vehiculo: 'Porsche 911 GT3', servicio: 'Escaneo OBD-II', estado: 'Completado' }
+  ]);
 
-// --- FIN DE LOS NUEVOS COMPONENTES ---
+  const handleCancelarCita = (id) => {
+    if (window.confirm("⚠️ ¿Estás seguro de que deseas cancelar esta cita? Esta acción no se puede deshacer.")) {
+      setCitas(citas.filter(cita => cita.id !== id));
+      alert("Cita cancelada correctamente.");
+    }
+  };
+
+  const handleEditarCita = (id) => {
+    alert(`Estrategia de edición para la cita #${id}: Aquí podrás abrir un modal o redirigir al formulario.`);
+  };
+
+  return (
+    <div>
+      <h3 className="text-uppercase fw-black border-bottom border-danger pb-2 mb-4">
+        Mi <span className="text-danger">Garaje y Citas</span>
+      </h3>
+      <p className="mb-4">Hola, <span className="text-danger fw-bold">{user.email}</span>. Desde aquí puedes gestionar los servicios programados para tu unidad.</p>
+      
+      <div className="table-responsive bg-black border border-secondary p-3">
+        <h6 className="fw-bold text-uppercase tracking-widest text-muted mb-3">Historial de Citas Agendadas</h6>
+        <table className="table table-dark table-hover align-middle mb-0">
+          <thead>
+            <tr className="text-muted small border-bottom border-danger">
+              <th scope="col" className="py-3">FECHA</th>
+              <th scope="col" className="py-3">HORA</th>
+              <th scope="col" className="py-3">VEHÍCULO</th>
+              <th scope="col" className="py-3">SERVICIO</th>
+              <th scope="col" className="py-3">ESTADO</th>
+              <th scope="col" className="py-3 text-center">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            {citas.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="text-center py-4 text-muted small">
+                  No tienes citas registradas actualmente.
+                </td>
+              </tr>
+            ) : (
+              citas.map((cita) => (
+                <tr key={cita.id} className="border-bottom border-secondary border-opacity-25">
+                  <td className="fw-bold">{cita.fecha}</td>
+                  <td>{cita.hora}</td>
+                  <td><span className="text-danger">🚗</span> {cita.vehiculo}</td>
+                  <td>{cita.servicio}</td>
+                  <td>
+                    <span className={`badge rounded-0 py-1 px-2 ${cita.estado === 'Completado' ? 'bg-secondary text-white' : 'bg-danger'}`}>
+                      {cita.estado.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="text-center">
+                    <div className="d-flex justify-content-center gap-2">
+                      <button 
+                        className="btn btn-sm btn-outline-light rounded-0 fw-bold px-2 py-1" 
+                        onClick={() => handleEditarCita(cita.id)}
+                        disabled={cita.estado === 'Completado'}
+                      >
+                        ✏️ MODIFICAR
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-danger rounded-0 fw-bold px-2 py-1" 
+                        onClick={() => handleCancelarCita(cita.id)}
+                        disabled={cita.estado === 'Completado'}
+                      >
+                        🗑️ CANCELAR
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
 const heroSlides = [
   './assets/images/motorlike.jpg',
@@ -120,21 +188,34 @@ function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Inicializar estado del usuario desde localStorage si existe
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     const email = localStorage.getItem("email");
 
     if (token && role && email) {
-      setUser({ email, role });
+      setUser({ 
+        email, 
+        role: role.toLowerCase() 
+      });
     }
   }, []);
 
+  // CORREGIDO: Efecto de control de navegación estable y tolerante
   useEffect(() => {
-    if (view === 'admin-dashboard' && (!user || user.role !== 'admin')) {
+    if (!user) {
+      if (view === 'admin-dashboard' || view === 'user-dashboard') {
+        setView('login');
+      }
+      return;
+    }
+
+    if (view === 'admin-dashboard' && user.role !== 'admin') {
       setView('login');
     }
-    if (view === 'user-dashboard' && (!user || user.role !== 'usuario')) {
+    
+    if (view === 'user-dashboard' && user.role !== 'usuario' && user.role !== 'cliente') {
       setView('login');
     }
   }, [view, user]);
@@ -148,7 +229,7 @@ function App() {
     const handlePopState = (e) => {
       if (!e.state || !e.state.section) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        window.history.replaceState(null, '', '/');  // 👈 replaceState va AQUÍ
+        window.history.replaceState(null, '', '/');
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -169,17 +250,21 @@ function App() {
       setView(user.role === 'admin' ? 'admin-dashboard' : 'user-dashboard');
     } else {
       setView('inicio');
-      // Si ya estamos en inicio, hacer scroll al top
       window.scrollTo({ top: 0, behavior: 'smooth' });
       window.history.replaceState(null, '', '/');
     }
   };
 
-  // Manejadores de autenticación
+  // CORREGIDO: Normalización del rol antes de la asignación del estado
   const handleLoginSuccess = (userData) => {
-    setUser(userData);
-    // Redirección inteligente inmediata según el rol
-    if (userData.role === 'admin') {
+    const normalizedUser = {
+      ...userData,
+      role: userData.role ? userData.role.toLowerCase() : 'usuario'
+    };
+
+    setUser(normalizedUser);
+
+    if (normalizedUser.role === 'admin') {
       setView('admin-dashboard');
     } else {
       setView('user-dashboard');
@@ -221,6 +306,14 @@ function App() {
                     className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
                     onClick={() => {
                       const v = text.toLowerCase().replace('á', 'a');
+                      
+                      if (v === 'citas' && !user) {
+                        alert("⚠️ Debes iniciar sesión para poder agendar una cita.");
+                        setView('login');
+                        setMenuOpen(false);
+                        return;
+                      }
+
                       setView(v);
                       if (v === 'inicio') {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -234,19 +327,18 @@ function App() {
                 </li>
               ))}
 
-              {/* NUEVO: Accesos rápidos en el menú dinámico según el Rol */}
               {user && user.role === 'admin' && (
                 <li className="nav-item">
-                  <button className="nav-link text-danger fw-black p-2" onClick={() => setView('admin-dashboard')}>
+                  <button className="nav-link text-danger fw-black p-2 bg-transparent border-0" onClick={() => setView('admin-dashboard')}>
                     PANEL ADMIN
                   </button>
                 </li>
               )}
               
-              {user && user.role === 'usuario' && (
+              {user && (user.role === 'usuario' || user.role === 'cliente') && (
                 <li className="nav-item">
-                  <button className="nav-link text-danger fw-black p-2" onClick={() => setView('user-dashboard')}>
-                    MI GARAGE
+                  <button className="nav-link text-danger fw-black p-2 bg-transparent border-0" onClick={() => setView('user-dashboard')}>
+                    MI GARAJE
                   </button>
                 </li>
               )}
@@ -263,7 +355,6 @@ function App() {
                 </button>
               </li>
 
-              {/* NUEVO: Botón Dinámico de Login / Logout */}
               <li className="nav-item">
                 {user ? (
                   <button className="btn btn-outline-light px-3 rounded-0 fw-bold btn-sm" onClick={handleLogout}>
@@ -281,7 +372,7 @@ function App() {
         </div>
       </nav>
 
-      {/* CONTENEDOR PRINCIPAL DE COMPONENTES */}
+      {/* CONTENEDOR PRINCIPAL */}
       <main className="flex-grow-1">
 
         {view !== 'inicio' && (
@@ -290,12 +381,11 @@ function App() {
               <div className="col-12 col-xl-10 animate-slide-in">
                 <div className="card bg-dark text-white border-danger border-opacity-50 shadow-lg p-4 p-md-5">
 
-                  {view === 'citas' && <AgendarCita />}
+                  {view === 'citas' && <AgendarCita onNeedLogin={() => setView('login')} />}
                   {view === 'registro' && <RegistroVehiculo />}
                   {view === 'catalogo' && <Catalogo />}
                   {view === 'contacto' && <Contacto />}
                   
-                  {/* NUEVAS VISTAS CONTROLADAS */}
                   {view === 'login' && <LoginView onLoginSuccess={handleLoginSuccess} />}
                   {view === 'admin-dashboard' && <DashboardAdmin />}
                   {view === 'user-dashboard' && <DashboardUsuario user={user} />}
@@ -336,7 +426,6 @@ function App() {
                 </div>
               </div>
 
-              {/* BARRAS DEL SLIDE */}
               <div className="slide-progress">
                 {heroSlides.map((_, i) => (
                   <div
@@ -348,14 +437,13 @@ function App() {
               </div>
             </header>
 
-            {/* CUADRÍCULA DE IMÁGENES CON SCROLL INTERNO Y MODAL CON CARRUSEL */}
+            {/* GALERÍA */}
             <section id="galeria" className="py-5 bg-black">
               <div className="container py-4">
                 <h2 className="text-center mb-5 fw-black text-uppercase">
                   Proyectos <span className="text-danger">Elite</span>
                 </h2>
 
-                {/* Contenedor con scroll para la cuadrícula */}
                 <div 
                   className="pe-2 custom-gallery-scroll" 
                   style={{ maxHeight: '460px', overflowY: 'auto', overflowX: 'hidden' }}
@@ -363,7 +451,6 @@ function App() {
                   <div className="row g-3">
                     {[
                       { 
-                        // RESTRUCTURADO: Ahora maneja un arreglo de 3 imágenes para el carrusel
                         imagenes: [
                           '/assets/images/mundoejecutivo.jpg', 
                           '/assets/images/mundocarrito.jpg', 
@@ -416,69 +503,6 @@ function App() {
                         ], 
                         titulo: 'Unidad de Potencia', 
                         descripcion: 'Modificación y ensamble de sistemas de inyección a medida para competencia.' 
-                      },
-                      { 
-                        imagenes: [
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/mundocarrito.jpg'
-                        ], 
-                        titulo: 'Porsche 911 GT3', 
-                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
-                      },
-                      { 
-                        imagenes: [
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/mundocarrito.jpg'
-                        ], 
-                        titulo: 'Porsche 911 GT3', 
-                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
-                      },
-                      { 
-                        imagenes: [
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/mundocarrito.jpg'
-                        ], 
-                        titulo: 'Porsche 911 GT3', 
-                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
-                      },
-                      { 
-                        imagenes: [
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/mundocarrito.jpg'
-                        ], 
-                        titulo: 'Porsche 911 GT3', 
-                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
-                      },
-                      { 
-                        imagenes: [
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/mundocarrito.jpg'
-                        ], 
-                        titulo: 'Porsche 911 GT3', 
-                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
-                      },
-                      { 
-                        imagenes: [
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/mundocarrito.jpg'
-                        ], 
-                        titulo: 'Porsche 911 GT3', 
-                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
-                      },
-                      { 
-                        imagenes: [
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/mundocarrito.jpg'
-                        ], 
-                        titulo: 'Porsche 911 GT3', 
-                        descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
                       }
                     ].map((proyecto, index) => (
                       <div key={index} className="col-6 col-md-4">
@@ -490,13 +514,11 @@ function App() {
                             setShowModal(true);
                           }}
                         >
-                          {/* Muestra la primera imagen del arreglo como portada en la cuadrícula */}
                           <img 
                             src={proyecto.imagenes[0]} 
                             alt={proyecto.titulo} 
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
-                          
                           <div className="gallery-hover-info">
                             <small>VER DETALLES</small>
                           </div>
@@ -507,7 +529,7 @@ function App() {
                 </div>
               </div>
 
-              {/* INTERFAZ EMERGENTE (MODAL REFORMADO CON CARRUSEL DE 3 IMÁGENES) */}
+              {/* MODAL CON CARRUSEL DE IMÁGENES */}
               {showModal && selectedProject && (
                 <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 1050 }}>
                   <div className="modal-dialog modal-dialog-centered">
@@ -521,8 +543,6 @@ function App() {
                       </div>
 
                       <div className="modal-body p-4">
-                        
-                        {/* NUEVO: PEQUEÑO CARRUSEL DE 3 IMÁGENES */}
                         <div id="carouselProjectDetails" className="carousel slide mb-3 border border-secondary" data-bs-ride="carousel" style={{ aspectRatio: '16/9' }}>
                           <div className="carousel-inner h-100">
                             {selectedProject.imagenes.map((imgUrl, idx) => (
@@ -536,14 +556,10 @@ function App() {
                               </div>
                             ))}
                           </div>
-                          
-                          {/* Flecha Izquierda */}
                           <button className="carousel-control-prev" type="button" data-bs-target="#carouselProjectDetails" data-bs-slide="prev">
                             <span className="carousel-control-prev-icon" aria-hidden="true"></span>
                             <span className="visually-hidden">Anterior</span>
                           </button>
-                          
-                          {/* Flecha Derecha */}
                           <button className="carousel-control-next" type="button" data-bs-target="#carouselProjectDetails" data-bs-slide="next">
                             <span className="carousel-control-next-icon" aria-hidden="true"></span>
                             <span className="visually-hidden">Siguiente</span>
@@ -572,7 +588,7 @@ function App() {
 
       <footer className="bg-black py-4 border-top border-danger border-opacity-25 text-center">
         <p className="small text-muted mb-0 tracking-widest">
-          © 2026 <span className="bg-black py-4 border-top border-danger border-opacity-25 text-center">DMI</span> • HIGH PERFORMANCE SERVICE
+          © 2026 • DMI • HIGH PERFORMANCE SERVICE
         </p>
       </footer>
 
