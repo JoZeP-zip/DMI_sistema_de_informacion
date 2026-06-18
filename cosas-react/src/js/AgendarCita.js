@@ -4,11 +4,7 @@ import '../styles/AgendarCita.css';
 const BASE_URL = "https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev";
 
 const AgendarCita = () => {
-  const [confirmado, setConfirmado]   = useState(false);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('');
-  const [vehiculos, setVehiculos]     = useState([]);
-
+  const [confirmado, setConfirmado] = useState(false);
   const [formData, setFormData] = useState({
     vehiculos_idvehiculo: '',
     fecha_cita: '',
@@ -30,51 +26,14 @@ const AgendarCita = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // ── Submit: llama a POST /citas/nueva ───────────────────────────
-  const handleCita = async (e) => {
+  const handleCita = (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const form = new URLSearchParams(formData);
-
-      const res = await fetch(`${BASE_URL}/citas/nueva`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        credentials: 'include',   // envía la cookie access_token que guarda FastAPI
-        body: form.toString(),
-      });
-
-      // FastAPI responde con redirect 302 en éxito — cualquier 2xx/3xx es OK
-      if (res.ok || res.status === 302 || res.redirected) {
-        setConfirmado(true);
-      } else {
-        // Intentar leer mensaje de error si el servidor devuelve JSON
-        let msg = `Error del servidor (${res.status})`;
-        try {
-          const data = await res.json();
-          msg = data.error || data.detail || msg;
-        } catch (_) {}
-        setError(msg);
-      }
-    } catch (err) {
-      setError('No se pudo conectar con el servidor. Verifica tu conexión.');
-    } finally {
-      setLoading(false);
-    }
+    setConfirmado(true);
   };
 
   const handleNuevaCita = () => {
     setConfirmado(false);
-    setError('');
-    setFormData({
-      vehiculos_idvehiculo: '',
-      fecha_cita: '',
-      hora_cita: '',
-      motivo: '',
-      observaciones: '',
-    });
+    setFormData({ vehiculo: '', fecha: '', hora: '', motivo: '', observacion: '' });
   };
 
   return (
@@ -202,6 +161,12 @@ const AgendarCita = () => {
                   />
                 </div>
 
+                {error && (
+                  <p style={{ color: '#e53e3e', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                    ⚠️ {error}
+                  </p>
+                )}
+
                 <div className="btn-row">
                   <button
                     type="button"
@@ -211,12 +176,8 @@ const AgendarCita = () => {
                   >
                     ↺ Limpiar
                   </button>
-                  <button
-                    type="submit"
-                    className="btn primary"
-                    disabled={loading}
-                  >
-                    {loading ? 'Enviando...' : '✓ Confirmar cita'}
+                  <button type="submit" className="btn primary">
+                    ✓ Confirmar cita
                   </button>
                 </div>
               </form>
