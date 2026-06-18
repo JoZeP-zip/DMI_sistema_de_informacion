@@ -8,8 +8,10 @@ import Contacto from './js/Contacto.js';
 import AgendarCita from './js/AgendarCita.js';
 import Catalogo from './js/Catalogo.js';
 import DashboardAdmin from './js/DashboardAdmin.js';
+import RegistroPrueba from './js/RegistroPrueba';
 
-// Componente de Login Integrado a la Estética DMI
+
+
 const LoginView = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -110,6 +112,10 @@ const BackButton = ({ onClick, user }) => (
     </button>
   </div>
 );
+
+
+
+
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);

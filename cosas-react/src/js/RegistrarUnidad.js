@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faKey, faCar, faUserCheck, faShield,
@@ -7,9 +7,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/RegistrarUnidad.css';
 
+const BASE_URL       = "https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev";
 const STEPS          = ['Cliente', 'Vehículo'];
 const tiposDocumento = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI'];
-const tiposVehiculo  = ['Sedán', 'SUV', 'Camioneta', 'Hatchback', 'Deportivo', 'Van', 'Bus', 'Camión', 'Moto'];
 
 const initialCliente = {
   email: '', contrasena: '', nombre: '', apellido: '',
@@ -22,29 +22,173 @@ const initialVehiculo = {
   descripcion: '', motor: '', asientos: '', capacidad: '', modelos: '',
 };
 
-/* ─── helpers ─── */
 const cx = (...classes) => classes.filter(Boolean).join(' ');
 
 export default function RegistrarUnidad() {
-  const [step, setStep]           = useState(0);
-  const [cliente, setCliente]     = useState(initialCliente);
-  const [vehiculo, setVehiculo]   = useState(initialVehiculo);
-  const [showPw, setShowPw]       = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [step, setStep]             = useState(0);
+  const [cliente, setCliente]       = useState(initialCliente);
+  const [vehiculo, setVehiculo]     = useState(initialVehiculo);
+  const [showPw, setShowPw]         = useState(false);
+  const [submitted, setSubmitted]   = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+  const [tiposVehiculo, setTiposVehiculo] = useState([]);
+
+  // ── Cargar tipos de vehículo desde la BD ───────────────────────
+  useEffect(() => {
+    fetch(`${BASE_URL}/api/vehiculos`)
+      // El endpoint /api/vehiculos devuelve vehículos, no tipos.
+      // Usamos el de tipovehiculos que sí existe en main.py:
+      .catch(() => {});
+
+    // Endpoint correcto para tipos de vehículo
+    fetch(`${BASE_URL}/api/vehiculos`)
+      .catch(() => {});
+
+    // Llamada real al endpoint de tipos (definido en main.py como SELECT * FROM dmi.tipovehiculos)
+    fetch(`${BASE_URL}/api/tipovehiculos`)
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTiposVehiculo(data);
+        } else {
+          // Fallback estático si el endpoint aún no está expuesto
+          setTiposVehiculo([
+            { idtipovehiculos: 1, vehiculo: 'Sedán' },
+            { idtipovehiculos: 2, vehiculo: 'SUV' },
+            { idtipovehiculos: 3, vehiculo: 'Camioneta' },
+            { idtipovehiculos: 4, vehiculo: 'Hatchback' },
+            { idtipovehiculos: 5, vehiculo: 'Deportivo' },
+            { idtipovehiculos: 6, vehiculo: 'Van' },
+            { idtipovehiculos: 7, vehiculo: 'Bus' },
+            { idtipovehiculos: 8, vehiculo: 'Camión' },
+            { idtipovehiculos: 9, vehiculo: 'Moto' },
+          ]);
+        }
+      })
+      .catch(() => {
+        setTiposVehiculo([
+          { idtipovehiculos: 1, vehiculo: 'Sedán' },
+          { idtipovehiculos: 2, vehiculo: 'SUV' },
+          { idtipovehiculos: 3, vehiculo: 'Camioneta' },
+          { idtipovehiculos: 4, vehiculo: 'Hatchback' },
+          { idtipovehiculos: 5, vehiculo: 'Deportivo' },
+          { idtipovehiculos: 6, vehiculo: 'Van' },
+          { idtipovehiculos: 7, vehiculo: 'Bus' },
+          { idtipovehiculos: 8, vehiculo: 'Camión' },
+          { idtipovehiculos: 9, vehiculo: 'Moto' },
+        ]);
+      });
+  }, []);
 
   const onCliente  = e => setCliente(p  => ({ ...p, [e.target.name]: e.target.value }));
   const onVehiculo = e => setVehiculo(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleNext   = e => { e.preventDefault(); setStep(1); };
-  const handleSubmit = e => { e.preventDefault(); console.log({ cliente, vehiculo }); setSubmitted(true); };
+  const handleNext = (e) => {
+    e.preventDefault();
+    setError('');
+    setStep(1);
+  };
+
+  // ── Submit final: registro usuario + vehículo ──────────────────
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // PASO 1: Registrar usuario vía /registro-react (devuelve JSON)
+      const regRes = await fetch(`${BASE_URL}/registro-react`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:            cliente.email,
+          password:         cliente.contrasena,
+          nombre:           cliente.nombre,
+          apellidos:        cliente.apellido,
+          documento:        cliente.documento,
+          tipodedocumento:  cliente.tipoDocumento,
+          fechadenacimiento: cliente.fechaNacimiento,
+          telefono:         cliente.telefono,
+          usuarionombre:    cliente.nombreUsuario,
+        }),
+      });
+
+      const regData = await regRes.json();
+      if (regData.error) throw new Error(regData.error);
+
+      // PASO 2: Login automático para obtener cookie de sesión
+      const loginRes = await fetch(`${BASE_URL}/login-react`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cliente.email, password: cliente.contrasena }),
+      });
+
+      const loginData = await loginRes.json();
+      if (loginData.error) throw new Error(loginData.error);
+
+      // Guardar token en localStorage para uso posterior
+      localStorage.setItem('token',  loginData.token);
+      localStorage.setItem('role',   loginData.role);
+      localStorage.setItem('email',  loginData.email);
+      localStorage.setItem('nombre', loginData.nombre);
+
+      // PASO 3: Registrar vehículo vía /vehiculo/nuevo (usa cookie de sesión)
+      // Como FastAPI lee la cookie httponly, necesitamos hacer login tradicional
+      // para que la cookie quede seteada correctamente.
+      // Usamos el token JWT como header Authorization en su lugar:
+      const vehForm = new URLSearchParams({
+        codigovehiculo:               vehiculo.codigo,
+        placa:                        vehiculo.placa,
+        marca:                        vehiculo.marca,
+        tipovehiculos_idtipovehiculos: vehiculo.tipoVehiculo,
+        descripcionvehiculo:          vehiculo.descripcion || '',
+        motor:                        vehiculo.motor || '',
+        cantidad_asientos:            vehiculo.asientos || '',
+        capacidad:                    vehiculo.capacidad || '',
+        modelo:                       vehiculo.modelos || '',
+      });
+
+      // Nota: /vehiculo/nuevo lee la cookie access_token.
+      // Como el registro es nuevo, la cookie no está seteada aún en el browser.
+      // Solución: llamar al endpoint /login estándar para que FastAPI setee la cookie.
+      const loginCookieRes = await fetch(`${BASE_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'include',
+        body: new URLSearchParams({ email: cliente.email, password: cliente.contrasena }).toString(),
+      });
+      // (ignoramos el redirect, lo que nos importa es que la cookie quede seteada)
+
+      const vehRes = await fetch(`${BASE_URL}/vehiculo/nuevo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'include',
+        body: vehForm.toString(),
+      });
+
+      if (vehRes.ok || vehRes.redirected || vehRes.status === 302) {
+        setSubmitted(true);
+      } else {
+        throw new Error(`Error al registrar vehículo (${vehRes.status})`);
+      }
+
+    } catch (err) {
+      setError(err.message || 'Error inesperado. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const reset = () => {
     setSubmitted(false);
     setStep(0);
+    setError('');
     setCliente(initialCliente);
     setVehiculo(initialVehiculo);
   };
 
-  /* ── Success screen ── */
+  // ── Pantalla de éxito ──────────────────────────────────────────
   if (submitted) return (
     <div className="ru-wrapper">
       <div className="ru-container">
@@ -57,7 +201,7 @@ export default function RegistrarUnidad() {
               <strong className="ru-highlight">{cliente.nombre} {cliente.apellido}</strong>{' '}
               y el vehículo con placa{' '}
               <strong className="ru-highlight">{vehiculo.placa}</strong>{' '}
-              han sido registrados exitosamente.
+              han sido registrados exitosamente en Disol Motors.
             </p>
             <button className="ru-btn-primary centered" onClick={reset}>
               Nuevo Registro
@@ -101,6 +245,13 @@ export default function RegistrarUnidad() {
           ))}
         </div>
 
+        {/* Banner de error global */}
+        {error && (
+          <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger mb-3">
+            ⚠️ {error}
+          </div>
+        )}
+
         {/* ══════ PASO 1 – CLIENTE ══════ */}
         {step === 0 && (
           <form onSubmit={handleNext}>
@@ -111,9 +262,7 @@ export default function RegistrarUnidad() {
               </div>
 
               <div className="ru-body">
-
                 <p className="ru-section">Datos de acceso</p>
-
                 <div className="ru-row">
                   <div className="ru-field">
                     <label className="ru-label">Nombre de usuario <span className="ru-req">*</span></label>
@@ -137,7 +286,7 @@ export default function RegistrarUnidad() {
                         className="ru-input pr-40"
                         type={showPw ? 'text' : 'password'}
                         name="contrasena" value={cliente.contrasena}
-                        onChange={onCliente} placeholder="••••••••" required
+                        onChange={onCliente} placeholder="••••••••" required minLength={6}
                       />
                       <button type="button" className="ru-pw-eye" onClick={() => setShowPw(p => !p)}>
                         <FontAwesomeIcon icon={showPw ? faEyeSlash : faEye} />
@@ -148,7 +297,6 @@ export default function RegistrarUnidad() {
                 </div>
 
                 <p className="ru-section">Datos personales</p>
-
                 <div className="ru-row">
                   <div className="ru-field">
                     <label className="ru-label">Nombre <span className="ru-req">*</span></label>
@@ -194,7 +342,6 @@ export default function RegistrarUnidad() {
                       placeholder="555-0123" />
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -216,9 +363,7 @@ export default function RegistrarUnidad() {
               </div>
 
               <div className="ru-body">
-
                 <p className="ru-section">Identificación</p>
-
                 <div className="ru-row">
                   <div className="ru-field">
                     <label className="ru-label">Código <span className="ru-req">*</span></label>
@@ -246,13 +391,16 @@ export default function RegistrarUnidad() {
                     <select className="ru-select" name="tipoVehiculo"
                       value={vehiculo.tipoVehiculo} onChange={onVehiculo} required>
                       <option value="">Seleccionar</option>
-                      {tiposVehiculo.map(t => <option key={t} value={t}>{t}</option>)}
+                      {tiposVehiculo.map(t => (
+                        <option key={t.idtipovehiculos} value={t.idtipovehiculos}>
+                          {t.vehiculo}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
                 <p className="ru-section">Especificaciones</p>
-
                 <div className="ru-row">
                   <div className="ru-field">
                     <label className="ru-label">Motor</label>
@@ -261,7 +409,7 @@ export default function RegistrarUnidad() {
                       placeholder="2.0L Turbo" />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Modelos</label>
+                    <label className="ru-label">Modelo</label>
                     <input className="ru-input" type="text" name="modelos"
                       value={vehiculo.modelos} onChange={onVehiculo}
                       placeholder="Sentra 2022" />
@@ -276,7 +424,7 @@ export default function RegistrarUnidad() {
                       placeholder="5" min="1" />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Capacidad (kg / ton)</label>
+                    <label className="ru-label">Capacidad (kg)</label>
                     <input className="ru-input" type="text" name="capacidad"
                       value={vehiculo.capacidad} onChange={onVehiculo}
                       placeholder="1500 kg" />
@@ -289,16 +437,27 @@ export default function RegistrarUnidad() {
                     value={vehiculo.descripcion} onChange={onVehiculo}
                     placeholder="Descripción general del vehículo..." />
                 </div>
-
               </div>
             </div>
 
             <div className="ru-btn-row">
-              <button type="button" className="ru-btn-secondary" onClick={() => setStep(0)}>
+              <button
+                type="button"
+                className="ru-btn-secondary"
+                onClick={() => setStep(0)}
+                disabled={loading}
+              >
                 <FontAwesomeIcon icon={faChevronLeft} /> Volver
               </button>
-              <button type="submit" className="ru-btn-primary">
-                <FontAwesomeIcon icon={faCheckCircle} /> Finalizar Registro
+              <button
+                type="submit"
+                className="ru-btn-primary"
+                disabled={loading}
+              >
+                {loading
+                  ? 'Registrando...'
+                  : <><FontAwesomeIcon icon={faCheckCircle} /> Finalizar Registro</>
+                }
               </button>
             </div>
           </form>

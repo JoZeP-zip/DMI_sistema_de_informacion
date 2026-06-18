@@ -41,7 +41,13 @@ templates.env.cache = None
 
 
 # ==================== OBTENER USUARIO ====================
-def obtener_usuario(access_token: Optional[str]) -> Optional[dict]:
+def obtener_usuario(access_token: Optional[str], request: Request = None) -> Optional[dict]:
+    
+    if not access_token and request:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+
     if not access_token:
         return None
     try:
@@ -65,7 +71,6 @@ def obtener_usuario(access_token: Optional[str]) -> Optional[dict]:
     except Exception:
         pass
     return None
-
 
 # ==================== HELPERS DE PERMISOS ====================
 
@@ -1720,7 +1725,7 @@ async def eliminar_producto(prod_id: int, access_token: str = Cookie(None)):
 async def api_ciudades():
     try:
         with engine.connect() as conn:
-            data = conn.execute(text("SELECT * FROM dmi.ciudades")).mappings().fetchall()
+            data = conn.execute(text("SELECT * FROM dmi.ciudades ORDER BY idciudades")).mappings().fetchall()
             return JSONResponse([dict(r) for r in data])
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -1729,7 +1734,7 @@ async def api_ciudades():
 async def api_metodospago():
     try:
         with engine.connect() as conn:
-            data = conn.execute(text("SELECT * FROM dmi.metodopago")).mappings().fetchall()
+            data = conn.execute(text("SELECT * FROM dmi.metodopago ORDER BY idmetodopago")).mappings().fetchall()
             return JSONResponse([dict(r) for r in data])
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -1776,8 +1781,148 @@ async def api_servicios():
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+# ==================== LOGIN REACT ====================
+@app.post("/login-react")
+async def login_react(request: Request):
+    try:
+        body = await request.json()
+        email = body.get("email", "").strip()
+        password = body.get("password", "")
+        if not email or not password:
+            return JSONResponse({"error": "Email y contrasena son requeridos"}, status_code=400)
+        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        if not res.user:
+            return JSONResponse({"error": "Credenciales incorrectas"}, status_code=401)
+        user_res = supabase.schema("dmi").table("usuarios").select("usuarionombre, rol").eq("id", res.user.id).execute()
+        rol = "usuario"
+        nombre = email
+        if user_res.data:
+            rol = user_res.data[0].get("rol", "usuario")
+            nombre = user_res.data[0].get("usuarionombre", email)
+        return JSONResponse({"token": res.session.access_token, "role": rol, "email": email, "nombre": nombre})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
-# ==================== EJECUCIÓN ====================
-if __name__ == "__main__": 
+
+# ==================== REGISTRO REACT ====================
+@app.post("/registro-react")
+async def registro_react(request: Request):
+    try:
+        body = await request.json()
+        email = body.get("email", "").strip()
+        password = body.get("password", "")
+        res = supabase.auth.sign_up({"email": email, "password": password})
+        if not res.user:
+            return JSONResponse({"error": "No se pudo registrar el usuario"}, status_code=400)
+        supabase.schema("dmi").table("usuarios").insert({
+            "id": res.user.id,
+            "usuarionombre": body.get("usuarionombre", ""),
+            "nombre": body.get("nombre", ""),
+            "apellidos": body.get("apellidos", ""),
+            "email": email,
+            "documento": body.get("documento", ""),
+            "tipodedocumento": body.get("tipodedocumento", ""),
+            "fechadenacimiento": body.get("fechadenacimiento", ""),
+            "telefono": body.get("telefono", ""),
+            "rol": "usuario",
+        }).execute()
+        return JSONResponse({"success": True, "message": "Usuario registrado correctamente"})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ==================== STATS ADMIN ====================
+@app.get("/admin/stats")
+async def admin_stats(access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return JSONResponse({"error": "No autorizado"}, status_code=403)
+    try:
+        with engine.connect() as conn:
+            citas     = conn.execute(text("SELECT COUNT(*) FROM dmi.citas WHERE estado='pendiente'")).scalar()
+            vehiculos = conn.execute(text("SELECT COUNT(*) FROM dmi.vehiculos")).scalar()
+            usuarios  = conn.execute(text("SELECT COUNT(*) FROM dmi.usuarios")).scalar()
+        return JSONResponse({"citas_pendientes": citas, "total_vehiculos": vehiculos, "total_usuarios": usuarios})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ==================== EJECUCION ====================
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8800, reload=True)
+
+
+# ==================== LOGIN REACT ====================
+@app.post("/login-react")
+async def login_react(request: Request):
+    try:
+        body = await request.json()
+        email = body.get("email", "").strip()
+        password = body.get("password", "")
+        if not email or not password:
+            return JSONResponse({"error": "Email y contrasena son requeridos"}, status_code=400)
+        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        if not res.user:
+            return JSONResponse({"error": "Credenciales incorrectas"}, status_code=401)
+        user_res = supabase.schema("dmi").table("usuarios").select("usuarionombre, rol").eq("id", res.user.id).execute()
+        rol = "usuario"
+        nombre = email
+        if user_res.data:
+            rol = user_res.data[0].get("rol", "usuario")
+            nombre = user_res.data[0].get("usuarionombre", email)
+        return JSONResponse({"token": res.session.access_token, "role": rol, "email": email, "nombre": nombre})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ==================== REGISTRO REACT ====================
+@app.post("/registro-react")
+async def registro_react(request: Request):
+    try:
+        body = await request.json()
+        email = body.get("email", "").strip()
+        password = body.get("password", "")
+        res = supabase.auth.sign_up({"email": email, "password": password})
+        if not res.user:
+            return JSONResponse({"error": "No se pudo registrar el usuario"}, status_code=400)
+        supabase.schema("dmi").table("usuarios").insert({
+            "id": res.user.id,
+            "usuarionombre": body.get("usuarionombre", ""),
+            "nombre": body.get("nombre", ""),
+            "apellidos": body.get("apellidos", ""),
+            "email": email,
+            "documento": body.get("documento", ""),
+            "tipodedocumento": body.get("tipodedocumento", ""),
+            "fechadenacimiento": body.get("fechadenacimiento", ""),
+            "telefono": body.get("telefono", ""),
+            "rol": "usuario",
+        }).execute()
+        return JSONResponse({"success": True, "message": "Usuario registrado correctamente"})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ==================== STATS ADMIN ====================
+@app.get("/admin/stats")
+async def admin_stats(access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token)
+    if not es_admin(usuario):
+        return JSONResponse({"error": "No autorizado"}, status_code=403)
+    try:
+        with engine.connect() as conn:
+            citas     = conn.execute(text("SELECT COUNT(*) FROM dmi.citas WHERE estado='pendiente'")).scalar()
+            vehiculos = conn.execute(text("SELECT COUNT(*) FROM dmi.vehiculos")).scalar()
+            usuarios  = conn.execute(text("SELECT COUNT(*) FROM dmi.usuarios")).scalar()
+        return JSONResponse({"citas_pendientes": citas, "total_vehiculos": vehiculos, "total_usuarios": usuarios})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# ==================== EJECUCION ====================
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8800, reload=True)
+
+for route in app.routes:
+    print(route.path)
