@@ -1,214 +1,129 @@
 /* =============================================
-   HERO — Viewport & Background
+   1. HERO SECTION (Racing & Cinematic)
    ============================================= */
- 
 .hero-viewport {
-  height: 90vh;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    height: 90vh;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
 }
- 
+
 .hero-background {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  transform: scale(1.1); /* Efecto Ken Burns */
-  transition: transform 8s ease;
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.1);
+    transition: transform 8s ease;
 }
- 
+
 .hero-viewport:hover .hero-background {
-  transform: scale(1);
+    transform: scale(1);
 }
- 
+
 .hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.9) 100%);
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.9) 100%);
 }
- 
- 
-/* =============================================
-   HERO — Tipografía
-   ============================================= */
- 
+
 .hero-title {
-  font-size: clamp(3rem, 10vw, 6rem);
-  font-weight: 900;
-  font-style: italic;
-  line-height: 1;
+    font-size: clamp(3rem, 10vw, 6rem);
+    font-weight: 900;
+    font-style: italic;
+    line-height: 1;
+    text-transform: uppercase;
+    text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
 }
- 
-.hero-subtitle {
-  font-size: clamp(1rem, 3vw, 1.5rem);
-  text-transform: uppercase;
-  letter-spacing: 5px;
-  color: #ccc;
-}
- 
- 
+
 /* =============================================
-   HERO — Progress Bars
+   2. BOTÓN RACING (Dynamic UI)
    ============================================= */
- 
-.slide-progress {
-  position: absolute;
-  bottom: 30px;
-  display: flex;
-  gap: 15px;
-}
- 
-.progress-bar-item {
-  width: 60px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-  position: relative;
-}
- 
-.progress-bar-item.active::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  background: #e63946;
-  animation: progressFill 5s linear;
-}
- 
-@keyframes progressFill {
-  from { width: 0; }
-  to   { width: 100%; }
-}
- 
- 
-/* =============================================
-   NAVEGACIÓN
-   ============================================= */
- 
-.nav-hover-red:hover {
-  color: #e63946 !important;
-  text-shadow: 0 0 10px rgba(230, 57, 70, 0.5);
-}
- 
- 
-/* =============================================
-   BOTÓN — Racing Style
-   ============================================= */
- 
 .btn-racing {
-  display: inline-block;
-  background: #e63946;
-  color: white;
-  font-weight: bold;
-  text-decoration: none;
-  border: none;
-  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
-  transition: background 0.3s, transform 0.3s;
+    padding: 12px 30px;
+    background: #e63946;
+    color: white;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border: none;
+    clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+    transition: all 0.3s ease;
 }
- 
+
 .btn-racing:hover {
-  background: #ff4d5a;
-  transform: skewX(-5deg) scale(1.05);
+    background: #ff4d5a;
+    transform: skewX(-5deg) scale(1.05);
+    color: white;
 }
- 
- 
+
 /* =============================================
-   GALERÍA — Cards
+   3. GALERÍA RACING (Grid Cards)
    ============================================= */
- 
-/* --- AGREGA O BUSCA ESTO JUSTO ARRIBA DE .item-1 --- */
 .gallery-card {
     position: relative;
-    aspect-ratio: 4/3;       /* Esto le da la forma de cuadro */
+    aspect-ratio: 4/3;
     overflow: hidden;
-    
-    /* ESTO ES LO QUE ACOMODA EL TAMAÑO */
-    background-size: cover;      /* Llena el cuadro sin deformar */
-    background-position: center; /* Centra la imagen */
-    background-repeat: no-repeat;
-    
-    transition: 0.3s;
+    background-size: cover;
+    background-position: center;
+    transition: all 0.4s ease;
+    border: 2px solid transparent;
 }
- 
+
 .gallery-card:hover {
-  border-left-color: #e63946;
-  transform: translateX(5px);
+    transform: scale(1.03) translateY(-5px);
+    border-color: #e63946;
 }
 
-/* Placeholder interno */
-.gallery-img-placeholder {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
- 
-/* Overlay al hacer hover */
 .gallery-hover-info {
-  position: absolute;
-  inset: 0;
-  background: rgba(230, 57, 70, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s;
+    position: absolute;
+    inset: 0;
+    background: rgba(230, 57, 70, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
- 
+
 .gallery-card:hover .gallery-hover-info {
-  opacity: 1;
+    opacity: 1;
 }
- 
- 
-/* =============================================
-   ANIMACIONES
-   ============================================= */
- 
-.animate-fade-up {
-  animation: fadeUp 1s ease-out forwards;
-}
- 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
- 
- 
-/* =============================================
-   UTILIDADES
-   ============================================= */
- 
-.fw-black { font-weight: 900; }
 
-/* ==========================================================================
-   DISEÑO PERSONALIZADO PARA EL SCROLL DE LA GALERÍA (DMI STYLE)
-   ========================================================================== */
-
-/* 1. Define el ancho total de la barra de scroll */
+/* =============================================
+   4. SCROLLBAR PERSONALIZADO (DMI Style)
+   ============================================= */
 .custom-gallery-scroll::-webkit-scrollbar {
-  width: 8px; /* Un grosor fino y elegante */
+    width: 8px;
 }
 
-/* 2. El fondo de la barra (el carril por donde se mueve) */
 .custom-gallery-scroll::-webkit-scrollbar-track {
-  background: #000000; /* Negro absoluto para que se fusione con el fondo */
-  border-left: 1px solid rgba(220, 53, 69, 0.15); /* Una sutil línea roja divisoria */
+    background: #000;
 }
 
-/* 3. La barra deslizable (la pieza que arrastras con el mouse) */
 .custom-gallery-scroll::-webkit-scrollbar-thumb {
-  background: #dc3545; /* Rojo oficial de Bootstrap / DMI */
-  border-radius: 4px; /* Bordes ligeramente suavizados para el agarre visual */
+    background: #dc3545;
+    border-radius: 4px;
 }
 
-/* 4. Efecto cuando el usuario pasa el mouse por encima del scroll */
 .custom-gallery-scroll::-webkit-scrollbar-thumb:hover {
-  background: #b52a37; /* Un rojo un poco más oscuro al hacer hover */
-  cursor: pointer;
+    background: #b52a37;
 }
+
+/* =============================================
+   5. UTILIDADES Y ANIMACIONES
+   ============================================= */
+.animate-fade-up {
+    animation: fadeUp 1s ease-out forwards;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.fw-black { font-weight: 900; }
