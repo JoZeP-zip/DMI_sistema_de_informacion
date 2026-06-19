@@ -280,7 +280,11 @@ async def crear_vehiculo(
 
         return RedirectResponse(url="/?success=Vehículo creado y asignado correctamente", status_code=302)
     except Exception as e:
-        return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
+        print("ERROR VEHICULO:", str(e))
+        return RedirectResponse(
+            url=f"/?error={str(e)}",
+            status_code=302
+        )
 
 
 # ==================== FORMULARIO EDITAR VEHÍCULO ====================
