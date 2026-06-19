@@ -5,393 +5,433 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vehículos — DMI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./static/styles.css">
 </head>
 <body>
 
-    <!-- ===== NAVBAR ===== -->
-    <nav class="navbar">
-        <span class="navbar-brand"> DMI Vehículos</span>
-        <div class="navbar-links">
-            <a href="/">Vehículos</a>
-            <a href="/citas"> Citas</a>
-            <a href="/configuracion">Panel de Administrador</a>
+<!-- ===== NAVBAR ===== -->
+<div class="topbar">
+    <div class="topbar-brand">
+        <i class="bi bi-truck-front-fill"></i>
+        DMI Vehículos
+    </div>
+    <div class="topbar-links">
+        <a href="/"><i class="bi bi-car-front"></i> Vehículos</a>
+        <a href="/citas"><i class="bi bi-calendar-check"></i> Citas</a>
+        <a href="/configuracion"><i class="bi bi-sliders"></i> Administrador</a>
+    </div>
+    <div class="topbar-user">
+        {% if usuario %}
+            <div class="user-chip"><i class="bi bi-person-circle"></i> {{ usuario.nombre }}</div>
+            <form action="/logout" method="post" style="margin:0">
+                <button type="submit" class="btn-salir"><i class="bi bi-box-arrow-right"></i> Salir</button>
+            </form>
+        {% else %}
+            <span style="color:#475569;font-size:.82rem">No has iniciado sesión</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== MODAL NOTIFICACIÓN ===== -->
+<div class="modal fade" id="notifModal" tabindex="-1" aria-labelledby="notifModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" id="notifModalContent" style="border-top: 4px solid #4f63f5;">
+            <div class="modal-header border-0 pb-1" id="notifModalHeader">
+                <h6 class="modal-title fw-bold" id="notifModalLabel"></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-1 pb-2" id="notifModalBody" style="color:#94a3b8;font-size:.9rem"></div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn-dmi" id="notifModalBtn" data-bs-dismiss="modal" style="width:auto;padding:.38rem 1.4rem">Aceptar</button>
+            </div>
         </div>
-        <div class="navbar-user">
-            {% if usuario %}
-                <span class="usuario-nombre"> {{ usuario.nombre }}</span>
-                <form action="/logout" method="post" style="display:inline;">
-                    <button type="submit" class="btn-logout">Cerrar sesión</button>
+    </div>
+</div>
+
+<!-- ===== LAYOUT PRINCIPAL ===== -->
+<div class="main-grid">
+
+    <!-- ══ COLUMNA IZQUIERDA ══ -->
+    <div>
+
+        <!-- REGISTRO USUARIO -->
+        <div class="dmi-card">
+            <div class="dmi-card-header blue">
+                <i class="bi bi-person-plus-fill"></i> Registrar Usuario
+            </div>
+            <div class="dmi-card-body">
+                <form action="/registro" method="post">
+                    <div class="form-section">Acceso</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nombre de usuario</label>
+                        <input type="text" name="usuarionombre" class="form-control" required>
+                    </div>
+
+                    <div class="form-section">Datos personales</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Apellidos</label>
+                            <input type="text" name="apellidos" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo documento</label>
+                            <select name="tipodedocumento" class="form-select" required>
+                                <option value="" disabled selected>Seleccione</option>
+                                <option value="CC">Cédula Ciudadanía</option>
+                                <option value="TI">Tarjeta Identidad</option>
+                                <option value="CE">Cédula Extranjería</option>
+                                <option value="PA">Pasaporte</option>
+                                <option value="RC">Registro Civil</option>
+                                <option value="NIT">NIT</option>
+                                <option value="PEP">PEP</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">N° Documento</label>
+                            <input type="text" name="documento" class="form-control" required pattern="[0-9]+" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha nacimiento</label>
+                            <input type="date" name="fechadenacimiento" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" name="telefono" class="form-control" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-dmi btn-primary-dmi" style="margin-top:.6rem">
+                        <i class="bi bi-person-check-fill"></i> Crear cuenta
+                    </button>
                 </form>
-            {% else %}
-                <span class="text-muted">No has iniciado sesión</span>
-            {% endif %}
-        </div>
-    </nav>
-
-    <!-- ===== MODAL DE NOTIFICACIÓN ===== -->
-    <div class="modal fade" id="notifModal" tabindex="-1" aria-labelledby="notifModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" id="notifModalContent">
-                <div class="modal-header border-0 pb-0" id="notifModalHeader">
-                    <h5 class="modal-title fw-bold" id="notifModalLabel"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body pt-2" id="notifModalBody"></div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn" id="notifModalBtn" data-bs-dismiss="modal">Aceptar</button>
-                </div>
             </div>
         </div>
+
+        <!-- INICIO SESIÓN -->
+        <div class="dmi-card">
+            <div class="dmi-card-header slate">
+                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+            </div>
+            <div class="dmi-card-body">
+                <form action="/login" method="post">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn-dmi btn-primary-dmi" style="margin-top:.5rem">
+                        <i class="bi bi-unlock-fill"></i> Iniciar sesión
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VEHÍCULO: Editar o Crear -->
+        {% if vehicle_to_edit %}
+        <div class="dmi-card">
+            <div class="dmi-card-header amber">
+                <i class="bi bi-pencil-square"></i> Editar Vehículo
+            </div>
+            <div class="dmi-card-body">
+                <form action="/vehiculo/editar/{{ vehicle_to_edit[0] }}" method="post">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Código</label>
+                            <input type="text" name="codigovehiculo" class="form-control" value="{{ vehicle_to_edit[1] }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Placa</label>
+                            <input type="text" name="placa" class="form-control" value="{{ vehicle_to_edit[5] }}" required maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Marca</label>
+                            <input type="text" name="marca" class="form-control" value="{{ vehicle_to_edit[8] }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo vehículo</label>
+                            <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
+                                {% for tipo in tipos %}
+                                    <option value="{{ tipo[0] }}" {% if tipo[0] == vehicle_to_edit[9] %}selected{% endif %}>{{ tipo[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2">
+                            <label class="form-label">Descripción</label>
+                            <input type="text" name="descripcionvehiculo" class="form-control" value="{{ vehicle_to_edit[2] }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Motor</label>
+                            <input type="text" name="motor" class="form-control" value="{{ vehicle_to_edit[3] }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Asientos</label>
+                            <input type="text" name="cantidad_asientos" class="form-control" value="{{ vehicle_to_edit[4] }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Capacidad</label>
+                            <input type="text" name="capacidad" class="form-control" value="{{ vehicle_to_edit[6] }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo</label>
+                            <input type="text" name="modelo" class="form-control" value="{{ vehicle_to_edit[7] }}">
+                        </div>
+                    </div>
+                    <div class="btn-flex">
+                        <button type="submit" class="btn-dmi btn-success-dmi"><i class="bi bi-floppy-fill"></i> Guardar cambios</button>
+                        <a href="/" class="btn-dmi btn-outline-dmi"><i class="bi bi-x-circle"></i> Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% else %}
+
+        <div class="dmi-card">
+            <div class="dmi-card-header green">
+                <i class="bi bi-truck-front"></i> Registrar Vehículo
+            </div>
+            <div class="dmi-card-body">
+                <form action="/vehiculo/nuevo" method="post">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Código</label>
+                            <input type="text" name="codigovehiculo" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Placa</label>
+                            <input type="text" name="placa" class="form-control" required maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Marca</label>
+                            <input type="text" name="marca" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo vehículo</label>
+                            <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
+                                <option value="" disabled selected>Seleccione</option>
+                                {% for tipo in tipos %}
+                                    <option value="{{ tipo.idtipovehiculos }}">{{ tipo.codigotipovehiculos }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2">
+                            <label class="form-label">Descripción</label>
+                            <input type="text" name="descripcionvehiculo" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Motor</label>
+                            <input type="text" name="motor" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Asientos</label>
+                            <input type="text" name="cantidad_asientos" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Capacidad</label>
+                            <input type="text" name="capacidad" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo</label>
+                            <input type="text" name="modelo" class="form-control">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-dmi btn-primary-dmi" style="margin-top:.6rem">
+                        <i class="bi bi-plus-circle-fill"></i> Guardar vehículo
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
-    <div class="container-fluid px-4 mt-3">
-        <div class="row g-4">
+    <!-- ══ COLUMNA DERECHA ══ -->
+    <div>
 
-            <!-- ===== COLUMNA IZQUIERDA (4/12): FORMULARIOS ===== -->
-            <div class="col-12 col-lg-4">
-
-                <!-- REGISTRO USUARIO -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title"> Registrar Usuario</h5>
-                        <form action="/registro" method="post">
-                            <div class="mb-2">
-                                <label class="form-label">Email</label>
-                                <input type="email" name="email" class="form-control" required>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Contraseña</label>
-                                <input type="password" name="password" class="form-control" required>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Nombre</label>
-                                <input type="text" name="nombre" class="form-control" required>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Apellidos</label>
-                                <input type="text" name="apellidos" class="form-control" required>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Fecha de Nacimiento</label>
-                                <input type="date" name="fechadenacimiento" class="form-control" required>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Tipo de Documento</label>
-                                <select name="tipodedocumento" class="form-select" required>
-                                    <option value="" disabled selected>Seleccione un tipo</option>
-                                    <option value="CC">Cédula de Ciudadanía</option>
-                                    <option value="TI">Tarjeta de Identidad</option>
-                                    <option value="CE">Cédula de Extranjería</option>
-                                    <option value="PA">Pasaporte</option>
-                                    <option value="RC">Registro Civil</option>
-                                    <option value="NIT">NIT</option>
-                                    <option value="PEP">Permiso Especial de Permanencia (PEP)</option>
-                                </select>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Documento</label>
-                                <input type="text" name="documento" class="form-control" required pattern="[0-9]+" inputmode="numeric">
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Teléfono</label>
-                                <input type="text" name="telefono" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Usuario</label>
-                                <input type="text" name="usuarionombre" class="form-control" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Registrarse</button>
-                        </form>
-                    </div>
+        <!-- TABLA VEHÍCULOS -->
+        <div class="dmi-card">
+            <div class="dmi-card-header">Listado de Vehículos</div>
+            <div class="dmi-card-body">
+                <table class="dmi-table">
+                    </table>
+            </div>
+        </div>
+            <div class="dmi-card-body" style="padding:0">
+                {% if data %}
+                <div class="table-wrap">
+                    <table class="dmi-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Motor</th>
+                                <th>Asientos</th>
+                                <th>Placa</th>
+                                <th>Capacidad</th>
+                                <th>Modelo</th>
+                                <th>Marca</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in data %}
+                            <tr>
+                                <td><span class="badge-code">{{ row[1] }}</span></td>
+                                <td>{{ row[2] }}</td>
+                                <td>{{ row[3] }}</td>
+                                <td style="text-align:center">{{ row[4] }}</td>
+                                <td><span class="badge-placa">{{ row[5] }}</span></td>
+                                <td style="text-align:center">{{ row[6] }}</td>
+                                <td>{{ row[9] }}</td>
+                                <td>{{ row[7] }}</td>
+                                <td>
+                                    <div class="tbl-actions">
+                                        <a href="/vehiculo/editar/{{ row[0] }}" class="tbl-btn tbl-btn-edit" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" style="margin:0">
+                                            <button type="submit"
+                                                onclick="return confirm('¿Eliminar este vehículo?')"
+                                                class="tbl-btn tbl-btn-delete" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-
-                <!-- INICIO SESIÓN -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title"> Iniciar Sesión</h5>
-                        <form action="/login" method="post">
-                            <div class="mb-2">
-                                <label class="form-label">Email</label>
-                                <input type="email" name="email" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <input type="password" name="password" class="form-control" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- EDITAR / CREAR VEHÍCULO -->
-                {% if vehicle_to_edit %}
-                <div class="card border-warning mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">✏️ Editar Vehículo</h5>
-                        <form action="/vehiculo/editar/{{ vehicle_to_edit[0] }}" method="post">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <label class="form-label">Código</label>
-                                    <input type="text" name="codigovehiculo" class="form-control" value="{{ vehicle_to_edit[1] }}" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Placa</label>
-                                    <input type="text" name="placa" class="form-control" value="{{ vehicle_to_edit[5] }}" required maxlength="10">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Marca</label>
-                                    <input type="text" name="marca" class="form-control" value="{{ vehicle_to_edit[8] }}" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Tipo de vehículo</label>
-                                    <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
-                                        {% for tipo in tipos %}
-                                            <option value="{{ tipo[0] }}" {% if tipo[0] == vehicle_to_edit[9] %}selected{% endif %}>
-                                                {{ tipo[1] }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">Descripción</label>
-                                    <input type="text" name="descripcionvehiculo" class="form-control" value="{{ vehicle_to_edit[2] }}">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Motor</label>
-                                    <input type="text" name="motor" class="form-control" value="{{ vehicle_to_edit[3] }}">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Asientos</label>
-                                    <input type="text" name="cantidad_asientos" class="form-control" value="{{ vehicle_to_edit[4] }}">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Capacidad</label>
-                                    <input type="text" name="capacidad" class="form-control" value="{{ vehicle_to_edit[6] }}">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Modelo</label>
-                                    <input type="text" name="modelo" class="form-control" value="{{ vehicle_to_edit[7] }}">
-                                </div>
-                            </div>
-                            <div class="d-flex gap-2 mt-3">
-                                <button type="submit" class="btn btn-success w-100">💾 Guardar Cambios</button>
-                                <a href="/" class="btn btn-danger w-100">Cancelar</a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
                 {% else %}
-
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">🚘 Registrar Vehículo</h5>
-                        <form action="/vehiculo/nuevo" method="post">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <label class="form-label">Código</label>
-                                    <input type="text" name="codigovehiculo" class="form-control" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Placa</label>
-                                    <input type="text" name="placa" class="form-control" required maxlength="10">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Marca</label>
-                                    <input type="text" name="marca" class="form-control" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Tipo de vehículo</label>
-                                    <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
-                                        <option value="" disabled selected>Seleccione un tipo</option>
-                                        {% for tipo in tipos %}
-                                            <option value="{{ tipo.idtipovehiculos }}">{{ tipo.codigotipovehiculos }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">Descripción</label>
-                                    <input type="text" name="descripcionvehiculo" class="form-control">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Motor</label>
-                                    <input type="text" name="motor" class="form-control">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Asientos</label>
-                                    <input type="text" name="cantidad_asientos" class="form-control">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Capacidad</label>
-                                    <input type="text" name="capacidad" class="form-control">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Modelo</label>
-                                    <input type="text" name="modelo" class="form-control">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100 mt-3">Guardar Vehículo</button>
-                        </form>
-                    </div>
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    No hay vehículos registrados.
                 </div>
                 {% endif %}
-            </div>
-
-            <!-- ===== COLUMNA DERECHA (8/12): TABLAS ===== -->
-            <div class="col-12 col-lg-8">
-
-                <!-- TABLA VEHÍCULOS -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">📋 Listado de Vehículos</h5>
-                        {% if data %}
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-hover table-bordered align-middle">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Código</th>
-                                        <th>Descripción</th>
-                                        <th>Motor</th>
-                                        <th>Asientos</th>
-                                        <th>Placa</th>
-                                        <th>Capacidad</th>
-                                        <th>Modelo</th>
-                                        <th>Marca</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for row in data %}
-                                    <tr>
-                                        <td>{{ row[1] }}</td>
-                                        <td>{{ row[2] }}</td>
-                                        <td>{{ row[3] }}</td>
-                                        <td>{{ row[4] }}</td>
-                                        <td>{{ row[5] }}</td>
-                                        <td>{{ row[6] }}</td>
-                                        <td>{{ row[9] }}</td>
-                                        <td>{{ row[7] }}</td>
-                                        <td>
-                                            <a href="/vehiculo/editar/{{ row[0] }}" class="btn btn-sm btn-warning">✏️</a>
-                                            <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" style="display:inline;">
-                                                <button type="submit"
-                                                    onclick="return confirm('¿Seguro que quieres eliminar este vehículo?')"
-                                                    class="btn btn-sm btn-danger">🗑️</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                            <p class="text-muted">No hay vehículos registrados.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- TABLA USUARIOS — solo visible para admins -->
-                {% if usuario and usuario.rol == 'admin' %}
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">👤 Gestión de Usuarios y Roles</h5>
-                        {% if usuarios_data %}
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-hover table-bordered align-middle">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Usuario</th>
-                                        <th>Nombre</th>
-                                        <th>Apellidos</th>
-                                        <th>Email</th>
-                                        <th>Rol actual</th>
-                                        <th>Cambiar rol</th>
-                                        <th>Eliminar</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for row in usuarios_data %}
-                                    <tr>
-                                        <td>{{ row[6] }}</td>
-                                        <td>{{ row[1] }}</td>
-                                        <td>{{ row[2] }}</td>
-                                        <td>{{ row[4] }}</td>
-                                        <!-- Columna "Rol actual": muestra badge según valor -->
-                                        <td>
-                                            {% set rol_actual = row[14] if row[14] else 'usuario' %}
-                                            {% if rol_actual == 'admin' %}
-                                                <span class="badge bg-danger">admin</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">usuario</span>
-                                            {% endif %}
-                                        </td>
-                                        <!-- Columna "Cambiar rol": selector + botón en un mini-form -->
-                                        <td>
-                                            <form action="/usuario/rol/{{ row[0] }}" method="post" class="d-flex gap-1">
-                                                <select name="rol" class="form-select form-select-sm" style="width:auto;">
-                                                    <option value="usuario" {% if row[14] != 'admin' %}selected{% endif %}>usuario</option>
-                                                    <option value="admin"   {% if row[14] == 'admin' %}selected{% endif %}>admin</option>
-                                                </select>
-                                                <button type="submit" class="btn btn-sm btn-primary">✔</button>
-                                            </form>
-                                        </td>
-                                        <!-- Columna "Eliminar" -->
-                                        <td>
-                                            <form action="/usuario/eliminar/{{ row[0] }}" method="post" style="display:inline;">
-                                                <button type="submit"
-                                                    onclick="return confirm('¿Eliminar este usuario permanentemente?')"
-                                                    class="btn btn-sm btn-danger">🗑️</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                            <p class="text-muted">No hay usuarios registrados.</p>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-
             </div>
         </div>
+
+        <!-- TABLA USUARIOS (solo admin) -->
+        {% if usuario and usuario.rol == 'admin' %}
+        <div class="dmi-card" style="margin-top:1rem">
+            <div class="dmi-card-header slate">
+                <i class="bi bi-people-fill"></i> Gestión de Usuarios y Roles
+            </div>
+            <div class="dmi-card-body" style="padding:0">
+                {% if usuarios_data %}
+                <div class="table-wrap">
+                    <table class="dmi-table">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Nombre</th>
+                                <th>Apellidos</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Cambiar rol</th>
+                                <th>Eliminar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in usuarios_data %}
+                            <tr>
+                                <td style="font-weight:600;color:#e2e8f0">{{ row[6] }}</td>
+                                <td>{{ row[1] }}</td>
+                                <td>{{ row[2] }}</td>
+                                <td style="color:#64748b;font-size:.8rem">{{ row[4] }}</td>
+                                <td>
+                                    {% set rol_actual = row[14] if row[14] else 'usuario' %}
+                                    {% if rol_actual == 'admin' %}
+                                        <span class="badge-admin"><i class="bi bi-shield-fill"></i> admin</span>
+                                    {% else %}
+                                        <span class="badge-user"><i class="bi bi-person"></i> usuario</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form action="/usuario/rol/{{ row[0] }}" method="post" class="role-form">
+                                        <select name="rol" class="form-select">
+                                            <option value="usuario" {% if row[14] != 'admin' %}selected{% endif %}>usuario</option>
+                                            <option value="admin"   {% if row[14] == 'admin' %}selected{% endif %}>admin</option>
+                                        </select>
+                                        <button type="submit" class="role-btn" title="Aplicar">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form action="/usuario/eliminar/{{ row[0] }}" method="post" style="margin:0">
+                                        <button type="submit"
+                                            onclick="return confirm('¿Eliminar este usuario permanentemente?')"
+                                            class="tbl-btn tbl-btn-delete" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-people"></i>
+                    No hay usuarios registrados.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    (function () {
-        const successMsg = {{ success_msg | tojson }};
-        const errorMsg   = {{ error | tojson }};
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    const successMsg = {{ success_msg | tojson }};
+    const errorMsg   = {{ error | tojson }};
+    if (!successMsg && !errorMsg) return;
 
-        if (!successMsg && !errorMsg) return;
+    const isSuccess = !!successMsg;
+    const mensaje   = successMsg || errorMsg;
 
-        const isSuccess = !!successMsg;
-        const mensaje   = successMsg || errorMsg;
+    const content = document.getElementById('notifModalContent');
+    const label   = document.getElementById('notifModalLabel');
+    const body    = document.getElementById('notifModalBody');
+    const btn     = document.getElementById('notifModalBtn');
 
-        const content = document.getElementById('notifModalContent');
-        const header  = document.getElementById('notifModalHeader');
-        const label   = document.getElementById('notifModalLabel');
-        const body    = document.getElementById('notifModalBody');
-        const btn     = document.getElementById('notifModalBtn');
+    if (isSuccess) {
+        content.style.borderTopColor = '#059669';
+        label.innerHTML = '<i class="bi bi-check-circle-fill me-2" style="color:#059669"></i>Operación exitosa';
+        btn.style.background = '#059669';
+        btn.style.color = '#fff';
+    } else {
+        content.style.borderTopColor = '#dc2626';
+        label.innerHTML = '<i class="bi bi-x-circle-fill me-2" style="color:#dc2626"></i>Ocurrió un error';
+        btn.style.background = '#dc2626';
+        btn.style.color = '#fff';
+    }
 
-        if (isSuccess) {
-            content.style.borderTop = '4px solid #198754';
-            header.style.color      = '#198754';
-            label.textContent       = '✅ Éxito';
-            btn.className           = 'btn btn-success';
-        } else {
-            content.style.borderTop = '4px solid #dc3545';
-            header.style.color      = '#dc3545';
-            label.textContent       = '❌ Error';
-            btn.className           = 'btn btn-danger';
-        }
-
-        body.textContent = mensaje;
-        new bootstrap.Modal(document.getElementById('notifModal')).show();
-    })();
-    </script>
+    body.textContent = mensaje;
+    new bootstrap.Modal(document.getElementById('notifModal')).show();
+})();
+</script>
 </body>
 </html>

@@ -250,9 +250,9 @@ const DashboardUsuario = ({ user }) => {
 };
 
 const heroSlides = [
-  './assets/images/motorlike.jpg',
-  './assets/images/contactos.jpg',
-  './assets/images/servicios.jpg',
+  './assets/images/like.jpg',
+  './assets/images/akira.jpg',
+  './assets/images/fotoautos.jpg',
 ];
 
 const BackButton = ({ onClick, user }) => (
@@ -426,7 +426,7 @@ function App() {
                 <button
                   className="btn btn-danger px-4 rounded-0 fw-bold shadow-sm"
                   onClick={() => {
-                    setView('registro'); // Te manda a la vista del componente <RegistroVehiculo />
+                    setView('registro'); 
                     setMenuOpen(false);
                   }}
                 >
@@ -538,32 +538,32 @@ function App() {
                   <div className="row g-3">
                     {[
                       { 
-                        imagenes: ['/assets/images/mundoejecutivo.jpg', '/assets/images/mundocarrito.jpg', '/assets/images/porche.jpg'], 
-                        titulo: 'Mundo Ejecutivo', 
-                        descripcion: 'Optimización de software y diagnóstico computarizado para flotas empresariales.' 
+                        imagenes: ['/assets/images/camaroamarillo.jpg', '/assets/images/camaro verde.jpg', '/assets/images/camaromodificado.jpg'], 
+                        titulo: 'Chevrolet Camaro 2018', 
+                        descripcion: 'Optimización de software y diagnóstico computarizado para flotas empresariales, se hizo mantenimiento prevnetivo y cambio de color.' 
                       },
                       { 
-                        imagenes: ['/assets/images/porche.jpg', '/assets/images/lamborghini.jpg', '/assets/images/mundocarrito.jpg'], 
+                        imagenes: ['/assets/images/porche.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
                         titulo: 'Porsche 911 GT3', 
                         descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
                       },
                       { 
-                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/porche.jpg', '/assets/images/Ambessa_1.jpg'], 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/porche.jpg', '/assets/images/lamborghini.jpg'], 
                         titulo: 'Lamborghini Aventador', 
                         descripcion: 'Mantenimiento de alta precisión en el sistema de admisión y mapeo de ECU para rendimiento extremo.' 
                       },
                       { 
-                        imagenes: ['/assets/images/mundocarrito.jpg', '/assets/images/mundoejecutivo.jpg', '/assets/images/Mel.jpg'], 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
                         titulo: 'Diagnóstico General', 
                         descripcion: 'Escaneo completo de módulos electrónicos mediante tecnología OBD-II de última generación.' 
                       },
                       { 
-                        imagenes: ['/assets/images/Mel.jpg', '/assets/images/Ambessa_1.jpg', '/assets/images/porche.jpg'], 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
                         titulo: 'Proyecto Mel', 
                         descripcion: 'Ajustes personalizados de alto rendimiento y restauración de componentes críticos del motor.' 
                       },
                       { 
-                        imagenes: ['/assets/images/Ambessa_1.jpg', '/assets/images/Mel.jpg', '/assets/images/lamborghini.jpg'], 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
                         titulo: 'Unidad de Potencia', 
                         descripcion: 'Modificación y ensamble de sistemas de inyección a medida para competencia.' 
                       }
