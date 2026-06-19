@@ -8,11 +8,10 @@ import Contacto from './js/Contacto.js';
 import AgendarCita from './js/AgendarCita.js';
 import Catalogo from './js/Catalogo.js';
 import DashboardAdmin from './js/DashboardAdmin.js';
-import RegistroPrueba from './js/RegistroPrueba';
 
 
-
-const LoginView = ({ onLoginSuccess }) => {
+// Componente para Iniciar Sesión (Ya existente)
+const LoginView = ({ onLoginSuccess, onSwitchToRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,7 +21,7 @@ const LoginView = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      const response = await fetch('https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev/login-react', {
+      const response = await fetch('/login-react', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -70,15 +69,102 @@ const LoginView = ({ onLoginSuccess }) => {
             required 
           />
         </div>
-        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest">
+        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3">
           INGRESAR
         </button>
+        <p className="text-center small text-muted">
+          ¿No tienes una cuenta? <span className="text-danger cursor-pointer fw-bold text-decoration-underline" style={{cursor: 'pointer'}} onClick={onSwitchToRegister}>Regístrate aquí</span>
+        </p>
       </form>
     </div>
   );
 };
 
-// Panel para el Usuario Común con Tabla de Gestión de Citas
+// NUEVO COMPONENTE: Vista para Registrar Usuarios Nuevos
+const RegistroUsuarioView = ({ onRegisterSuccess }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess(false);
+
+    try {
+      const response = await fetch('/registrar-usuario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, email, password, role: "usuario" }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.detail || 'Error al registrar el usuario.');
+      } else {
+        setSuccess(true);
+        setTimeout(() => {
+          onRegisterSuccess(); // Redirige al login tras 2 segundos
+        }, 2000);
+      }
+    } catch (err) {
+      setError('Error de conexión con el servidor backend.');
+    }
+  };
+
+  return (
+    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+      <h3 className="text-center text-uppercase fw-black mb-4">
+        Crear <span className="text-danger">Cuenta</span>
+      </h3>
+      {error && <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger">{error}</div>}
+      {success && <div className="alert alert-success small py-2 rounded-0 border-success bg-black text-success">¡Registro exitoso! Redirigiendo al login...</div>}
+      <form onSubmit={handleRegister}>
+        <div className="mb-3">
+          <label className="form-label text-muted small fw-bold">NOMBRE COMPLETO</label>
+          <input 
+            type="text" 
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            required 
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label text-muted small fw-bold">CORREO ELECTRÓNICO</label>
+          <input 
+            type="email" 
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required 
+          />
+        </div>
+        <div className="mb-4">
+          <label className="form-label text-muted small fw-bold">CONTRASEÑA</label>
+          <input 
+            type="password" 
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required 
+          />
+        </div>
+        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3">
+          REGISTRARSE
+        </button>
+        <p className="text-center small text-muted">
+          ¿Ya tienes cuenta? <span className="text-danger cursor-pointer fw-bold text-decoration-underline" style={{cursor: 'pointer'}} onClick={onRegisterSuccess}>Inicia sesión</span>
+        </p>
+      </form>
+    </div>
+  );
+};
+
+// Panel para el Usuario Común (Ya existente)
 const DashboardUsuario = ({ user }) => {
   const [citas, setCitas] = useState([
     { id: 1, fecha: '2026-06-25', hora: '09:00 AM', vehiculo: 'Porsche 911 GT3', servicio: 'Calibración de Inyección', estado: 'En Espera' },
@@ -181,20 +267,14 @@ const BackButton = ({ onClick, user }) => (
   </div>
 );
 
-
-
-
-
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState('inicio');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [user, setUser] = useState(null);
-
   const [selectedProject, setSelectedProject] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // Inicializar estado del usuario desde localStorage si existe
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
@@ -208,7 +288,6 @@ function App() {
     }
   }, []);
 
-  // CORREGIDO: Efecto de control de navegación estable y tolerante
   useEffect(() => {
     if (!user) {
       if (view === 'admin-dashboard' || view === 'user-dashboard') {
@@ -261,15 +340,12 @@ function App() {
     }
   };
 
-  // CORREGIDO: Normalización del rol antes de la asignación del estado
   const handleLoginSuccess = (userData) => {
     const normalizedUser = {
       ...userData,
       role: userData.role ? userData.role.toLowerCase() : 'usuario'
     };
-
     setUser(normalizedUser);
-
     if (normalizedUser.role === 'admin') {
       setView('admin-dashboard');
     } else {
@@ -289,7 +365,6 @@ function App() {
       {/* NAVBAR */}
       <nav className="navbar navbar-expand-lg navbar-dark bg-black sticky-top border-bottom border-danger py-3">
         <div className="container">
-
           <button className="navbar-brand bg-transparent border-0 p-0" onClick={goToInicio}>
             <img
               src="/assets/images/logoempresaXD.png"
@@ -312,14 +387,12 @@ function App() {
                     className="nav-link fw-bold p-2 nav-hover-red bg-transparent border-0"
                     onClick={() => {
                       const v = text.toLowerCase().replace('á', 'a');
-                      
                       if (v === 'citas' && !user) {
                         alert("⚠️ Debes iniciar sesión para poder agendar una cita.");
                         setView('login');
                         setMenuOpen(false);
                         return;
                       }
-
                       setView(v);
                       if (v === 'inicio') {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -353,7 +426,7 @@ function App() {
                 <button
                   className="btn btn-danger px-4 rounded-0 fw-bold shadow-sm"
                   onClick={() => {
-                    setView('registro');
+                    setView('registro'); // Te manda a la vista del componente <RegistroVehiculo />
                     setMenuOpen(false);
                   }}
                 >
@@ -372,7 +445,6 @@ function App() {
                   </button>
                 )}
               </li>
-
             </ul>
           </div>
         </div>
@@ -380,7 +452,6 @@ function App() {
 
       {/* CONTENEDOR PRINCIPAL */}
       <main className="flex-grow-1">
-
         {view !== 'inicio' && (
           <section className="container py-5">
             <div className="row justify-content-center">
@@ -392,7 +463,17 @@ function App() {
                   {view === 'catalogo' && <Catalogo />}
                   {view === 'contacto' && <Contacto />}
                   
-                  {view === 'login' && <LoginView onLoginSuccess={handleLoginSuccess} />}
+                  {/* ASIGNACIÓN DE VISTAS DE AUTENTICACIÓN */}
+                  {view === 'login' && (
+                    <LoginView 
+                      onLoginSuccess={handleLoginSuccess} 
+                      onSwitchToRegister={() => setView('registro-usuario')} 
+                    />
+                  )}
+                  {view === 'registro-usuario' && (
+                    <RegistroUsuarioView onRegisterSuccess={() => setView('login')} />
+                  )}
+
                   {view === 'admin-dashboard' && <DashboardAdmin />}
                   {view === 'user-dashboard' && <DashboardUsuario user={user} />}
 
@@ -457,56 +538,32 @@ function App() {
                   <div className="row g-3">
                     {[
                       { 
-                        imagenes: [
-                          '/assets/images/mundoejecutivo.jpg', 
-                          '/assets/images/mundocarrito.jpg', 
-                          '/assets/images/porche.jpg'
-                        ], 
+                        imagenes: ['/assets/images/mundoejecutivo.jpg', '/assets/images/mundocarrito.jpg', '/assets/images/porche.jpg'], 
                         titulo: 'Mundo Ejecutivo', 
                         descripcion: 'Optimización de software y diagnóstico computarizado para flotas empresariales.' 
                       },
                       { 
-                        imagenes: [
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/mundocarrito.jpg'
-                        ], 
+                        imagenes: ['/assets/images/porche.jpg', '/assets/images/lamborghini.jpg', '/assets/images/mundocarrito.jpg'], 
                         titulo: 'Porsche 911 GT3', 
                         descripcion: 'Calibración avanzada del sistema de inyección electrónica y pruebas de presión en tiempo real.' 
                       },
                       { 
-                        imagenes: [
-                          '/assets/images/lamborghini.jpg', 
-                          '/assets/images/porche.jpg', 
-                          '/assets/images/Ambessa_1.jpg'
-                        ], 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/porche.jpg', '/assets/images/Ambessa_1.jpg'], 
                         titulo: 'Lamborghini Aventador', 
                         descripcion: 'Mantenimiento de alta precisión en el sistema de admisión y mapeo de ECU para rendimiento extremo.' 
                       },
                       { 
-                        imagenes: [
-                          '/assets/images/mundocarrito.jpg', 
-                          '/assets/images/mundoejecutivo.jpg', 
-                          '/assets/images/Mel.jpg'
-                        ], 
+                        imagenes: ['/assets/images/mundocarrito.jpg', '/assets/images/mundoejecutivo.jpg', '/assets/images/Mel.jpg'], 
                         titulo: 'Diagnóstico General', 
                         descripcion: 'Escaneo completo de módulos electrónicos mediante tecnología OBD-II de última generación.' 
                       },
                       { 
-                        imagenes: [
-                          '/assets/images/Mel.jpg', 
-                          '/assets/images/Ambessa_1.jpg', 
-                          '/assets/images/porche.jpg'
-                        ], 
+                        imagenes: ['/assets/images/Mel.jpg', '/assets/images/Ambessa_1.jpg', '/assets/images/porche.jpg'], 
                         titulo: 'Proyecto Mel', 
                         descripcion: 'Ajustes personalizados de alto rendimiento y restauración de componentes críticos del motor.' 
                       },
                       { 
-                        imagenes: [
-                          '/assets/images/Ambessa_1.jpg', 
-                          '/assets/images/Mel.jpg', 
-                          '/assets/images/lamborghini.jpg'
-                        ], 
+                        imagenes: ['/assets/images/Ambessa_1.jpg', '/assets/images/Mel.jpg', '/assets/images/lamborghini.jpg'], 
                         titulo: 'Unidad de Potencia', 
                         descripcion: 'Modificación y ensamble de sistemas de inyección a medida para competencia.' 
                       }
@@ -540,48 +597,36 @@ function App() {
                 <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 1050 }}>
                   <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content bg-dark text-white border border-danger rounded-0 shadow-lg">
-                      
                       <div className="modal-header border-bottom border-danger border-opacity-50">
                         <h5 className="modal-title fw-black text-uppercase">
                           Detalles del <span className="text-danger">Proyecto</span>
                         </h5>
                         <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
                       </div>
-
                       <div className="modal-body p-4">
                         <div id="carouselProjectDetails" className="carousel slide mb-3 border border-secondary" data-bs-ride="carousel" style={{ aspectRatio: '16/9' }}>
                           <div className="carousel-inner h-100">
                             {selectedProject.imagenes.map((imgUrl, idx) => (
                               <div key={idx} className={`carousel-item h-100 ${idx === 0 ? 'active' : ''}`}>
-                                <img 
-                                  src={imgUrl} 
-                                  className="d-block w-100 h-100" 
-                                  alt={`Slide ${idx + 1}`} 
-                                  style={{ objectFit: 'cover' }}
-                                />
+                                <img src={imgUrl} className="d-block w-100 h-100" alt={`Slide ${idx + 1}`} style={{ objectFit: 'cover' }} />
                               </div>
                             ))}
                           </div>
                           <button className="carousel-control-prev" type="button" data-bs-target="#carouselProjectDetails" data-bs-slide="prev">
                             <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-                            <span className="visually-hidden">Anterior</span>
                           </button>
                           <button className="carousel-control-next" type="button" data-bs-target="#carouselProjectDetails" data-bs-slide="next">
                             <span className="carousel-control-next-icon" aria-hidden="true"></span>
-                            <span className="visually-hidden">Siguiente</span>
                           </button>
                         </div>
-
                         <h4 className="fw-bold text-uppercase tracking-wider mb-2 text-danger">{selectedProject.titulo}</h4>
                         <p className="text-muted small mb-0">{selectedProject.descripcion}</p>
                       </div>
-
                       <div className="modal-footer border-top border-danger border-opacity-25">
                         <button type="button" className="btn btn-danger rounded-0 fw-bold px-4" onClick={() => setShowModal(false)}>
                           CERRAR
                         </button>
                       </div>
-
                     </div>
                   </div>
                 </div>
@@ -589,7 +634,6 @@ function App() {
             </section>
           </>
         )}
-
       </main>
 
       <footer className="bg-black py-4 border-top border-danger border-opacity-25 text-center">
@@ -597,7 +641,6 @@ function App() {
           © 2026 • DMI • HIGH PERFORMANCE SERVICE
         </p>
       </footer>
-
     </div>
   );
 }

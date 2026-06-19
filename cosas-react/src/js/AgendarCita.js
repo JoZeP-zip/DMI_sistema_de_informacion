@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/AgendarCita.css';
 
-const BASE_URL = "https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev";
+const BASE_URL = "";
 
 const AgendarCita = () => {
   const [confirmado, setConfirmado] = useState(false);
+  const [vehiculos, setVehiculos] = useState([]);   
+  const [error, setError] = useState('');        // eslint-disable-line        
+  const [loading, setLoading] = useState(false); // eslint-disable-line    
   const [formData, setFormData] = useState({
     vehiculos_idvehiculo: '',
     fecha_cita: '',

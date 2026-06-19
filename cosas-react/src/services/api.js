@@ -11,7 +11,7 @@
 //  BASE URL — cambia este valor si el codespace
 //  rota o si pasas a producción.
 // ─────────────────────────────────────────────
-const BASE_URL = "https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev";
+const BASE_URL = "";
 
 // ─────────────────────────────────────────────
 //  HELPER: construye headers con el token JWT

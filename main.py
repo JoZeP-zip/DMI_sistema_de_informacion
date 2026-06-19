@@ -27,9 +27,17 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
 
+origins = [
+    "https://shiny-space-barnacle-5gw6x4p97vqf744g-3000.app.github.dev", 
+    "http://localhost:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://shiny-space-barnacle-5gw6x4p97vqf744g-3000.app.github.dev",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1848,10 +1856,6 @@ async def admin_stats(access_token: str = Cookie(None)):
 
 
 # ==================== EJECUCION ====================
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8800, reload=True)
-
 
 # ==================== LOGIN REACT ====================
 @app.post("/login-react")
@@ -1861,7 +1865,7 @@ async def login_react(request: Request):
         email = body.get("email", "").strip()
         password = body.get("password", "")
         if not email or not password:
-            return JSONResponse({"error": "Email y contrasena son requeridos"}, status_code=400)
+            return JSONResponse({"error": "Email y contrasena requeridos"}, status_code=400)
         res = supabase.auth.sign_in_with_password({"email": email, "password": password})
         if not res.user:
             return JSONResponse({"error": "Credenciales incorrectas"}, status_code=401)
@@ -1885,7 +1889,7 @@ async def registro_react(request: Request):
         password = body.get("password", "")
         res = supabase.auth.sign_up({"email": email, "password": password})
         if not res.user:
-            return JSONResponse({"error": "No se pudo registrar el usuario"}, status_code=400)
+            return JSONResponse({"error": "No se pudo registrar"}, status_code=400)
         supabase.schema("dmi").table("usuarios").insert({
             "id": res.user.id,
             "usuarionombre": body.get("usuarionombre", ""),
@@ -1918,11 +1922,22 @@ async def admin_stats(access_token: str = Cookie(None)):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+#======================= CORS =========================
+
+
+@app.get("/api/tipovehiculos")
+async def api_tipovehiculos():
+    try:
+        with engine.connect() as conn:
+            data = conn.execute(
+                text("SELECT idtipovehiculos, codigotipovehiculos, vehiculo FROM dmi.tipovehiculos ORDER BY idtipovehiculos")
+            ).mappings().fetchall()
+            return JSONResponse([dict(r) for r in data])
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 
 # ==================== EJECUCION ====================
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8800, reload=True)
-
-for route in app.routes:
-    print(route.path)

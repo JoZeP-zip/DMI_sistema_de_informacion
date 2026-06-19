@@ -117,7 +117,7 @@ const DashboardAdmin = () => {
   const [formData, setFormData] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
 
-  const API_BASE_URL = 'https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev';
+  const API_BASE_URL = "";
 
   const getAuthHeader = useCallback(() => {
     let token = localStorage.getItem('token');

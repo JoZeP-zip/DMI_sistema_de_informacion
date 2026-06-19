@@ -6,7 +6,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const API_BASE_URL = 'https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev';
+  const API_BASE_URL = "";
 
   // Función profesional para gestionar la sesión
   const guardarSesion = (token, role, email) => {

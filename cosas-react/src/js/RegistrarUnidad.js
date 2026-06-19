@@ -7,7 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/RegistrarUnidad.css';
 
-const BASE_URL       = "https://musical-bassoon-wrx6qgr9gvp9f7v-8800.app.github.dev";
+const BASE_URL = "";
 const STEPS          = ['Cliente', 'Vehículo'];
 const tiposDocumento = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI'];
 
@@ -37,11 +37,8 @@ export default function RegistrarUnidad() {
   // ── Cargar tipos de vehículo desde la BD ───────────────────────
   useEffect(() => {
     fetch(`${BASE_URL}/api/vehiculos`)
-      // El endpoint /api/vehiculos devuelve vehículos, no tipos.
-      // Usamos el de tipovehiculos que sí existe en main.py:
       .catch(() => {});
 
-    // Endpoint correcto para tipos de vehículo
     fetch(`${BASE_URL}/api/vehiculos`)
       .catch(() => {});
 
