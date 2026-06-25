@@ -94,7 +94,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess }) => {
     setSuccess(false);
 
     try {
-      const response = await fetch('/registrar-usuario', {
+      const response = await fetch('/registro-react', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, email, password, role: "usuario" }),

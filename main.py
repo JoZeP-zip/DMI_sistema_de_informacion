@@ -751,6 +751,102 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
         context=ctx,
     )
 
+#========================= INVENTARIO ======================================
+
+@app.get("/api/inventario")
+async def api_inventario():
+    try:
+        with engine.connect() as conn:
+            data = conn.execute(text("SELECT * FROM dmi.inventario ORDER BY idinventario")).mappings().fetchall()
+            return JSONResponse([dict(r) for r in data])
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+#=========================== MOVIMIENTOS INVENTARIO =============================
+
+@app.get("/api/movimientos_inventario")
+async def api_movimientos():
+    try:
+        with engine.connect() as conn:
+            data = conn.execute(text("""
+                SELECT m.*, i.codigoinventario 
+                FROM dmi.movimientos_inventario m
+                LEFT JOIN dmi.inventario i ON i.idinventario = m.inventario_id
+                ORDER BY m.fecha DESC LIMIT 50
+            """)).mappings().fetchall()
+            result = []
+            for r in data:
+                row = dict(r)
+                if row.get("fecha"): row["fecha"] = str(row["fecha"])
+                result.append(row)
+            return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    
+#====================== TIPO VEHICULO ============================
+
+@app.get("/api/tipo_vehiculo")
+async def api_tipo_vehiculo():
+    try:
+        with engine.connect() as conn:
+            data = conn.execute(text("SELECT idtipovehiculos as id, codigotipovehiculos, vehiculo as nombre FROM dmi.tipovehiculos ORDER BY idtipovehiculos")).mappings().fetchall()
+            return JSONResponse([dict(r) for r in data])
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+#===================== PRECIOS PRODUCTO =========================
+
+@app.get("/api/precios_producto")
+async def api_precios_producto():
+    try:
+        with engine.connect() as conn:
+            data = conn.execute(text("SELECT idproductoprecio as id, codigoproductoprecio, descripcionprprecio, valor as precio FROM dmi.productoprecio ORDER BY idproductoprecio")).mappings().fetchall()
+            return JSONResponse([dict(r) for r in data])
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+#===================== SERVICIOS PRECIO ========================
+
+@app.get("/api/precios_servicio")
+async def api_precios_servicio():
+    try:
+        with engine.connect() as conn:
+            data = conn.execute(text("SELECT idserviciosprecio as id, codigoserviciosprecio, descripcionserviciosprecio, precioserviciosprecio as precio FROM dmi.serviciosprecio ORDER BY idserviciosprecio")).mappings().fetchall()
+            return JSONResponse([dict(r) for r in data])
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    
+#===================== TIPOS DE REPARACION =====================
+
+@app.get("/api/tipo_reparacion")
+async def api_tipo_reparacion():
+    try:
+        with engine.connect() as conn:
+            data = conn.execute(text("SELECT idtiporeparacion as id, codigotiporeparacion, descripciontiporeparacion as nombre FROM dmi.tiporeparacion ORDER BY idtiporeparacion")).mappings().fetchall()
+            return JSONResponse([dict(r) for r in data])
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+#======================= METODOS DE PAGO ======================
+
+@app.get("/api/metodos_pago")
+async def api_metodos_pago():
+    try:
+        with engine.connect() as conn:
+            data = conn.execute(text("SELECT idmetodopago as id, codigompago, descripcionmpago as nombre FROM dmi.metodopago ORDER BY idmetodopago")).mappings().fetchall()
+            return JSONResponse([dict(r) for r in data])
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+
+
+
+
+
+
+
+
 
 # ══════════════════════════════════════════════════════════════════
 #  CIUDADES — CRUD completo
@@ -870,7 +966,7 @@ async def editar_tipovehiculo(
                 text("""
                     UPDATE dmi.tipovehiculos
                     SET codigotipovehiculos = :codigo,
-                        vehiculos = :vehiculo,
+                        vehiculos = :vehiculo
                     WHERE idtipovehiculos = :id
                 """),
                 {
@@ -1752,10 +1848,10 @@ async def api_metodospago():
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/api/oficinas")
-async def api_oficinas():
+async def api_oficinas_v2():
     try:
         with engine.connect() as conn:
-            data = conn.execute(text("SELECT * FROM dmi.oficinas")).mappings().fetchall()
+            data = conn.execute(text("SELECT idoficinas as id, codigo_oficina, descripcionof as nombre, direccion FROM dmi.oficinas ORDER BY idoficinas")).mappings().fetchall()
             return JSONResponse([dict(r) for r in data])
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -1858,57 +1954,6 @@ async def admin_stats(access_token: str = Cookie(None)):
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
-
-# ==================== EJECUCION ====================
-
-# ==================== LOGIN REACT ====================
-@app.post("/login-react")
-async def login_react(request: Request):
-    try:
-        body = await request.json()
-        email = body.get("email", "").strip()
-        password = body.get("password", "")
-        if not email or not password:
-            return JSONResponse({"error": "Email y contrasena requeridos"}, status_code=400)
-        res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        if not res.user:
-            return JSONResponse({"error": "Credenciales incorrectas"}, status_code=401)
-        user_res = supabase.schema("dmi").table("usuarios").select("usuarionombre, rol").eq("id", res.user.id).execute()
-        rol = "usuario"
-        nombre = email
-        if user_res.data:
-            rol = user_res.data[0].get("rol", "usuario")
-            nombre = user_res.data[0].get("usuarionombre", email)
-        return JSONResponse({"token": res.session.access_token, "role": rol, "email": email, "nombre": nombre})
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
-
-
-# ==================== REGISTRO REACT ====================
-@app.post("/registro-react")
-async def registro_react(request: Request):
-    try:
-        body = await request.json()
-        email = body.get("email", "").strip()
-        password = body.get("password", "")
-        res = supabase.auth.sign_up({"email": email, "password": password})
-        if not res.user:
-            return JSONResponse({"error": "No se pudo registrar"}, status_code=400)
-        supabase.schema("dmi").table("usuarios").insert({
-            "id": res.user.id,
-            "usuarionombre": body.get("usuarionombre", ""),
-            "nombre": body.get("nombre", ""),
-            "apellidos": body.get("apellidos", ""),
-            "email": email,
-            "documento": body.get("documento", ""),
-            "tipodedocumento": body.get("tipodedocumento", ""),
-            "fechadenacimiento": body.get("fechadenacimiento", ""),
-            "telefono": body.get("telefono", ""),
-            "rol": "usuario",
-        }).execute()
-        return JSONResponse({"success": True, "message": "Usuario registrado correctamente"})
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # ==================== STATS ADMIN ====================
