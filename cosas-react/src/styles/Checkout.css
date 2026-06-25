@@ -1,0 +1,517 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap');
+
+/* === FORMULARIO DE PAGO - version PRO === */
+
+.checkout-overlay{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:30px;
+  background:rgba(0,0,0,0.88);
+  backdrop-filter:blur(8px);
+  animation:fadeMenu 0.25s ease;
+}
+
+.checkout-container{
+  position:relative;
+  width:min(540px, 96vw);
+  max-height:90vh;
+  overflow-y:auto;
+  padding:42px 38px;
+  background:linear-gradient(160deg, rgba(18,0,0,0.98), rgba(0,0,0,0.99));
+  border:1px solid rgba(255,0,0,0.4);
+  box-shadow:
+    0 0 0 1px rgba(255,0,0,0.08),
+    0 30px 80px rgba(0,0,0,0.7),
+    0 0 60px rgba(255,0,0,0.18);
+  font-family:'Orbitron',sans-serif;
+  color:white;
+}
+
+.checkout-container::-webkit-scrollbar{
+  width:8px;
+}
+
+.checkout-container::-webkit-scrollbar-track{
+  background:#120000;
+}
+
+.checkout-container::-webkit-scrollbar-thumb{
+  background:red;
+}
+
+.checkout-container::-webkit-scrollbar-thumb:hover{
+  background:#ff4b4b;
+}
+
+.checkout-close{
+  position:absolute;
+  top:18px;
+  right:18px;
+  width:38px;
+  height:38px;
+  border:1px solid rgba(255,0,0,0.4);
+  background:rgba(255,255,255,0.03);
+  color:rgba(255,255,255,0.7);
+  cursor:pointer;
+  font-family:'Orbitron',sans-serif;
+  font-weight:700;
+  font-size:14px;
+  transition:0.25s;
+}
+
+.checkout-close:hover{
+  background:red;
+  color:white;
+  border-color:red;
+}
+
+.checkout-eyebrow{
+  font-size:11px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:#ff5b5b;
+  margin-bottom:8px;
+  text-align:center;
+}
+
+.checkout-container h2{
+  text-align:center;
+  font-size:26px;
+  font-weight:700;
+  letter-spacing:1.5px;
+  margin-bottom:32px;
+  text-shadow:0 0 24px rgba(255,0,0,0.35);
+}
+
+.checkout-container form{
+  display:flex;
+  flex-direction:column;
+  gap:22px;
+}
+
+/* === Grupos de campos === */
+
+.form-group{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.form-label{
+  font-size:11px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.45);
+}
+
+.form-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.checkout-container input[type="text"],
+.checkout-container input[type="email"]{
+  width:100%;
+  padding:14px 16px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:4px;
+  color:white;
+  outline:none;
+  font-size:13px;
+  font-family:'Orbitron',sans-serif;
+  letter-spacing:0.5px;
+  transition:0.2s;
+}
+
+.checkout-container input[type="text"]::placeholder,
+.checkout-container input[type="email"]::placeholder{
+  color:rgba(255,255,255,0.32);
+}
+
+.checkout-container input[type="text"]:focus,
+.checkout-container input[type="email"]:focus{
+  border-color:red;
+  background:rgba(255,0,0,0.05);
+  box-shadow:0 0 0 3px rgba(255,0,0,0.12);
+}
+
+/* === Metodo de pago === */
+
+.payment-methods{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.payment-methods h3{
+  font-size:11px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.45);
+}
+
+.payment-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:10px;
+}
+
+.payment-option{
+  --accent:#ff0000;
+
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:6px;
+  background:rgba(255,255,255,0.02);
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.payment-option:hover{
+  border-color:rgba(255,255,255,0.25);
+  background:rgba(255,255,255,0.04);
+}
+
+.payment-option.selected{
+  border-color:var(--accent);
+  background:rgba(255,0,0,0.06);
+  box-shadow:0 0 0 1px var(--accent), 0 0 18px rgba(255,0,0,0.25);
+}
+
+.payment-option input[type="radio"]{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+
+.payment-icon{
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
+}
+
+.payment-icon svg{
+  width:100%;
+  height:100%;
+}
+
+.payment-label{
+  font-size:12px;
+  letter-spacing:0.5px;
+  color:rgba(255,255,255,0.85);
+}
+
+.payment-option.selected .payment-label{
+  color:white;
+  font-weight:600;
+}
+
+/* checkmark cuando esta seleccionado */
+.payment-option.selected::after{
+  content:"";
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 8px var(--accent);
+}
+
+@media(max-width:520px){
+  .payment-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+/* === Total === */
+
+.checkout-total{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 20px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,0,0,0.3);
+  border-radius:6px;
+}
+
+.checkout-total::before{
+  content:"Total a pagar";
+  font-size:11px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.45);
+}
+
+.checkout-total-value{
+  font-size:24px;
+  font-weight:700;
+  color:#ff3b3b;
+  text-shadow:0 0 18px rgba(255,0,0,0.4);
+}
+
+/* === Boton === */
+
+.checkout-submit{
+  margin-top:4px;
+  padding:17px;
+  border:1px solid red;
+  border-radius:6px;
+  background:red;
+  color:white;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:2px;
+  cursor:pointer;
+  font-family:'Orbitron',sans-serif;
+  transition:0.25s;
+}
+
+.checkout-submit:hover:not(:disabled){
+  background:#ff1a1a;
+  box-shadow:0 0 24px rgba(255,0,0,0.5);
+}
+
+.checkout-submit:disabled{
+  opacity:0.4;
+  cursor:not-allowed;
+}
+
+/* === Compatibilidad con Checkout.js === */
+
+.checkout-overlay,
+.checkout-container,
+.checkout-container *{
+  box-sizing:border-box;
+}
+
+.checkout-container{
+  scrollbar-width:thin;
+  scrollbar-color:red #120000;
+}
+
+.checkout-container button,
+.checkout-container input{
+  font-family:'Orbitron',sans-serif;
+}
+
+.checkout-close{
+  line-height:1;
+}
+
+.checkout-container form{
+  width:100%;
+}
+
+.form-group input:last-child{
+  margin-bottom:0;
+}
+
+.payment-option{
+  min-height:62px;
+  user-select:none;
+}
+
+.payment-label{
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+
+.checkout-total{
+  gap:16px;
+}
+
+.checkout-total-value{
+  margin-left:auto;
+  text-align:right;
+  white-space:nowrap;
+}
+
+.checkout-submit{
+  width:100%;
+  min-height:56px;
+}
+
+.checkout-submit:focus,
+.checkout-close:focus,
+.payment-option:focus-within,
+.checkout-container input:focus{
+  outline:none;
+}
+
+@supports not (backdrop-filter: blur(8px)){
+  .checkout-overlay{
+    background:rgba(0,0,0,0.94);
+  }
+}
+
+/* === Responsive === */
+
+@media(max-width:600px){
+  .checkout-overlay{
+    padding:14px;
+  }
+
+  .checkout-container{
+    padding:30px 22px;
+  }
+
+  .checkout-container h2{
+    font-size:20px;
+  }
+
+  .form-row{
+    grid-template-columns:1fr;
+  }
+
+  .checkout-total-value{
+    font-size:20px;
+  }
+
+  .checkout-total{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .checkout-total-value{
+    margin-left:0;
+    text-align:left;
+    white-space:normal;
+  }
+}
+
+/* =========================
+   TEMA UNIFICADO CON REGISTRAR UNIDAD
+========================= */
+
+:root {
+  --checkout-accent: #e8324d;
+  --checkout-accent-strong: #ff2f4f;
+  --checkout-border: rgba(232, 50, 77, 0.72);
+  --checkout-border-soft: rgba(232, 50, 77, 0.34);
+  --checkout-bg: rgba(24, 4, 8, 0.96);
+  --checkout-bg-soft: rgba(232, 50, 77, 0.08);
+  --checkout-glow: rgba(232, 50, 77, 0.48);
+}
+
+.checkout-overlay {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.checkout-container {
+  background:
+    linear-gradient(160deg, var(--checkout-bg), rgba(0, 0, 0, 0.99));
+  border-color: var(--checkout-border);
+  box-shadow:
+    0 0 0 1px rgba(232, 50, 77, 0.12),
+    0 30px 80px rgba(0, 0, 0, 0.72),
+    0 0 48px var(--checkout-glow);
+}
+
+.checkout-eyebrow,
+.form-label,
+.payment-methods h3 {
+  color: rgba(255, 190, 200, 0.72);
+}
+
+.checkout-container h2,
+.checkout-total-value {
+  color: var(--checkout-accent-strong);
+  text-shadow: 0 0 24px var(--checkout-glow);
+}
+
+.checkout-close,
+.checkout-container input[type="text"],
+.checkout-container input[type="email"],
+.payment-option,
+.checkout-total {
+  border-color: var(--checkout-border-soft);
+}
+
+.checkout-close,
+.checkout-container input[type="text"],
+.checkout-container input[type="email"],
+.payment-option,
+.checkout-total {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.checkout-container input[type="text"]:focus,
+.checkout-container input[type="email"]:focus {
+  border-color: var(--checkout-accent);
+  background: var(--checkout-bg-soft);
+  box-shadow: 0 0 0 3px rgba(232, 50, 77, 0.16), 0 0 18px var(--checkout-glow);
+}
+
+.payment-option:hover {
+  border-color: var(--checkout-border);
+  background: var(--checkout-bg-soft);
+}
+
+.payment-option.selected {
+  border-color: var(--checkout-accent);
+  background: rgba(232, 50, 77, 0.12);
+  box-shadow: 0 0 0 1px var(--checkout-accent), 0 0 22px var(--checkout-glow);
+}
+
+.payment-option.selected::after {
+  background: var(--checkout-accent);
+  box-shadow: 0 0 10px var(--checkout-accent);
+}
+
+.checkout-submit,
+.checkout-close:hover {
+  background: var(--checkout-accent);
+  border-color: var(--checkout-accent);
+  color: white;
+  box-shadow: 0 0 20px var(--checkout-glow);
+}
+
+.checkout-submit:hover:not(:disabled) {
+  background: var(--checkout-accent-strong);
+  box-shadow: 0 0 30px var(--checkout-glow);
+}
+
+.checkout-container::-webkit-scrollbar-thumb {
+  background: var(--checkout-accent);
+}
+
+.checkout-container::-webkit-scrollbar-thumb:hover {
+  background: var(--checkout-accent-strong);
+}
+
+/* =========================
+   CHECKOUT SIEMPRE CENTRADO
+========================= */
+
+.checkout-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  z-index: 2147483000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+}
+
+.checkout-container {
+  max-height: calc(100dvh - 40px) !important;
+  overflow-y: auto !important;
+}
