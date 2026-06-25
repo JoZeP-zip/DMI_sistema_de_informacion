@@ -5,23 +5,313 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Citas — DMI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
     <style>
-        /* ===== NAVEGACIÓN DE MES ===== */
-        .cal-nav-selects select {
-            padding: 0.3rem 0.6rem;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            background: #fff;
+/* ── BASE ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #000;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 0.9rem;
+            min-height: 100vh;
         }
 
-        /* ===== BADGES DE ESTADO ===== */
-        .badge-pendiente  { background: #fff3cd; color: #856404; }
-        .badge-completada { background: #d1e7dd; color: #0f5132; }
-        .badge-cancelada  { background: #f8d7da; color: #842029; }
+        /* ── TOPBAR ── */
+        .topbar {
+            background: #000;
+            border-bottom: 1px solid #262626;
+            padding: 0.6rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-brand {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #e5505c;
+            letter-spacing: .4px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+        .topbar-links {
+            display: flex;
+            gap: .2rem;
+            flex: 1;
+        }
+        .topbar-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: .32rem .75rem;
+            border-radius: 6px;
+            font-size: .84rem;
+            font-weight: 500;
+            transition: background .18s, color .18s;
+        }
+        .topbar-links a:hover { background: #1a1a1a; color: #fff; }
+        .topbar-links a.active { background: #1a1a1a; color: #e5505c; }
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            margin-left: auto;
+        }
+        .user-chip {
+            background: #1a1a1a;
+            color: #e5505c;
+            border-radius: 20px;
+            padding: .22rem .85rem;
+            font-size: .8rem;
+            font-weight: 600;
+        }
+        .btn-salir {
+            background: transparent;
+            border: 1px solid #333;
+            color: #94a3b8;
+            border-radius: 6px;
+            padding: .25rem .7rem;
+            font-size: .8rem;
+            cursor: pointer;
+            transition: all .18s;
+        }
+        .btn-salir:hover { border-color: #e5505c; color: #e5505c; }
+
+        /* ── APP SHELL ── */
+        .app-shell {
+            display: flex;
+            min-height: calc(100vh - 45px);
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 200px;
+            min-width: 200px;
+            background: #0a0a0a;
+            border-right: 1px solid #1e1e1e;
+            padding: 1rem 0 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .sidebar-section-label {
+            color: #475569;
+            font-size: 0.67rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.08rem;
+            padding: .9rem 1rem .3rem;
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .38rem 1rem;
+            color: #64748b;
+            text-decoration: none;
+            font-size: .82rem;
+            font-weight: 500;
+            border-left: 2px solid transparent;
+            transition: color .15s, background .15s, border-color .15s;
+        }
+        .sidebar-link:hover { color: #cbd5e1; background: #111; border-left-color: #333; }
+        .sidebar-link.active { color: #e5505c; background: #160a0b; border-left-color: #e5505c; }
+
+        /* ── MAIN ── */
+        .main-content {
+            flex: 1;
+            padding: 1.5rem;
+            background: #050505;
+            overflow-y: auto;
+        }
+
+        /* ── PANEL ── */
+        .cfg-panel { display: none; }
+        .cfg-panel.active { display: block; }
+
+        .panel-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: .65rem;
+            border-bottom: 1px solid #1e1e1e;
+        }
+        .panel-title span.accent { color: #e5505c; }
+
+        /* ── PANEL GRID ── */
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.25rem;
+            align-items: start;
+        }
+        @media (max-width: 1024px) { .panel-grid { grid-template-columns: 1fr; } }
+
+        /* ── CARDS ── */
+        .dmi-card {
+            background: #121212;
+            border: 1px solid #262626;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .dmi-card-header {
+            padding: .6rem 1rem;
+            font-weight: 600;
+            font-size: .82rem;
+            letter-spacing: .3px;
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            border-bottom: 1px solid #1e1e1e;
+            background: #0f0f0f;
+            color: #e5505c;
+        }
+        .dmi-card-header.amber { color: #fcd34d; }
+        .dmi-card-header.green { color: #6ee7b7; }
+        .dmi-card-header.white { color: #e2e8f0; }
+        .dmi-card-body { padding: 1rem; }
+
+        /* ── FORMS ── */
+        .form-row { margin-bottom: .75rem; }
+        .form-label {
+            display: block;
+            font-size: .71rem;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: .25rem;
+        }
+        .form-control, .form-select {
+            background: #000;
+            border: 1px solid #2a2a2a;
+            color: #e2e8f0;
+            border-radius: 7px;
+            font-size: .85rem;
+            padding: .42rem .7rem;
+            width: 100%;
+            transition: border-color .18s, box-shadow .18s;
+            outline: none;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #e5505c;
+            box-shadow: 0 0 0 3px rgba(229,80,92,.15);
+        }
+        .form-control::placeholder { color: #334155; }
+        .form-select option { background: #121212; color: #e2e8f0; }
+        textarea.form-control { resize: vertical; min-height: 64px; }
+        .input-prefix {
+            display: flex;
+        }
+        .input-prefix-text {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-right: none;
+            color: #475569;
+            padding: .42rem .65rem;
+            border-radius: 7px 0 0 7px;
+            font-size: .85rem;
+        }
+        .input-prefix .form-control { border-radius: 0 7px 7px 0; }
+
+        /* ── BUTTONS ── */
+        .btn-dmi {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+            padding: .48rem 1rem;
+            border-radius: 7px;
+            font-size: .86rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: opacity .18s;
+            width: 100%;
+        }
+        .btn-primary-dmi { background: #e5505c; color: #fff; }
+        .btn-primary-dmi:hover { background: #d4404c; }
+        .btn-outline-dmi { background: transparent; border: 1px solid #2a2a2a; color: #64748b; }
+        .btn-outline-dmi:hover { border-color: #e5505c; color: #e5505c; }
+
+        /* ── TABLE ── */
+        .table-responsive { width: 100%; overflow-x: auto; }
+        .dmi-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #121212;
+            color: #e2e8f0;
+        }
+        .dmi-table th {
+            background: #0a0a0a;
+            color: #475569;
+            font-size: .71rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            padding: .55rem .85rem;
+            border-bottom: 1px solid #1e1e1e;
+            white-space: nowrap;
+        }
+        .dmi-table td {
+            padding: .55rem .85rem;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: .84rem;
+            color: #cbd5e1;
+        }
+        .dmi-table tr:last-child td { border-bottom: none; }
+        .dmi-table tr:hover td { background: #161616; }
+
+        .empty-row td {
+            text-align: center;
+            color: #334155;
+            padding: 2rem;
+            font-size: .82rem;
+        }
+
+        /* ── ACTION BUTTONS ── */
+        .tbl-actions { display: flex; gap: .4rem; }
+        .tbl-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid #2a2a2a;
+            background: #0f0f0f;
+            cursor: pointer;
+            transition: all .18s;
+            font-size: .75rem;
+        }
+        .tbl-btn-edit { color: #fcd34d; }
+        .tbl-btn-edit:hover { background: #fcd34d; color: #000; border-color: #fcd34d; }
+        .tbl-btn-delete { color: #e5505c; }
+        .tbl-btn-delete:hover { background: #e5505c; color: #fff; border-color: #e5505c; }
+
+        /* ── BADGE ── */
+        .badge-dmi {
+            display: inline-block;
+            padding: .18rem .55rem;
+            border-radius: 20px;
+            font-size: .72rem;
+            font-weight: 600;
+        }
+        .badge-green { background: #052e16; color: #6ee7b7; }
+        .badge-red   { background: #2d0a0e; color: #fca5a5; }
+        .badge-amber { background: #1c1404; color: #fcd34d; }
+        .badge-slate { background: #1e293b; color: #94a3b8; }
     </style>
 </head>
 <body>

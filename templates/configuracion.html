@@ -3,23 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuración — DMI</title>
+    <title>Configuración Total — DMI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href=""
-    <style>
-        :root { --navy: #0a2540; --accent: #0d6efd; }
-        body { background-color: #f8f9fa; }
-        
-        /* Sidebar mejorado con Bootstrap */
-        .sidebar { min-height: 100vh; background: var(--navy); }
-        .sidebar .nav-link { color: #adb5bd; border-radius: 0; border-left: 3px solid transparent; }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,.05); border-left-color: var(--accent); }
-        .sidebar .section-label { color: #6c757d; font-size: 0.75rem; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05rem; }
-        
-        .main-content { background: #e9ecef; min-height: 100vh; }
-        .cfg-panel { display: none; }
-        .cfg-panel.active { display: block; }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+
 </head>
 <body>
 
@@ -34,26 +22,285 @@
 
 <div class="container-fluid">
     <div class="row">
+        
         <nav class="col-md-3 col-lg-2 d-md-block sidebar p-3">
-            <div class="section-label mb-2 mt-3">Catálogos</div>
-            <ul class="nav flex-column">
-                <li class="nav-item"><a href="#" class="nav-link active" onclick="show('ciudades', this)">Ciudades</a></li>
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('tipovehiculos', this)">Tipo Vehículos</a></li>
+            <div class="section-label mb-1 mt-2">Core Operaciones</div>
+            <ul class="nav flex-column mb-2">
+                <li class="nav-item"><a href="#" class="nav-link active" onclick="show('pedidos', this)"><i class="bi bi-file-earmark-text me-2"></i>Pedidos</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('citas', this)"><i class="bi bi-calendar-event me-2"></i>Citas</a></li>
             </ul>
-            </nav>
+
+            <div class="section-label mb-1">Estructura y Logística</div>
+            <ul class="nav flex-column mb-2">
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('ciudades', this)"><i class="bi bi-building me-2"></i>Ciudades</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('oficinas', this)"><i class="bi bi-geo-alt me-2"></i>Oficinas</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('metodopago', this)"><i class="bi bi-credit-card me-2"></i>Métodos Pago</a></li>
+            </ul>
+
+            <div class="section-label mb-1">Inventario</div>
+            <ul class="nav flex-column mb-2">
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('inventario', this)"><i class="bi bi-box-seam me-2"></i>Artículos</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('movimientos', this)"><i class="bi bi-arrow-left-right me-2"></i>Movimientos</a></li>
+            </ul>
+
+            <div class="section-label mb-1">Flota Vehicular</div>
+            <ul class="nav flex-column mb-2">
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('vehiculos', this)"><i class="bi bi-car-front me-2"></i>Vehículos</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('tipovehiculos', this)"><i class="bi bi-tags me-2"></i>Tipo Vehículos</a></li>
+            </ul>
+
+            <div class="section-label mb-1">Servicios y Reparaciones</div>
+            <ul class="nav flex-column mb-2">
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('servicios', this)"><i class="bi bi-tools me-2"></i>Servicios</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('tiporeparacion', this)"><i class="bi bi-wrench me-2"></i>Tipos Reparación</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('productos', this)"><i class="bi bi-cart me-2"></i>Productos</a></li>
+            </ul>
+
+            <div class="section-label mb-1">Catálogo de Precios</div>
+            <ul class="nav flex-column mb-2">
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('serviciosprecio', this)"><i class="bi bi-cash-coin me-2"></i>Precios Serv.</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('productoprecio', this)"><i class="bi bi-tag me-2"></i>Precios Prod.</a></li>
+            </ul>
+
+            <div class="section-label mb-1">Seguridad</div>
+            <ul class="nav flex-column">
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('usuarios', this)"><i class="bi bi-people me-2"></i>Usuarios</a></li>
+            </ul>
+        </nav>
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 main-content">
-            <div id="panel-ciudades" class="cfg-panel active">
-                <div class="row">
-                    <div class="col-lg-4">
-                        <div class="card shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title fw-bold text-primary mb-3">🏙 Nueva Ciudad</h5>
-                                </div>
-                        </div>
-                    </div>
-                </div>
+            
+            {% if error %}<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endif %}
+            {% if success_msg %}<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i>{{ success_msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endif %}
+
+            <div id="panel-pedidos" class="cfg-panel active">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">📝 Nuevo Pedido</h5>
+                <form action="/config/pedidos/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Fecha (Texto)</label><input type="text" class="form-control" name="fecha" required></div>
+                    <div class="mb-3"><label class="form-label">Código Pedido</label><input type="text" class="form-control" name="codigopedido" required></div>
+                    <div class="mb-3"><label class="form-label">Método Pago ID</label><input type="number" class="form-control" name="metodopago_idmetodopago" required></div>
+                    <div class="mb-3"><label class="form-label">Fecha Cita (TZ)</label><input type="datetime-local" class="form-control" name="fecha_cita" required></div>
+                    <div class="mb-3"><label class="form-label">Estado</label><input type="text" class="form-control" name="estado" value="pendiente" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><textarea class="form-control" name="descripcion"></textarea></div>
+                    <div class="mb-3"><label class="form-label">Oficina ID</label><input type="number" class="form-control" name="oficinas_idoficinas"></div>
+                    <button type="submit" class="btn btn-primary w-100">Registrar Pedido</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Pedidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Fecha Cita</th><th>Estado</th><th>Oficina</th></tr></thead><tbody>
+                {% for p in pedidos %}<tr><td>{{p.idpedido}}</td><td>{{p.codigopedido}}</td><td>{{p.fecha_cita}}</td><td><span class="badge bg-warning text-dark">{{p.estado}}</span></td><td>{{p.oficinas_idoficinas}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
             </div>
+
+            <div id="panel-citas" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">📅 Nueva Cita</h5>
+                <form action="/config/citas/nueva" method="POST">
+                    <div class="mb-3"><label class="form-label">Vehículo ID</label><input type="number" class="form-control" name="vehiculos_idvehiculo" required></div>
+                    <div class="mb-3"><label class="form-label">Fecha</label><input type="date" class="form-control" name="fecha" required></div>
+                    <div class="mb-3"><label class="form-label">Hora</label><input type="time" class="form-control" name="hora" required></div>
+                    <div class="mb-3"><label class="form-label">Motivo</label><input type="text" class="form-control" name="motivo" required></div>
+                    <div class="mb-3"><label class="form-label">Estado</label><select class="form-select" name="estado"><option value="pendiente">pendiente</option><option value="completada">completada</option><option value="cancelada">cancelada</option></select></div>
+                    <div class="mb-3"><label class="form-label">Notas</label><textarea class="form-control" name="notas"></textarea></div>
+                    <button type="submit" class="btn btn-primary w-100">Agendar Cita</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Historial de Citas</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Vehículo</th><th>Fecha/Hora</th><th>Motivo</th><th>Estado</th></tr></thead><tbody>
+                {% for c in citas %}<tr><td>{{c.idcita}}</td><td>{{c.vehiculos_idvehiculo}}</td><td>{{c.fecha}} {{c.hora}}</td><td>{{c.motivo}}</td><td>{{c.estado}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-ciudades" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🏙️ Nueva Ciudad</h5>
+                <form action="/config/ciudades/nueva" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Ciudad</label><input type="text" class="form-control" name="codigo_ciudad" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcion_ciudad" required></div>
+                    <div class="mb-3"><label class="form-label">Código Postal</label><input type="text" class="form-control" name="codigo_postal" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Ciudades</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>C.P.</th></tr></thead><tbody>
+                {% for c in ciudades %}<tr><td>{{c.idciudades}}</td><td>{{c.codigo_ciudad}}</td><td>{{c.descripcion_ciudad}}</td><td>{{c.codigo_postal}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-oficinas" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🏢 Nueva Oficina</h5>
+                <form action="/config/oficinas/nueva" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Oficina</label><input type="text" class="form-control" name="codigo_oficina" required></div>
+                    <div class="mb-3"><label class="form-label">Dirección</label><input type="text" class="form-control" name="direccion" required></div>
+                    <div class="mb-3"><label class="form-label">Teléfono</label><input type="text" class="form-control" name="telefono_oficina" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionof" required></div>
+                    <div class="mb-3"><label class="form-label">Ciudad ID</label><input type="number" class="form-control" name="ciudades_idciudades" required></div>
+                    <div class="mb-3"><label class="form-label">Inventario Inicial ID</label><input type="number" class="form-control" name="inventario_idinventario" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar Oficina</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Oficinas</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Dirección</th><th>Teléfono</th><th>Ciudad ID</th></tr></thead><tbody>
+                {% for o in oficinas %}<tr><td>{{o.idoficinas}}</td><td>{{o.codigo_oficina}}</td><td>{{o.direccion}}</td><td>{{o.telefono_oficina}}</td><td>{{o.ciudades_idciudades}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-metodopago" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">💳 Nuevo Método Pago</h5>
+                <form action="/config/metodopago/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código MP</label><input type="text" class="form-control" name="codigompago" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionmpago" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Métodos de Pago</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th></tr></thead><tbody>
+                {% for m in metodopago %}<tr><td>{{m.idmetodopago}}</td><td>{{m.codigompago}}</td><td>{{m.descripcionmpago}}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-inventario" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">📦 Nuevo Item Inventario</h5>
+                <form action="/config/inventario/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Inventario</label><input type="text" class="form-control" name="codigoinventario" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcioninventario" required></div>
+                    <div class="mb-3"><label class="form-label">Pedido ID (Opcional)</label><input type="number" class="form-control" name="pedido_idpedido"></div>
+                    <div class="mb-3"><label class="form-label">Cantidad</label><input type="number" step="0.01" class="form-control" name="cantidad" value="0"></div>
+                    <div class="mb-3"><label class="form-label">Costo Unitario</label><input type="number" step="0.01" class="form-control" name="costo_unitario"></div>
+                    <div class="mb-3"><label class="form-label">Unidad Medida</label><input type="text" class="form-control" name="unidad_medida" value="UND"></div>
+                    <div class="mb-3"><label class="form-label">Estado</label><input type="text" class="form-control" name="estado" value="activo"></div>
+                    <div class="mb-3"><label class="form-label">Oficina ID</label><input type="number" class="form-control" name="oficinas_idoficinas"></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar Item</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Inventario Actual</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Cant.</th><th>Costo</th><th>Estado</th></tr></thead><tbody>
+                {% for i in inventario %}<tr><td>{{i.idinventario}}</td><td>{{i.codigoinventario}}</td><td>{{i.descripcioninventario}}</td><td>{{i.cantidad}} {{i.unidad_medida}}</td><td>${{i.costo_unitario}}</td><td>{{i.estado}}</td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-movimientos" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🔄 Registrar Movimiento</h5>
+                <form action="/config/movimientos/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Inventario ID</label><input type="number" class="form-control" name="inventario_id" required></div>
+                    <div class="mb-3"><label class="form-label">Tipo Movimiento</label><input type="text" class="form-control" name="tipo_movimiento" placeholder="ENTRADA / SALIDA" required></div>
+                    <div class="mb-3"><label class="form-label">Cantidad</label><input type="number" step="0.01" class="form-control" name="cantidad" required></div>
+                    <div class="mb-3"><label class="form-label">Costo Unitario</label><input type="number" step="0.01" class="form-control" name="costo_unitario"></div>
+                    <div class="mb-3"><label class="form-label">Valor Total</label><input type="number" step="0.01" class="form-control" name="valor_total"></div>
+                    <div class="mb-3"><label class="form-label">Motivo</label><textarea class="form-control" name="motivo"></textarea></div>
+                    <div class="mb-3"><label class="form-label">Referencia ID</label><input type="number" class="form-control" name="referencia_id"></div>
+                    <div class="mb-3"><label class="form-label">Usuario ID</label><input type="text" class="form-control" name="usuario_id"></div>
+                    <button type="submit" class="btn btn-primary w-100">Registrar Movimiento</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Kardex / Movimientos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Inv ID</th><th>Tipo</th><th>Cant.</th><th>Total</th><th>Fecha</th></tr></thead><tbody>
+                {% for m in movimientos_inventario %}<tr><td>{{m.idmovimiento}}</td><td>{{m.inventario_id}}</td><td>{{m.tipo_movimiento}}</td><td>{{m.cantidad}}</td><td>${{m.valor_total}}</td><td>{{m.fecha}}</td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-vehiculos" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🚗 Nuevo Vehículo</h5>
+                <form action="/config/vehiculos/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Vehículo</label><input type="text" class="form-control" name="codigovehiculo" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionvehiculo" required></div>
+                    <div class="mb-3"><label class="form-label">Motor</label><input type="text" class="form-control" name="motor" required></div>
+                    <div class="mb-3"><label class="form-label">Asientos</label><input type="text" class="form-control" name="cantidad_asientos" required></div>
+                    <div class="mb-3"><label class="form-label">Placa</label><input type="text" class="form-control" name="placa" required></div>
+                    <div class="mb-3"><label class="form-label">Capacidad</label><input type="text" class="form-control" name="capacidad" required></div>
+                    <div class="mb-3"><label class="form-label">Marca</label><input type="text" class="form-control" name="marca" required></div>
+                    <div class="mb-3"><label class="form-label">Modelo</label><input type="text" class="form-control" name="modelo" required></div>
+                    <div class="mb-3"><label class="form-label">Tipo Vehículo ID</label><input type="number" class="form-control" name="tipovehiculos_idtipovehiculos" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar Vehículo</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Flota Vehicular</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Placa</th><th>Marca/Modelo</th><th>Motor</th><th>Tipo ID</th></tr></thead><tbody>
+                {% for v in vehiculos %}<tr><td>{{v.idvehiculo}}</td><td>{{v.placa}}</td><td>{{v.marca}} {{v.modelo}}</td><td>{{v.motor}}</td><td>{{v.tipovehiculos_idtipovehiculos}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-tipovehiculos" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🏷️ Categoría Vehículo</h5>
+                <form action="/config/tipovehiculos/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Tipo</label><input type="text" class="form-control" name="codigotipovehiculos" required></div>
+                    <div class="mb-3"><label class="form-label">Vehículo / Categoría</label><input type="text" class="form-control" name="vehiculo" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Tipos Definidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Categoría</th></tr></thead><tbody>
+                {% for t in tipovehiculos %}<tr><td>{{t.idtipovehiculos}}</td><td>{{t.codigotipovehiculos}}</td><td>{{t.vehiculo}}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-servicios" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🛠️ Configurar Servicio</h5>
+                <form action="/config/servicios/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Servicio</label><input type="text" class="form-control" name="codigoservicio" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionservicio" required></div>
+                    <div class="mb-3"><label class="form-label">Pedido ID</label><input type="number" class="form-control" name="pedido_idpedido" required></div>
+                    <div class="mb-3"><label class="form-label">Precio Servicio ID</label><input type="number" class="form-control" name="serviciosprecio_idserviciosprecio"></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar Servicio</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Servicios Ofrecidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Pedido ID</th></tr></thead><tbody>
+                {% for s in servicios %}<tr><td>{{s.idservicios}}</td><td>{{s.codigoservicio}}</td><td>{{s.descripcionservicio}}</td><td>{{s.pedido_idpedido}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-tiporeparacion" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🔧 Tipo Reparación</h5>
+                <form action="/config/tiporeparacion/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código</label><input type="text" class="form-control" name="codigotiporeparacion" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripciontiporeparacion" required></div>
+                    <div class="mb-3"><label class="form-label">Servicios ID</label><input type="number" class="form-control" name="servicios_idservicios" required></div>
+                    <div class="mb-3"><label class="form-label">Pedido ID</label><input type="number" class="form-control" name="pedido_idpedido" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Reparaciones</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Servicio ID</th></tr></thead><tbody>
+                {% for tr in tiporeparacion %}<tr><td>{{tr.idtiporeparacion}}</td><td>{{tr.codigotiporeparacion}}</td><td>{{tr.descripciontiporeparacion}}</td><td>{{tr.servicios_idservicios}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-productos" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🛒 Adicionar Producto</h5>
+                <form action="/config/productos/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Producto</label><input type="text" class="form-control" name="codigoproductos" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionproductos" required></div>
+                    <div class="mb-3"><label class="form-label">Precio Producto ID</label><input type="number" class="form-control" name="productoprecio_idproductoprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Pedido ID</label><input type="number" class="form-control" name="pedido_idpedido" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Productos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Precio ID</th></tr></thead><tbody>
+                {% for p in productos %}<tr><td>{{p.idproductos}}</td><td>{{p.codigoproductos}}</td><td>{{p.descripcionproductos}}</td><td>{{p.productoprecio_idproductoprecio}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-serviciosprecio" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">💰 Tarifa de Servicio</h5>
+                <form action="/config/serviciosprecio/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Tarifa</label><input type="text" class="form-control" name="codigoserviciosprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionserviciosprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Precio (Texto)</label><input type="text" class="form-control" name="precioserviciosprecio"></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar Tarifa</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Lista de Precios de Servicio</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Precio</th></tr></thead><tbody>
+                {% for sp in serviciosprecio %}<tr><td>{{sp.idserviciosprecio}}</td><td>{{sp.codigoserviciosprecio}}</td><td>{{sp.descripcionserviciosprecio}}</td><td>{{sp.precioserviciosprecio}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-productoprecio" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">💲 Costo de Producto</h5>
+                <form action="/config/productoprecio/nuevo" method="POST">
+                    <div class="mb-3"><label class="form-label">Código Costo</label><input type="text" class="form-control" name="codigoproductoprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionprprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Valor Numérico</label><input type="number" step="0.01" class="form-control" name="valor" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar Costo</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Lista de Precios de Venta</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Valor</th></tr></thead><tbody>
+                {% for pp in productoprecio %}<tr><td>{{pp.idproductoprecio}}</td><td>{{pp.codigoproductoprecio}}</td><td>{{pp.descripcionprprecio}}</td><td>${{pp.valor}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
+            <div id="panel-usuarios" class="cfg-panel">
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">👤 Registrar Usuario</h5>
+                <form action="/config/usuarios/nuevo" method="POST">
+                    <div class="mb-2"><label class="form-label">Nombre</label><input type="text" class="form-control form-control-sm" name="nombre" required></div>
+                    <div class="mb-2"><label class="form-label">Apellidos</label><input type="text" class="form-control form-control-sm" name="apellidos" required></div>
+                    <div class="mb-2"><label class="form-label">Documento</label><input type="number" class="form-control form-control-sm" name="documento" required></div>
+                    <div class="mb-2"><label class="form-label">Tipo Documento</label><input type="text" class="form-control form-control-sm" name="tipadedocumento" placeholder="C.C, Pasaporte" required></div>
+                    <div class="mb-2"><label class="form-label">Email</label><input type="email" class="form-control form-control-sm" name="email" required></div>
+                    <div class="mb-2"><label class="form-label">Teléfono</label><input type="text" class="form-control form-control-sm" name="telefono" required></div>
+                    <div class="mb-2"><label class="form-label">Username Único</label><input type="text" class="form-control form-control-sm" name="usuarionombre" required></div>
+                    <div class="mb-2"><label class="form-label">Fecha Nacimiento</label><input type="date" class="form-control form-control-sm" name="fechadenacimiento" required></div>
+                    <div class="mb-2"><label class="form-label">Rol</label><select class="form-select form-select-sm" name="rol"><option value="usuario">usuario</option><option value="admin">admin</option></select></div>
+                    <button type="submit" class="btn btn-primary w-100 btn-sm mt-2">Guardar Usuario</button>
+                </form></div></div></div>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Usuarios en Sistema</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle text-nowrap"><thead class="table-dark"><tr><th>ID</th><th>Nombre Completo</th><th>Doc</th><th>Username</th><th>Rol</th></tr></thead><tbody>
+                {% for u in usuarios %}<tr><td>{{u.idusuarios}}</td><td>{{u.nombre}} {{u.apellidos}}</td><td>{{u.documento}}</td><td>{{u.usuarionombre}}</td><td>{{u.rol}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                </tbody></table></div></div></div></div></div>
+            </div>
+
         </main>
     </div>
 </div>
@@ -61,9 +308,11 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function show(panelId, element) {
+        if (window.event) window.event.preventDefault(); 
         document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-        document.getElementById('panel-' + panelId).classList.add('active');
+        const targetPanel = document.getElementById('panel-' + panelId);
+        if (targetPanel) targetPanel.classList.add('active');
         element.classList.add('active');
     }
 </script>
