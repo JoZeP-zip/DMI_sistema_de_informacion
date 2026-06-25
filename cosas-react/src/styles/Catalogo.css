@@ -3525,3 +3525,171 @@ main {
     top: 0 !important;
   }
 }
+
+/* =========================
+   MODAL DETALLE PRODUCTO SIEMPRE VISIBLE
+   Hace que la ficha salga centrada apenas se da clic.
+========================= */
+
+.product-detail-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  z-index: 2147483000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+}
+
+.product-detail-modal {
+  max-height: calc(100dvh - 40px) !important;
+  overflow-y: auto !important;
+}
+
+/* =========================
+   MODAL EDITAR PRODUCTO SIEMPRE VISIBLE
+   Hace que el formulario de editar salga centrado y guarda la URL con vista previa.
+========================= */
+
+.edit-product-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  z-index: 2147483000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  background: rgba(0, 0, 0, 0.88) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.edit-product-modal {
+  width: min(500px, calc(100vw - 40px)) !important;
+  max-height: calc(100dvh - 40px) !important;
+  overflow-y: auto !important;
+  background: #0d0000 !important;
+  border: 2px solid rgb(255, 0, 0) !important;
+  padding: 36px !important;
+  box-shadow: 0 0 40px rgba(255, 0, 0, 0.45) !important;
+  font-family: 'Orbitron', sans-serif !important;
+}
+
+.edit-product-modal h2 {
+  color: rgb(255, 0, 0) !important;
+  margin-bottom: 24px !important;
+  font-size: 16px !important;
+  letter-spacing: 2px !important;
+}
+
+.edit-product-field {
+  margin-bottom: 14px !important;
+}
+
+.edit-product-field label {
+  display: block !important;
+  color: #ff6666 !important;
+  font-size: 11px !important;
+  margin-bottom: 5px !important;
+  letter-spacing: 1px !important;
+}
+
+.edit-product-field input {
+  width: 100% !important;
+  padding: 11px 14px !important;
+  background: #1a0000 !important;
+  border: 1px solid rgba(255, 0, 0, 0.4) !important;
+  color: white !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 13px !important;
+  outline: none !important;
+}
+
+.edit-product-field input:focus {
+  border-color: rgb(255, 0, 0) !important;
+  box-shadow: 0 0 18px rgba(255, 0, 0, 0.45) !important;
+}
+
+.edit-product-preview {
+  width: 100% !important;
+  height: 180px !important;
+  object-fit: cover !important;
+  margin-top: 12px !important;
+  border: 1px solid rgba(255, 0, 0, 0.35) !important;
+  background: #050000 !important;
+}
+
+.edit-product-actions {
+  display: flex !important;
+  gap: 12px !important;
+  margin-top: 24px !important;
+}
+
+.edit-product-actions button {
+  flex: 1 !important;
+  padding: 14px !important;
+  color: white !important;
+  cursor: pointer !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 14px !important;
+}
+
+.edit-product-save {
+  background: rgb(255, 0, 0) !important;
+  border: none !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+}
+
+.edit-product-cancel {
+  background: transparent !important;
+  border: 2px solid rgb(255, 0, 0) !important;
+}
+
+@media (max-width: 700px) {
+  .edit-product-modal {
+    padding: 24px !important;
+  }
+
+  .edit-product-actions {
+    flex-direction: column !important;
+  }
+}
+
+/* =========================
+   CARRITO Y TUS COMPRAS SIEMPRE ACTIVOS
+   Los paneles ahora salen por portal, encima del catalogo.
+========================= */
+
+.cart-panel,
+.mis-compras-panel {
+  position: fixed !important;
+  top: 110px !important;
+  right: 32px !important;
+  z-index: 2147482500 !important;
+}
+
+.cart-panel {
+  width: min(380px, calc(100vw - 28px)) !important;
+  max-height: calc(100dvh - 140px) !important;
+}
+
+.mis-compras-panel {
+  width: min(460px, calc(100vw - 28px)) !important;
+  max-height: calc(100dvh - 140px) !important;
+}
+
+@media (max-width: 700px) {
+  .cart-panel,
+  .mis-compras-panel {
+    top: 84px !important;
+    right: 14px !important;
+    left: 14px !important;
+    width: auto !important;
+    max-height: calc(100dvh - 104px) !important;
+  }
+}
+
