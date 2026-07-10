@@ -1,12 +1,257 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuración Total — DMI</title>
+    <title>Configuracion Total - DMI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/configuracion.css">
+
+    <style>
+        .cfg-workbar {
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            flex-wrap: wrap !important;
+            gap: 14px !important;
+            margin: 0 0 18px !important;
+            padding: 16px !important;
+            background: linear-gradient(135deg, rgba(255, 47, 85, 0.09), rgba(0, 0, 0, 0.82)) !important;
+            border: 1px solid rgba(255, 47, 85, 0.55) !important;
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+        }
+
+        .cfg-workbar-actions,
+        .cfg-searchbox {
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+        }
+
+        .cfg-tool-btn {
+            min-height: 44px !important;
+            padding: 0 18px !important;
+            border: 1px solid rgba(255, 47, 85, 0.78) !important;
+            border-radius: 0 !important;
+            background: rgba(0, 0, 0, 0.72) !important;
+            color: #ffffff !important;
+            font-family: 'Orbitron', 'Rajdhani', Arial, sans-serif !important;
+            font-size: 0.82rem !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.08em !important;
+            text-transform: uppercase !important;
+            line-height: 1 !important;
+            box-shadow: none !important;
+            transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease !important;
+        }
+
+        .cfg-tool-btn i {
+            color: #ff4057 !important;
+            margin-right: 6px !important;
+        }
+
+        .cfg-tool-btn.primary {
+            background: #ff4057 !important;
+            border-color: #ff4057 !important;
+            color: #ffffff !important;
+            box-shadow: 0 12px 28px rgba(255, 64, 87, 0.26) !important;
+        }
+
+        .cfg-tool-btn.primary i {
+            color: #ffffff !important;
+        }
+
+        .cfg-tool-btn:hover {
+            background: rgba(255, 64, 87, 0.16) !important;
+            border-color: #ff4057 !important;
+            transform: translateY(-1px) !important;
+        }
+
+        .cfg-tool-btn.primary:hover {
+            background: #e63249 !important;
+        }
+
+        .cfg-table-search {
+            width: min(420px, 82vw) !important;
+            min-height: 44px !important;
+            padding: 0 16px !important;
+            border: 1px solid rgba(255, 47, 85, 0.62) !important;
+            border-radius: 0 !important;
+            outline: none !important;
+            background: rgba(0, 0, 0, 0.82) !important;
+            color: #ffffff !important;
+            font-family: 'Rajdhani', Arial, sans-serif !important;
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.03em !important;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02) !important;
+        }
+
+        .cfg-table-search::placeholder {
+            color: rgba(255, 255, 255, 0.52) !important;
+        }
+
+        .cfg-table-search:focus {
+            border-color: #ff4057 !important;
+            box-shadow: 0 0 0 3px rgba(255, 64, 87, 0.14) !important;
+        }
+
+        .cfg-no-results {
+            display: none;
+            padding: 14px 16px !important;
+            background: rgba(255, 47, 85, 0.06) !important;
+            border-top: 1px solid rgba(255, 47, 85, 0.28) !important;
+            color: rgba(255, 255, 255, 0.72) !important;
+            font-family: 'Rajdhani', Arial, sans-serif !important;
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.03em !important;
+        }
+
+        @media (max-width: 760px) {
+            .cfg-workbar,
+            .cfg-workbar-actions,
+            .cfg-searchbox {
+                align-items: stretch !important;
+                flex-direction: column !important;
+            }
+
+            .cfg-tool-btn,
+            .cfg-table-search {
+                width: 100% !important;
+            }
+        }
+
+        .cfg-actions-cell {
+            min-width: 210px !important;
+            white-space: nowrap !important;
+        }
+
+        .cfg-row-btn {
+            min-height: 34px !important;
+            margin: 2px 6px 2px 0 !important;
+            padding: 0 12px !important;
+            border: 1px solid #ff4057 !important;
+            border-radius: 0 !important;
+            background: rgba(255, 64, 87, 0.10) !important;
+            color: #ffffff !important;
+            font-family: 'Orbitron', 'Rajdhani', Arial, sans-serif !important;
+            font-size: 0.78rem !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.03em !important;
+            text-transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .cfg-row-btn.edit {
+            background: rgba(255, 64, 87, 0.14) !important;
+        }
+
+        .cfg-row-btn.delete {
+            background: #ff4057 !important;
+            color: #ffffff !important;
+        }
+
+        .cfg-row-btn i {
+            color: inherit !important;
+            margin-right: 5px !important;
+        }
+
+        .cfg-row-btn:hover {
+            background: #ff4057 !important;
+            color: #ffffff !important;
+        }
+
+        .cfg-modal-backdrop {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 5000 !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 24px !important;
+            background: rgba(0, 0, 0, 0.76) !important;
+            backdrop-filter: blur(8px) !important;
+        }
+
+        .cfg-modal-backdrop.is-visible {
+            display: flex !important;
+        }
+
+        .cfg-modal-card {
+            width: min(520px, 94vw) !important;
+            margin: auto !important;
+            padding: 34px 36px !important;
+            border: 1px solid #ff2f55 !important;
+            border-radius: 0 !important;
+            background: linear-gradient(145deg, rgba(28, 0, 7, 0.96), rgba(5, 5, 8, 0.98)) !important;
+            box-shadow: 0 0 35px rgba(255, 47, 85, 0.22) !important;
+            color: #ffffff !important;
+        }
+
+        .cfg-modal-icon {
+            display: none !important;
+        }
+
+        .cfg-modal-copy p {
+            margin: 0 0 8px !important;
+            color: #ff2f55 !important;
+            font-size: 0.78rem !important;
+            font-weight: 900 !important;
+            letter-spacing: 3px !important;
+            text-transform: uppercase !important;
+        }
+
+        .cfg-modal-copy h2 {
+            margin: 0 0 16px !important;
+            color: #ff2f55 !important;
+            font-size: 2rem !important;
+            font-weight: 900 !important;
+            letter-spacing: 1px !important;
+        }
+
+        .cfg-modal-copy span {
+            display: block !important;
+            color: #c9bcc2 !important;
+            font-family: 'Rajdhani', Arial, sans-serif !important;
+            font-size: 1.05rem !important;
+            font-weight: 700 !important;
+            line-height: 1.6 !important;
+        }
+
+        .cfg-modal-actions {
+            display: flex !important;
+            gap: 16px !important;
+            margin-top: 26px !important;
+        }
+
+        .cfg-modal-btn {
+            flex: 1 1 0 !important;
+            min-height: 58px !important;
+            border-radius: 0 !important;
+            font-family: 'Orbitron', 'Rajdhani', Arial, sans-serif !important;
+            font-weight: 900 !important;
+            letter-spacing: 0 !important;
+        }
+
+        .cfg-modal-btn.primary {
+            border: 1px solid #ff4057 !important;
+            background: #ff4057 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 20px rgba(255, 47, 85, 0.25) !important;
+        }
+
+        .cfg-modal-btn.ghost {
+            border: 1px solid #ff2f55 !important;
+            background: transparent !important;
+            color: #ffffff !important;
+        }
+    </style>
 
 </head>
 <body>
@@ -14,8 +259,9 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
     <a class="navbar-brand fw-bold" href="#">DMI Sistema</a>
     <div class="navbar-nav ms-auto">
-        <a class="nav-link" href="/">Vehículos</a>
+        <a class="nav-link" href="/">Vehiculos</a>
         <a class="nav-link" href="/citas">Citas</a>
+        <a class="frontend-catalogo-link nav-link" href="/catalogo" target="_top">Catalogo</a>
         <a class="nav-link active" href="/configuracion">Panel de Administrador</a>
     </div>
 </nav>
@@ -28,35 +274,36 @@
             <ul class="nav flex-column mb-2">
                 <li class="nav-item"><a href="#" class="nav-link active" onclick="show('pedidos', this)"><i class="bi bi-file-earmark-text me-2"></i>Pedidos</a></li>
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('citas', this)"><i class="bi bi-calendar-event me-2"></i>Citas</a></li>
+                <li class="nav-item"><a href="/catalogo" target="_top" class="frontend-catalogo-link nav-link"><i class="bi bi-grid me-2"></i>Catalogo</a></li>
             </ul>
 
-            <div class="section-label mb-1">Estructura y Logística</div>
+            <div class="section-label mb-1">Estructura y Logistica</div>
             <ul class="nav flex-column mb-2">
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('ciudades', this)"><i class="bi bi-building me-2"></i>Ciudades</a></li>
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('oficinas', this)"><i class="bi bi-geo-alt me-2"></i>Oficinas</a></li>
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('metodopago', this)"><i class="bi bi-credit-card me-2"></i>Métodos Pago</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('metodopago', this)"><i class="bi bi-credit-card me-2"></i>Metodos Pago</a></li>
             </ul>
 
             <div class="section-label mb-1">Inventario</div>
             <ul class="nav flex-column mb-2">
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('inventario', this)"><i class="bi bi-box-seam me-2"></i>Artículos</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('inventario', this)"><i class="bi bi-box-seam me-2"></i>Articulos</a></li>
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('movimientos', this)"><i class="bi bi-arrow-left-right me-2"></i>Movimientos</a></li>
             </ul>
 
             <div class="section-label mb-1">Flota Vehicular</div>
             <ul class="nav flex-column mb-2">
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('vehiculos', this)"><i class="bi bi-car-front me-2"></i>Vehículos</a></li>
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('tipovehiculos', this)"><i class="bi bi-tags me-2"></i>Tipo Vehículos</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('vehiculos', this)"><i class="bi bi-car-front me-2"></i>Vehiculos</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('tipovehiculos', this)"><i class="bi bi-tags me-2"></i>Tipo Vehiculos</a></li>
             </ul>
 
             <div class="section-label mb-1">Servicios y Reparaciones</div>
             <ul class="nav flex-column mb-2">
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('servicios', this)"><i class="bi bi-tools me-2"></i>Servicios</a></li>
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('tiporeparacion', this)"><i class="bi bi-wrench me-2"></i>Tipos Reparación</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('tiporeparacion', this)"><i class="bi bi-wrench me-2"></i>Tipos Reparacion</a></li>
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('productos', this)"><i class="bi bi-cart me-2"></i>Productos</a></li>
             </ul>
 
-            <div class="section-label mb-1">Catálogo de Precios</div>
+            <div class="section-label mb-1">Catalogo de Precios</div>
             <ul class="nav flex-column mb-2">
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('serviciosprecio', this)"><i class="bi bi-cash-coin me-2"></i>Precios Serv.</a></li>
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('productoprecio', this)"><i class="bi bi-tag me-2"></i>Precios Prod.</a></li>
@@ -74,26 +321,26 @@
             {% if success_msg %}<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i>{{ success_msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endif %}
 
             <div id="panel-pedidos" class="cfg-panel active">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">📝 Nuevo Pedido</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Pedido</h5>
                 <form action="/config/pedidos/nuevo" method="POST">
                     <div class="mb-3"><label class="form-label">Fecha (Texto)</label><input type="text" class="form-control" name="fecha" required></div>
-                    <div class="mb-3"><label class="form-label">Código Pedido</label><input type="text" class="form-control" name="codigopedido" required></div>
-                    <div class="mb-3"><label class="form-label">Método Pago ID</label><input type="number" class="form-control" name="metodopago_idmetodopago" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Pedido</label><input type="text" class="form-control" name="codigopedido" required></div>
+                    <div class="mb-3"><label class="form-label">Metodo Pago ID</label><input type="number" class="form-control" name="metodopago_idmetodopago" required></div>
                     <div class="mb-3"><label class="form-label">Fecha Cita (TZ)</label><input type="datetime-local" class="form-control" name="fecha_cita" required></div>
                     <div class="mb-3"><label class="form-label">Estado</label><input type="text" class="form-control" name="estado" value="pendiente" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><textarea class="form-control" name="descripcion"></textarea></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><textarea class="form-control" name="descripcion"></textarea></div>
                     <div class="mb-3"><label class="form-label">Oficina ID</label><input type="number" class="form-control" name="oficinas_idoficinas"></div>
                     <button type="submit" class="btn btn-primary w-100">Registrar Pedido</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Pedidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Fecha Cita</th><th>Estado</th><th>Oficina</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Pedidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Fecha Cita</th><th>Estado</th><th>Oficina</th></tr></thead><tbody>
                 {% for p in pedidos %}<tr><td>{{p.idpedido}}</td><td>{{p.codigopedido}}</td><td>{{p.fecha_cita}}</td><td><span class="badge bg-warning text-dark">{{p.estado}}</span></td><td>{{p.oficinas_idoficinas}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-citas" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">📅 Nueva Cita</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Cita</h5>
                 <form action="/config/citas/nueva" method="POST">
-                    <div class="mb-3"><label class="form-label">Vehículo ID</label><input type="number" class="form-control" name="vehiculos_idvehiculo" required></div>
+                    <div class="mb-3"><label class="form-label">Vehiculo ID</label><input type="number" class="form-control" name="vehiculos_idvehiculo" required></div>
                     <div class="mb-3"><label class="form-label">Fecha</label><input type="date" class="form-control" name="fecha" required></div>
                     <div class="mb-3"><label class="form-label">Hora</label><input type="time" class="form-control" name="hora" required></div>
                     <div class="mb-3"><label class="form-label">Motivo</label><input type="text" class="form-control" name="motivo" required></div>
@@ -101,57 +348,90 @@
                     <div class="mb-3"><label class="form-label">Notas</label><textarea class="form-control" name="notas"></textarea></div>
                     <button type="submit" class="btn btn-primary w-100">Agendar Cita</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Historial de Citas</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Vehículo</th><th>Fecha/Hora</th><th>Motivo</th><th>Estado</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Historial de Citas</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Vehiculo</th><th>Fecha/Hora</th><th>Motivo</th><th>Estado</th></tr></thead><tbody>
                 {% for c in citas %}<tr><td>{{c.idcita}}</td><td>{{c.vehiculos_idvehiculo}}</td><td>{{c.fecha}} {{c.hora}}</td><td>{{c.motivo}}</td><td>{{c.estado}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-ciudades" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🏙️ Nueva Ciudad</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Ciudad</h5>
                 <form action="/config/ciudades/nueva" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Ciudad</label><input type="text" class="form-control" name="codigo_ciudad" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcion_ciudad" required></div>
-                    <div class="mb-3"><label class="form-label">Código Postal</label><input type="text" class="form-control" name="codigo_postal" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Ciudad</label><input type="text" class="form-control" name="codigo_ciudad" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripcion_ciudad" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Postal</label><input type="text" class="form-control" name="codigo_postal" required></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Ciudades</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>C.P.</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Ciudades</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>C.P.</th></tr></thead><tbody>
                 {% for c in ciudades %}<tr><td>{{c.idciudades}}</td><td>{{c.codigo_ciudad}}</td><td>{{c.descripcion_ciudad}}</td><td>{{c.codigo_postal}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-oficinas" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🏢 Nueva Oficina</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Oficina</h5>
                 <form action="/config/oficinas/nueva" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Oficina</label><input type="text" class="form-control" name="codigo_oficina" required></div>
-                    <div class="mb-3"><label class="form-label">Dirección</label><input type="text" class="form-control" name="direccion" required></div>
-                    <div class="mb-3"><label class="form-label">Teléfono</label><input type="text" class="form-control" name="telefono_oficina" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionof" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Oficina</label><input type="text" class="form-control" name="codigo_oficina" required></div>
+                    <div class="mb-3"><label class="form-label">Direccion</label><input type="text" class="form-control" name="direccion" required></div>
+                    <div class="mb-3"><label class="form-label">Telefono</label><input type="text" class="form-control" name="telefono_oficina" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripcionof" required></div>
                     <div class="mb-3"><label class="form-label">Ciudad ID</label><input type="number" class="form-control" name="ciudades_idciudades" required></div>
                     <div class="mb-3"><label class="form-label">Inventario Inicial ID</label><input type="number" class="form-control" name="inventario_idinventario" required></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar Oficina</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Oficinas</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Dirección</th><th>Teléfono</th><th>Ciudad ID</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Oficinas</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Direccion</th><th>Telefono</th><th>Ciudad ID</th></tr></thead><tbody>
                 {% for o in oficinas %}<tr><td>{{o.idoficinas}}</td><td>{{o.codigo_oficina}}</td><td>{{o.direccion}}</td><td>{{o.telefono_oficina}}</td><td>{{o.ciudades_idciudades}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-metodopago" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">💳 Nuevo Método Pago</h5>
-                <form action="/config/metodopago/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código MP</label><input type="text" class="form-control" name="codigompago" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionmpago" required></div>
-                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
-                </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Métodos de Pago</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th></tr></thead><tbody>
-                {% for m in metodopago %}<tr><td>{{m.idmetodopago}}</td><td>{{m.codigompago}}</td><td>{{m.descripcionmpago}}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
-                </tbody></table></div></div></div></div></div>
+                <div class="payment-config-shell">
+                    <div class="payment-config-card">
+                        <div class="payment-close">X</div>
+                        <p class="payment-kicker">PASARELA ADMIN</p>
+                        <h2>Metodos de <span>Pago</span></h2>
+
+                        <form action="/config/metodopago/nuevo" method="POST" class="payment-form">
+                            <div class="payment-section-label">Registrar metodo</div>
+
+                            <div class="payment-form-grid">
+                                <input type="text" name="codigompago" placeholder="Codigo MP" required>
+                                <input type="text" name="descripcionmpago" placeholder="Descripcion del metodo" required>
+                            </div>
+
+                            <div class="payment-total-row">
+                                <span>ESTADO</span>
+                                <strong>ACTIVO</strong>
+                            </div>
+
+                            <button type="submit" class="payment-confirm-btn">Guardar metodo</button>
+                        </form>
+
+                        <div class="payment-section-label mt-4">Metodos registrados</div>
+                        <div class="payment-method-grid">
+                            {% for m in metodopago %}
+                              <article class="payment-method-card">
+                                <div class="payment-method-icon">{{ m.codigompago[:2] if m.codigompago else 'MP' }}</div>
+                                <div>
+                                  <strong>{{ m.descripcionmpago }}</strong>
+                                  <span>{{ m.codigompago }}</span>
+                                </div>
+                                <div class="cfg-actions-cell">
+                                  <button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-metodopago'), '{{ m.idmetodopago }}')"><i class="bi bi-pencil-square"></i> Editar</button>
+                                  <button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-metodopago'), '{{ m.idmetodopago }}')"><i class="bi bi-trash3"></i> Eliminar</button>
+                                </div>
+                              </article>
+                            {% else %}
+                              <div class="payment-empty">No hay metodos de pago registrados.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="panel-inventario" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">📦 Nuevo Item Inventario</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Inventario</h5>
                 <form action="/config/inventario/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Inventario</label><input type="text" class="form-control" name="codigoinventario" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcioninventario" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Inventario</label><input type="text" class="form-control" name="codigoinventario" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripcioninventario" required></div>
                     <div class="mb-3"><label class="form-label">Pedido ID (Opcional)</label><input type="number" class="form-control" name="pedido_idpedido"></div>
                     <div class="mb-3"><label class="form-label">Cantidad</label><input type="number" step="0.01" class="form-control" name="cantidad" value="0"></div>
                     <div class="mb-3"><label class="form-label">Costo Unitario</label><input type="number" step="0.01" class="form-control" name="costo_unitario"></div>
@@ -160,13 +440,13 @@
                     <div class="mb-3"><label class="form-label">Oficina ID</label><input type="number" class="form-control" name="oficinas_idoficinas"></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar Item</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Inventario Actual</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Cant.</th><th>Costo</th><th>Estado</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Inventario Actual</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Cant.</th><th>Costo</th><th>Estado</th></tr></thead><tbody>
                 {% for i in inventario %}<tr><td>{{i.idinventario}}</td><td>{{i.codigoinventario}}</td><td>{{i.descripcioninventario}}</td><td>{{i.cantidad}} {{i.unidad_medida}}</td><td>${{i.costo_unitario}}</td><td>{{i.estado}}</td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-movimientos" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🔄 Registrar Movimiento</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Movimiento</h5>
                 <form action="/config/movimientos/nuevo" method="POST">
                     <div class="mb-3"><label class="form-label">Inventario ID</label><input type="number" class="form-control" name="inventario_id" required></div>
                     <div class="mb-3"><label class="form-label">Tipo Movimiento</label><input type="text" class="form-control" name="tipo_movimiento" placeholder="ENTRADA / SALIDA" required></div>
@@ -184,18 +464,18 @@
             </div>
 
             <div id="panel-vehiculos" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🚗 Nuevo Vehículo</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Vehiculo</h5>
                 <form action="/config/vehiculos/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Vehículo</label><input type="text" class="form-control" name="codigovehiculo" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionvehiculo" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Vehiculo</label><input type="text" class="form-control" name="codigovehiculo" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripcionvehiculo" required></div>
                     <div class="mb-3"><label class="form-label">Motor</label><input type="text" class="form-control" name="motor" required></div>
                     <div class="mb-3"><label class="form-label">Asientos</label><input type="text" class="form-control" name="cantidad_asientos" required></div>
                     <div class="mb-3"><label class="form-label">Placa</label><input type="text" class="form-control" name="placa" required></div>
                     <div class="mb-3"><label class="form-label">Capacidad</label><input type="text" class="form-control" name="capacidad" required></div>
                     <div class="mb-3"><label class="form-label">Marca</label><input type="text" class="form-control" name="marca" required></div>
                     <div class="mb-3"><label class="form-label">Modelo</label><input type="text" class="form-control" name="modelo" required></div>
-                    <div class="mb-3"><label class="form-label">Tipo Vehículo ID</label><input type="number" class="form-control" name="tipovehiculos_idtipovehiculos" required></div>
-                    <button type="submit" class="btn btn-primary w-100">Guardar Vehículo</button>
+                    <div class="mb-3"><label class="form-label">Tipo Vehiculo ID</label><input type="number" class="form-control" name="tipovehiculos_idtipovehiculos" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Guardar Vehiculo</button>
                 </form></div></div></div>
                 <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Flota Vehicular</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Placa</th><th>Marca/Modelo</th><th>Motor</th><th>Tipo ID</th></tr></thead><tbody>
                 {% for v in vehiculos %}<tr><td>{{v.idvehiculo}}</td><td>{{v.placa}}</td><td>{{v.marca}} {{v.modelo}}</td><td>{{v.motor}}</td><td>{{v.tipovehiculos_idtipovehiculos}}</td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
@@ -203,96 +483,97 @@
             </div>
 
             <div id="panel-tipovehiculos" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🏷️ Categoría Vehículo</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Vehiculo</h5>
                 <form action="/config/tipovehiculos/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Tipo</label><input type="text" class="form-control" name="codigotipovehiculos" required></div>
-                    <div class="mb-3"><label class="form-label">Vehículo / Categoría</label><input type="text" class="form-control" name="vehiculo" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Tipo</label><input type="text" class="form-control" name="codigotipovehiculos" required></div>
+                    <div class="mb-3"><label class="form-label">Vehiculo / Categoria</label><input type="text" class="form-control" name="vehiculo" required></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Tipos Definidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Categoría</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Tipos Definidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Categoria</th></tr></thead><tbody>
                 {% for t in tipovehiculos %}<tr><td>{{t.idtipovehiculos}}</td><td>{{t.codigotipovehiculos}}</td><td>{{t.vehiculo}}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-servicios" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🛠️ Configurar Servicio</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Servicio</h5>
                 <form action="/config/servicios/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Servicio</label><input type="text" class="form-control" name="codigoservicio" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionservicio" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Servicio</label><input type="text" class="form-control" name="codigoservicio" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripcionservicio" required></div>
                     <div class="mb-3"><label class="form-label">Pedido ID</label><input type="number" class="form-control" name="pedido_idpedido" required></div>
                     <div class="mb-3"><label class="form-label">Precio Servicio ID</label><input type="number" class="form-control" name="serviciosprecio_idserviciosprecio"></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar Servicio</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Servicios Ofrecidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Pedido ID</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Servicios Ofrecidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Pedido ID</th></tr></thead><tbody>
                 {% for s in servicios %}<tr><td>{{s.idservicios}}</td><td>{{s.codigoservicio}}</td><td>{{s.descripcionservicio}}</td><td>{{s.pedido_idpedido}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-tiporeparacion" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🔧 Tipo Reparación</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Reparacion</h5>
                 <form action="/config/tiporeparacion/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código</label><input type="text" class="form-control" name="codigotiporeparacion" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripciontiporeparacion" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo</label><input type="text" class="form-control" name="codigotiporeparacion" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripciontiporeparacion" required></div>
                     <div class="mb-3"><label class="form-label">Servicios ID</label><input type="number" class="form-control" name="servicios_idservicios" required></div>
                     <div class="mb-3"><label class="form-label">Pedido ID</label><input type="number" class="form-control" name="pedido_idpedido" required></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Reparaciones</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Servicio ID</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Reparaciones</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Servicio ID</th></tr></thead><tbody>
                 {% for tr in tiporeparacion %}<tr><td>{{tr.idtiporeparacion}}</td><td>{{tr.codigotiporeparacion}}</td><td>{{tr.descripciontiporeparacion}}</td><td>{{tr.servicios_idservicios}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-productos" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">🛒 Adicionar Producto</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Producto</h5>
                 <form action="/config/productos/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Producto</label><input type="text" class="form-control" name="codigoproductos" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionproductos" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Producto</label><input type="text" class="form-control" name="codigoproductos" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripcionproductos" required></div>
                     <div class="mb-3"><label class="form-label">Precio Producto ID</label><input type="number" class="form-control" name="productoprecio_idproductoprecio" required></div>
                     <div class="mb-3"><label class="form-label">Pedido ID</label><input type="number" class="form-control" name="pedido_idpedido" required></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Productos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Precio ID</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Productos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Precio ID</th></tr></thead><tbody>
                 {% for p in productos %}<tr><td>{{p.idproductos}}</td><td>{{p.codigoproductos}}</td><td>{{p.descripcionproductos}}</td><td>{{p.productoprecio_idproductoprecio}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-serviciosprecio" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">💰 Tarifa de Servicio</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Servicio</h5>
                 <form action="/config/serviciosprecio/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Tarifa</label><input type="text" class="form-control" name="codigoserviciosprecio" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionserviciosprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Tarifa</label><input type="text" class="form-control" name="codigoserviciosprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripcionserviciosprecio" required></div>
                     <div class="mb-3"><label class="form-label">Precio (Texto)</label><input type="text" class="form-control" name="precioserviciosprecio"></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar Tarifa</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Lista de Precios de Servicio</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Precio</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Lista de Precios de Servicio</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Precio</th></tr></thead><tbody>
                 {% for sp in serviciosprecio %}<tr><td>{{sp.idserviciosprecio}}</td><td>{{sp.codigoserviciosprecio}}</td><td>{{sp.descripcionserviciosprecio}}</td><td>{{sp.precioserviciosprecio}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-productoprecio" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">💲 Costo de Producto</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Producto</h5>
                 <form action="/config/productoprecio/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Código Costo</label><input type="text" class="form-control" name="codigoproductoprecio" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><input type="text" class="form-control" name="descripcionprprecio" required></div>
-                    <div class="mb-3"><label class="form-label">Valor Numérico</label><input type="number" step="0.01" class="form-control" name="valor" required></div>
+                    <div class="mb-3"><label class="form-label">Codigo Costo</label><input type="text" class="form-control" name="codigoproductoprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Descripcion</label><input type="text" class="form-control" name="descripcionprprecio" required></div>
+                    <div class="mb-3"><label class="form-label">Valor Numerico</label><input type="number" step="0.01" class="form-control" name="valor" required></div>
                     <button type="submit" class="btn btn-primary w-100">Guardar Costo</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Lista de Precios de Venta</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Código</th><th>Descripción</th><th>Valor</th></tr></thead><tbody>
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Lista de Precios de Venta</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Valor</th></tr></thead><tbody>
                 {% for pp in productoprecio %}<tr><td>{{pp.idproductoprecio}}</td><td>{{pp.codigoproductoprecio}}</td><td>{{pp.descripcionprprecio}}</td><td>${{pp.valor}}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
             <div id="panel-usuarios" class="cfg-panel">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">👤 Registrar Usuario</h5>
+                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Usuario</h5>
                 <form action="/config/usuarios/nuevo" method="POST">
                     <div class="mb-2"><label class="form-label">Nombre</label><input type="text" class="form-control form-control-sm" name="nombre" required></div>
                     <div class="mb-2"><label class="form-label">Apellidos</label><input type="text" class="form-control form-control-sm" name="apellidos" required></div>
                     <div class="mb-2"><label class="form-label">Documento</label><input type="number" class="form-control form-control-sm" name="documento" required></div>
-                    <div class="mb-2"><label class="form-label">Tipo Documento</label><input type="text" class="form-control form-control-sm" name="tipadedocumento" placeholder="C.C, Pasaporte" required></div>
+                    <div class="mb-2"><label class="form-label">Tipo Documento</label><input type="text" class="form-control form-control-sm" name="tipodedocumento" placeholder="C.C, Pasaporte" required></div>
                     <div class="mb-2"><label class="form-label">Email</label><input type="email" class="form-control form-control-sm" name="email" required></div>
-                    <div class="mb-2"><label class="form-label">Teléfono</label><input type="text" class="form-control form-control-sm" name="telefono" required></div>
-                    <div class="mb-2"><label class="form-label">Username Único</label><input type="text" class="form-control form-control-sm" name="usuarionombre" required></div>
+                    <div class="mb-2"><label class="form-label">Telefono</label><input type="text" class="form-control form-control-sm" name="telefono" required></div>
+                    <div class="mb-2"><label class="form-label">Username Unico</label><input type="text" class="form-control form-control-sm" name="usuarionombre" required></div>
                     <div class="mb-2"><label class="form-label">Fecha Nacimiento</label><input type="date" class="form-control form-control-sm" name="fechadenacimiento" required></div>
+                    <div class="mb-2"><label class="form-label">Password</label><input type="password" class="form-control form-control-sm" name="password" required></div>
                     <div class="mb-2"><label class="form-label">Rol</label><select class="form-select form-select-sm" name="rol"><option value="usuario">usuario</option><option value="admin">admin</option></select></div>
                     <button type="submit" class="btn btn-primary w-100 btn-sm mt-2">Guardar Usuario</button>
                 </form></div></div></div>
@@ -306,15 +587,433 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="cfg-modal-backdrop" id="cfg-modal" aria-hidden="true">
+    <div class="cfg-modal-card" role="dialog" aria-modal="true" aria-labelledby="cfg-modal-title">
+        <div class="cfg-modal-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="cfg-modal-copy">
+            <p id="cfg-modal-kicker">Panel admin</p>
+            <h2 id="cfg-modal-title">Confirmar accion</h2>
+            <span id="cfg-modal-message">Estas seguro?</span>
+        </div>
+        <div class="cfg-modal-actions">
+            <button type="button" class="cfg-modal-btn primary" id="cfg-modal-ok">Aceptar</button>
+            <button type="button" class="cfg-modal-btn ghost" id="cfg-modal-cancel">Cancelar</button>
+        </div>
+    </div>
+</div>
 <script>
+    const cfgPanelHistory = [];
+    let cfgCurrentPanel = 'pedidos';
+
     function show(panelId, element) {
         if (window.event) window.event.preventDefault(); 
+        if (panelId !== cfgCurrentPanel) {
+            cfgPanelHistory.push(cfgCurrentPanel);
+            cfgCurrentPanel = panelId;
+        }
+        sessionStorage.setItem('cfgCurrentPanel', panelId);
+
         document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
         const targetPanel = document.getElementById('panel-' + panelId);
         if (targetPanel) targetPanel.classList.add('active');
-        element.classList.add('active');
+        if (element) element.classList.add('active');
+        enhanceConfigPanel(targetPanel);
     }
+
+    function goBackConfig() {
+        const previousPanel = cfgPanelHistory.pop();
+
+        if (previousPanel) {
+            const link = document.querySelector(`.sidebar .nav-link[onclick*="'${previousPanel}'"], .sidebar .nav-link[onclick*='"${previousPanel}"']`);
+            cfgCurrentPanel = previousPanel;
+            document.querySelectorAll('.cfg-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+            const panel = document.getElementById('panel-' + previousPanel);
+            if (panel) panel.classList.add('active');
+            if (link) link.classList.add('active');
+            enhanceConfigPanel(panel);
+            return;
+        }
+
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = "/";
+        }
+    }
+
+    function filterConfigTable(table, value, emptyState) {
+        const query = value.trim().toLowerCase();
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        let visibleRows = 0;
+
+        rows.forEach((row) => {
+            const isEmptyRow = row.querySelector('td[colspan]');
+            const match = !query || row.textContent.toLowerCase().includes(query);
+            row.style.display = match ? '' : 'none';
+            if (match && !isEmptyRow) visibleRows += 1;
+        });
+
+        if (emptyState) {
+            emptyState.style.display = query && visibleRows === 0 ? 'block' : 'none';
+        }
+    }
+
+    function enhanceConfigPanel(panel) {
+        if (!panel || panel.dataset.enhanced === 'true') return;
+        panel.dataset.enhanced = 'true';
+
+        const row = panel.querySelector('.row');
+        const table = panel.querySelector('table');
+        if (!row) return;
+        panel.querySelectorAll('form').forEach((form) => {
+            form.addEventListener('submit', () => {
+                sessionStorage.setItem('cfgCurrentPanel', configEntityFromPanel(panel));
+            });
+        });
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'cfg-workbar';
+
+        const leftActions = document.createElement('div');
+        leftActions.className = 'cfg-workbar-actions';
+
+        const backButton = document.createElement('button');
+        backButton.type = 'button';
+        backButton.className = 'cfg-tool-btn';
+        backButton.innerHTML = '<i class="bi bi-arrow-left"></i> Volver';
+        backButton.addEventListener('click', goBackConfig);
+        leftActions.appendChild(backButton);
+
+        const formCard = panel.querySelector('.col-lg-4');
+        if (formCard) {
+            const formToggle = document.createElement('button');
+            formToggle.type = 'button';
+            formToggle.className = 'cfg-tool-btn primary';
+            formToggle.innerHTML = panel.id === 'panel-citas'
+                ? '<i class="bi bi-calendar-plus"></i> Agendar cita'
+                : '<i class="bi bi-plus-circle"></i> Registrar';
+            formToggle.addEventListener('click', () => {
+                formCard.classList.toggle('d-none');
+                if (!formCard.classList.contains('d-none')) {
+                    const form = formCard.querySelector('form');
+                    if (form && form.dataset.editing) {
+                        form.action = form.dataset.originalAction || form.action;
+                        form.dataset.editing = '';
+                        form.dataset.confirmedEdit = '';
+                        form.reset();
+                        const passwordInput = form.querySelector('input[name="password"]');
+                        if (passwordInput) passwordInput.required = true;
+                        const cancelButton = form.querySelector('[data-cancel-edit]');
+                        if (cancelButton) cancelButton.classList.add('d-none');
+                        const submitButton = form.querySelector('button[type="submit"]');
+                        if (submitButton && submitButton.dataset.originalText) submitButton.textContent = submitButton.dataset.originalText;
+                    }
+                }
+                formToggle.innerHTML = formCard.classList.contains('d-none')
+                    ? (panel.id === 'panel-citas' ? '<i class="bi bi-calendar-plus"></i> Agendar cita' : '<i class="bi bi-plus-circle"></i> Registrar')
+                    : '<i class="bi bi-eye-slash"></i> Ocultar formulario';
+            });
+            leftActions.appendChild(formToggle);
+        }
+
+        const tableCard = panel.querySelector('.col-lg-8');
+        if (tableCard) {
+            const tableToggle = document.createElement('button');
+            tableToggle.type = 'button';
+            tableToggle.className = 'cfg-tool-btn';
+            tableToggle.innerHTML = '<i class="bi bi-table"></i> Ocultar tabla';
+            tableToggle.addEventListener('click', () => {
+                tableCard.classList.toggle('d-none');
+                tableToggle.innerHTML = tableCard.classList.contains('d-none')
+                    ? '<i class="bi bi-table"></i> Ver tabla'
+                    : '<i class="bi bi-table"></i> Ocultar tabla';
+            });
+            leftActions.appendChild(tableToggle);
+        }
+
+        toolbar.appendChild(leftActions);
+
+        if (table) {
+            const searchWrap = document.createElement('div');
+            searchWrap.className = 'cfg-searchbox';
+
+            const searchInput = document.createElement('input');
+            searchInput.type = 'search';
+            searchInput.className = 'cfg-table-search';
+            searchInput.placeholder = 'Buscar informacion especifica...';
+            searchInput.setAttribute('aria-label', 'Buscar informacion especifica');
+
+            const emptyState = document.createElement('div');
+            emptyState.className = 'cfg-no-results';
+            emptyState.textContent = 'No se encontraron resultados para esa busqueda.';
+            table.parentElement.appendChild(emptyState);
+
+            searchInput.addEventListener('input', () => filterConfigTable(table, searchInput.value, emptyState));
+            searchWrap.appendChild(searchInput);
+            toolbar.appendChild(searchWrap);
+        }
+
+        row.insertAdjacentElement('beforebegin', toolbar);
+        addConfigTableActions(panel);
+    }
+
+    function configEntityFromPanel(panel) {
+        return panel && panel.id ? panel.id.replace('panel-', '') : '';
+    }
+
+    function addConfigTableActions(panel) {
+        const table = panel.querySelector('table');
+        if (!table || table.dataset.actionsReady === 'true') return;
+        table.dataset.actionsReady = 'true';
+
+        const headRow = table.querySelector('thead tr');
+        if (headRow) {
+            const actionHead = document.createElement('th');
+            actionHead.textContent = 'Acciones';
+            headRow.appendChild(actionHead);
+        }
+
+        table.querySelectorAll('tbody tr').forEach((row) => {
+            if (row.querySelector('td[colspan]')) return;
+
+            const idCell = row.querySelector('td');
+            const recordId = idCell ? idCell.textContent.trim() : '';
+            if (!recordId) return;
+
+            const actions = document.createElement('td');
+            actions.className = 'cfg-actions-cell';
+            actions.innerHTML = `
+                <button type="button" class="cfg-row-btn edit"><i class="bi bi-pencil-square"></i> Editar</button>
+                <button type="button" class="cfg-row-btn delete"><i class="bi bi-trash3"></i> Eliminar</button>
+            `;
+
+            actions.querySelector('.edit').addEventListener('click', () => confirmEditConfigRecord(panel, recordId));
+            actions.querySelector('.delete').addEventListener('click', () => deleteConfigRecord(panel, recordId));
+            row.appendChild(actions);
+        });
+    }
+
+    function ensureCancelEditButton(form, originalAction, submitButton) {
+        let cancelButton = form.querySelector('[data-cancel-edit]');
+        if (cancelButton) return cancelButton;
+
+        cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.className = 'btn btn-outline-light w-100 mt-2';
+        cancelButton.dataset.cancelEdit = 'true';
+        cancelButton.textContent = 'Cancelar edicion';
+        cancelButton.addEventListener('click', () => {
+            form.action = originalAction;
+            form.reset();
+            form.dataset.editing = '';
+            form.dataset.confirmedEdit = '';
+            const passwordInput = form.querySelector('input[name="password"]');
+            if (passwordInput) passwordInput.required = true;
+            if (submitButton) submitButton.textContent = submitButton.dataset.originalText || 'Guardar';
+            cancelButton.classList.add('d-none');
+        });
+        form.appendChild(cancelButton);
+        return cancelButton;
+    }
+
+    function setFieldValue(field, value) {
+        if (value === null || value === undefined) value = '';
+        value = String(value);
+        if (field.type === 'datetime-local') value = value.replace(' ', 'T').slice(0, 16);
+        if (field.type === 'date') value = value.slice(0, 10);
+        if (field.type === 'time') value = value.slice(0, 5);
+        field.value = value;
+    }
+
+    function showConfigModal({ kicker = 'Panel admin', title, message, confirmText = 'Aceptar', cancelText = 'Cancelar', showCancel = true, onConfirm }) {
+        const modal = document.getElementById('cfg-modal');
+        const kickerEl = document.getElementById('cfg-modal-kicker');
+        const titleEl = document.getElementById('cfg-modal-title');
+        const messageEl = document.getElementById('cfg-modal-message');
+        const okButton = document.getElementById('cfg-modal-ok');
+        const cancelButton = document.getElementById('cfg-modal-cancel');
+        if (!modal || !kickerEl || !titleEl || !messageEl || !okButton || !cancelButton) return;
+
+        kickerEl.textContent = kicker;
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        okButton.textContent = confirmText;
+        cancelButton.textContent = cancelText;
+        cancelButton.style.display = showCancel ? '' : 'none';
+        modal.classList.add('is-visible');
+        modal.setAttribute('aria-hidden', 'false');
+
+        const close = () => {
+            modal.classList.remove('is-visible');
+            modal.setAttribute('aria-hidden', 'true');
+            okButton.onclick = null;
+            cancelButton.onclick = null;
+        };
+
+        okButton.onclick = () => {
+            close();
+            if (onConfirm) onConfirm();
+        };
+        cancelButton.onclick = close;
+        modal.onclick = (event) => {
+            if (event.target === modal) close();
+        };
+    }
+
+    function confirmEditConfigRecord(panel, recordId) {
+        showConfigModal({
+            kicker: 'Editar registro',
+            title: 'Confirmar edicion',
+            message: 'Vas a cargar este registro en el formulario para modificarlo. Revisa los datos antes de guardar.',
+            confirmText: 'Editar',
+            cancelText: 'Cancelar',
+            onConfirm: () => editConfigRecord(panel, recordId),
+        });
+    }
+
+    async function editConfigRecord(panel, recordId) {
+        const entity = configEntityFromPanel(panel);
+        const formCard = panel.querySelector('.col-lg-4');
+        const form = panel.querySelector('form');
+        if (!entity || !form) return;
+
+        const response = await fetch(`/config/${entity}/registro/${recordId}`, {
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'include',
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.error) {
+            showConfigModal({
+                kicker: 'Editar registro',
+                title: 'No se pudo cargar',
+                message: data.error || 'No se pudo cargar el registro.',
+                confirmText: 'Entendido',
+                showCancel: false,
+            });
+            return;
+        }
+
+        form.dataset.originalAction = form.dataset.originalAction || form.getAttribute('action');
+        form.action = `/config/${entity}/editar/${recordId}`;
+        form.dataset.editing = recordId;
+
+        form.querySelectorAll('input[name], select[name], textarea[name]').forEach((field) => {
+            if (field.name === 'password') {
+                field.required = false;
+                field.value = '';
+                return;
+            }
+            if (Object.prototype.hasOwnProperty.call(data, field.name)) {
+                setFieldValue(field, data[field.name]);
+            }
+        });
+
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.dataset.originalText = submitButton.dataset.originalText || submitButton.textContent;
+            submitButton.textContent = 'Guardar cambios';
+        }
+
+        const cancelButton = ensureCancelEditButton(form, form.dataset.originalAction, submitButton);
+        cancelButton.classList.remove('d-none');
+
+        if (formCard) formCard.classList.remove('d-none');
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function deleteConfigRecord(panel, recordId) {
+        const entity = configEntityFromPanel(panel);
+        if (!entity || !recordId) return;
+        showConfigModal({
+            kicker: 'Eliminar registro',
+            title: 'Confirmar eliminacion',
+            message: 'Vas a eliminar este registro de la configuracion. Esta accion no se puede deshacer.',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            onConfirm: () => {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/config/${entity}/eliminar/${recordId}`;
+                sessionStorage.setItem('cfgCurrentPanel', entity);
+                document.body.appendChild(form);
+                form.submit();
+            },
+        });
+    }
+
+    function confirmEditedSubmit(form, panel) {
+        const entity = configEntityFromPanel(panel);
+        showConfigModal({
+            kicker: 'Guardar cambios',
+            title: 'Confirmar guardado',
+            message: 'Vas a guardar los cambios de este registro. Confirma para actualizar la informacion.',
+            confirmText: 'Guardar cambios',
+            cancelText: 'Cancelar',
+            onConfirm: () => {
+                form.dataset.confirmedEdit = 'true';
+                sessionStorage.setItem('cfgCurrentPanel', entity);
+                sessionStorage.setItem('cfgEditedSaved', 'true');
+                HTMLFormElement.prototype.submit.call(form);
+            },
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.cfg-panel form').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                const panel = form.closest('.cfg-panel');
+                if (panel) sessionStorage.setItem('cfgCurrentPanel', configEntityFromPanel(panel));
+                if (form.dataset.editing && form.dataset.confirmedEdit !== 'true') {
+                    event.preventDefault();
+                    confirmEditedSubmit(form, panel);
+                }
+            });
+        });
+
+        const requestedPanel = window.location.hash ? window.location.hash.slice(1) : (sessionStorage.getItem('cfgCurrentPanel') || '');
+        if (requestedPanel) {
+            const link = document.querySelector(`.sidebar .nav-link[onclick*="'${requestedPanel}'"], .sidebar .nav-link[onclick*='"${requestedPanel}"']`);
+            if (link) {
+                show(requestedPanel, link);
+                return;
+            }
+        }
+        enhanceConfigPanel(document.querySelector('.cfg-panel.active'));
+
+        const params = new URLSearchParams(window.location.search);
+        const success = params.get('success');
+        const error = params.get('error');
+        const editedSaved = sessionStorage.getItem('cfgEditedSaved') === 'true';
+        if (success || error) {
+            if (editedSaved) sessionStorage.removeItem('cfgEditedSaved');
+            showConfigModal({
+                kicker: error ? 'Panel admin' : (editedSaved ? 'Guardar cambios' : 'Panel admin'),
+                title: error ? 'No se pudo completar' : (editedSaved ? 'Cambios guardados' : 'Operacion completada'),
+                message: error || success,
+                confirmText: 'Entendido',
+                showCancel: false,
+            });
+        }
+    });
+</script>
+<script>
+(function () {
+  const catalogoLinks = document.querySelectorAll(".frontend-catalogo-link");
+  if (!catalogoLinks.length) return;
+
+  const host = window.location.hostname;
+  const protocol = window.location.protocol;
+  if (host.includes("app.github.dev")) {
+    const frontendHost = host
+      .replace(/-8000\.app\.github\.dev$/, "-3000.app.github.dev")
+      .replace(/-8800\.app\.github\.dev$/, "-3000.app.github.dev");
+    catalogoLinks.forEach((link) => { link.href = `${protocol}//${frontendHost}/catalogo`; });
+  } else if (host === "localhost" || host === "127.0.0.1") {
+    catalogoLinks.forEach((link) => { link.href = "http://localhost:3000/catalogo"; });
+  }
+})();
 </script>
 </body>
 </html>

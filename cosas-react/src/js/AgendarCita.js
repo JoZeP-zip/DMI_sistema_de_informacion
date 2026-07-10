@@ -1,7 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/AgendarCita.css';
 
-const BASE_URL = "";
+const getApiBaseUrl = () => {
+  const { protocol, hostname } = window.location;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8000";
+  }
+
+  if (hostname.includes("app.github.dev")) {
+    return `${protocol}//${hostname.replace(/-3000\.app\.github\.dev$/, "-8000.app.github.dev")}`;
+  }
+
+  return "";
+};
+
+const BASE_URL = getApiBaseUrl();
 
 const AgendarCita = () => {
   const [confirmado, setConfirmado] = useState(false);
@@ -10,6 +24,7 @@ const AgendarCita = () => {
   const [loading, setLoading] = useState(false); // eslint-disable-line    
   const [formData, setFormData] = useState({
     vehiculos_idvehiculo: '',
+    descripcion_vehiculo: '',
     fecha_cita: '',
     hora_cita: '',
     motivo: '',
@@ -29,14 +44,49 @@ const AgendarCita = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCita = (e) => {
+  const handleCita = async (e) => {
     e.preventDefault();
-    setConfirmado(true);
+    setError('');
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_URL}/citas/nueva`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+        body: new URLSearchParams(formData).toString(),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'No se pudo agendar la cita.');
+      }
+
+      setConfirmado(true);
+    } catch (err) {
+      setError(err.message || 'No se pudo agendar la cita.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNuevaCita = () => {
     setConfirmado(false);
-    setFormData({ vehiculo: '', fecha: '', hora: '', motivo: '', observacion: '' });
+    setError('');
+    setFormData({
+      vehiculos_idvehiculo: '',
+      descripcion_vehiculo: '',
+      fecha_cita: '',
+      hora_cita: '',
+      motivo: '',
+      observaciones: '',
+    });
   };
 
   return (
@@ -82,34 +132,35 @@ const AgendarCita = () => {
 
               <form className="cita-form" onSubmit={handleCita}>
 
-                <p className="ac-section">Vehículo</p>
-                <div className="form-group">
-                  <label>Vehículo <span className="ac-req">*</span></label>
-                  {vehiculos.length > 0 ? (
+                <p className="ac-section">Vehiculo</p>
+                {vehiculos.length > 0 && (
+                  <div className="form-group">
+                    <label>Vehiculo registrado (opcional)</label>
                     <select
                       name="vehiculos_idvehiculo"
                       value={formData.vehiculos_idvehiculo}
                       onChange={handleChange}
-                      required
                     >
-                      <option value="" disabled>Selecciona un vehículo</option>
+                      <option value="">Usar descripcion del cliente</option>
                       {vehiculos.map(v => (
                         <option key={v.idvehiculo} value={v.idvehiculo}>
-                          {v.placa} — {v.marca} {v.modelo || ''}
+                          {v.placa} - {v.marca} {v.modelo || ''}
                         </option>
                       ))}
                     </select>
-                  ) : (
-                    // Fallback: ingreso manual si no hay vehículos cargados
-                    <input
-                      type="text"
-                      name="vehiculos_idvehiculo"
-                      placeholder="ID del vehículo"
-                      value={formData.vehiculos_idvehiculo}
-                      onChange={handleChange}
-                      required
-                    />
-                  )}
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label>Descripcion del vehiculo <span className="ac-req">*</span></label>
+                  <textarea
+                    name="descripcion_vehiculo"
+                    placeholder="Ejemplo: Renault Logan 2012, falla al encender, ruido en motor..."
+                    value={formData.descripcion_vehiculo}
+                    onChange={handleChange}
+                    rows={3}
+                    required
+                  />
                 </div>
 
                 <p className="ac-section">Programación</p>
@@ -179,8 +230,8 @@ const AgendarCita = () => {
                   >
                     ↺ Limpiar
                   </button>
-                  <button type="submit" className="btn primary">
-                    ✓ Confirmar cita
+                  <button type="submit" className="btn primary" disabled={loading}>
+                    {loading ? 'Guardando...' : 'Confirmar cita'}
                   </button>
                 </div>
               </form>

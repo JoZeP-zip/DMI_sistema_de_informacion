@@ -11,7 +11,21 @@
 //  BASE URL — cambia este valor si el codespace
 //  rota o si pasas a producción.
 // ─────────────────────────────────────────────
-const BASE_URL = "";
+const getApiBaseUrl = () => {
+  const { protocol, hostname } = window.location;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8000";
+  }
+
+  if (hostname.includes("app.github.dev")) {
+    return `${protocol}//${hostname.replace(/-3000\.app\.github\.dev$/, "-8000.app.github.dev")}`;
+  }
+
+  return "";
+};
+
+const BASE_URL = getApiBaseUrl();
 
 // ─────────────────────────────────────────────
 //  HELPER: construye headers con el token JWT
@@ -63,6 +77,7 @@ export const AuthService = {
     localStorage.setItem("role",   data.role);
     localStorage.setItem("email",  data.email);
     localStorage.setItem("nombre", data.nombre);
+    localStorage.setItem("dmiSessionStartedAt", new Date().toISOString());
     return data;
   },
 
@@ -80,7 +95,11 @@ export const AuthService = {
 
   /** Limpia localStorage y cierra sesión local. */
   logout: () => {
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("email");
+    localStorage.removeItem("nombre");
+    localStorage.removeItem("dmiSessionStartedAt");
   },
 
   /** Devuelve el usuario guardado en localStorage o null. */
@@ -112,9 +131,12 @@ export const VehiculosService = {
     const res = await fetch(`${BASE_URL}/vehiculo/nuevo`, {
       method: "POST",
       headers: { 
+        ...authHeaders(),
         "Content-Type": "application/x-www-form-urlencoded",
-        ...authHeaders() 
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
+      credentials: "include",
       body: form.toString(),
     });
     if (!res.ok) throw new Error(`Error al crear vehículo: ${res.status}`);
@@ -165,7 +187,12 @@ export const CitasService = {
     const form = new URLSearchParams(datos);
     const res = await fetch(`${BASE_URL}/citas/nueva`, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        ...authHeaders(),
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
       credentials: "include",
       body: form.toString(),
     });

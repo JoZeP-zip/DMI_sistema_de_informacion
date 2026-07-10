@@ -39,13 +39,26 @@ function Catalogo() {
 
 
   const PRODUCTS_PER_PAGE = 25;
+  const sessionDateKey = (localStorage.getItem("dmiSessionStartedAt") || new Date().toISOString()).slice(0, 10);
+  const currentEmail = String(localStorage.getItem("email") || "invitado").toLowerCase();
+  const cartStorageKey = `dmiPendingCart_${currentEmail}`;
+  const cartSessionsKey = `dmiPendingCartSessions_${currentEmail}`;
 
   const [search, setSearch] = useState("");
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const savedCart = localStorage.getItem(cartStorageKey);
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (error) {
+      console.error("No se pudo cargar el carrito pendiente:", error);
+      return [];
+    }
+  });
   const [showCart, setShowCart] = useState(false);
   const [showMisCompras, setShowMisCompras] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [showCategories, setShowCategories] = useState(false);
   const [slide, setSlide] = useState(0);
@@ -65,10 +78,31 @@ function Catalogo() {
   });
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const currentRole = String(localStorage.getItem("role") || "").toLowerCase();
+  const isAdmin = currentRole === "admin";
 
   useEffect(() => {
     localStorage.setItem("catalogoProducts", JSON.stringify(products));
   }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+    try {
+      const savedSessions = JSON.parse(localStorage.getItem(cartSessionsKey) || "{}");
+      if (cart.length) {
+        savedSessions[sessionDateKey] = {
+          fecha: sessionDateKey,
+          items: cart,
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        delete savedSessions[sessionDateKey];
+      }
+      localStorage.setItem(cartSessionsKey, JSON.stringify(savedSessions));
+    } catch (error) {
+      console.error("No se pudo guardar el carrito por fecha:", error);
+    }
+  }, [cart, cartStorageKey, cartSessionsKey, sessionDateKey]);
 
   const carouselImages = [
     "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=1400&auto=format&fit=crop",
@@ -125,38 +159,35 @@ function Catalogo() {
     ));
   };
 
-  // PAGO
-  const PAGOS_URL = "https://zany-sniffle-97ww574r65xvcpxp.github.dev";
-
   const goToPayment = (product) => {
-    const params = new URLSearchParams({
-      id: String(product.id),
-      codigo: product.codigo,
-      nombre: product.nombre,
-      precio: String(product.precioVenta),
-      categoria: product.categoria,
-      imagen: product.image,
-    });
-    window.location.href = `${PAGOS_URL}/?${params.toString()}`;
+    setSelectedProduct(null);
+    setShowCart(false);
+    setShowMisCompras(false);
+    setCheckoutItems([{ ...product, quantity: 1 }]);
+    setShowCheckout(true);
   };
 
   const goToPaymentCart = () => {
     setShowConfirmModal(false);
     setShowMisCompras(false);
     setShowCart(false);
+    setCheckoutItems(cart);
     setShowCheckout(true);
   };
 
   const totalProducts = cart.reduce((acc, item) => acc + item.quantity, 0);
   const totalPrice = cart.reduce((acc, item) => acc + item.precioVenta * item.quantity, 0);
+  const checkoutTotal = checkoutItems.reduce((acc, item) => acc + item.precioVenta * item.quantity, 0);
 
   // EDICION
   const openEdit = (product) => {
+    if (!isAdmin) return;
     setEditingId(product.id);
     setEditForm({ ...product });
   };
 
   const saveEdit = () => {
+    if (!isAdmin) return;
     const updatedProduct = {
       ...editForm,
       image: String(editForm.image || "").trim(),
@@ -452,7 +483,7 @@ function Catalogo() {
         )}
 
       {/* MODAL EDICION */}
-      {editingId &&
+      {isAdmin && editingId &&
         createPortal(
           <div className="edit-product-overlay">
             <div className="edit-product-modal">
@@ -565,13 +596,15 @@ function Catalogo() {
                   >
                     Comprar
                   </button>
-                  <button
-                    className="edit-product-btn"
-                    onClick={(e) => { e.stopPropagation(); openEdit(product); }}
-                    title="Editar producto"
-                  >
-                    Editar
-                  </button>
+                  {isAdmin && (
+                    <button
+                      className="edit-product-btn"
+                      onClick={(e) => { e.stopPropagation(); openEdit(product); }}
+                      title="Editar producto"
+                    >
+                      Editar
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -646,11 +679,13 @@ function Catalogo() {
                   >
                     Comprar ahora
                   </button>
-                  <button
-                    onClick={() => { openEdit(selectedProduct); setSelectedProduct(null); }}
-                  >
-                    Editar
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => { openEdit(selectedProduct); setSelectedProduct(null); }}
+                    >
+                      Editar
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -661,8 +696,16 @@ function Catalogo() {
       {showCheckout &&
         createPortal(
           <Checkout
-            total={totalPrice}
-            onClose={() => setShowCheckout(false)}
+            total={checkoutTotal}
+            items={checkoutItems}
+            onPaid={() => {
+              const paidIds = new Set(checkoutItems.map((item) => item.id));
+              setCart((currentCart) => currentCart.filter((item) => !paidIds.has(item.id)));
+            }}
+            onClose={() => {
+              setShowCheckout(false);
+              setCheckoutItems([]);
+            }}
           />,
           document.body
         )}
@@ -672,6 +715,3 @@ function Catalogo() {
 }
 
 export default Catalogo;
-
-
-

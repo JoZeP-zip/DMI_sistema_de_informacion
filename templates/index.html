@@ -1,431 +1,1941 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehículos — DMI</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DMI Admin | Panel de Administrador</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/admin.css?v=ficha-20260706">
+  <style>
+    .admin-workbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      margin: 0 0 16px;
+      background: rgba(255, 47, 85, 0.06);
+      border: 1px solid rgba(255, 47, 85, 0.36);
+    }
+
+    .admin-workbar-actions,
+    .admin-searchbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .admin-tool-btn,
+    .admin-table-search {
+      min-height: 40px;
+      border-radius: 0;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .admin-tool-btn {
+      border: 1px solid rgba(255, 47, 85, 0.75);
+      background: transparent;
+      color: #fff;
+      padding: 0 14px;
+      text-transform: uppercase;
+    }
+
+    .admin-tool-btn.primary {
+      background: #ff2f55;
+      border-color: #ff2f55;
+      color: #fff;
+    }
+
+    .admin-tool-btn:hover {
+      background: rgba(255, 47, 85, 0.18);
+    }
+
+    .admin-table-search {
+      width: min(360px, 76vw);
+      background: #050507;
+      border: 1px solid rgba(255, 47, 85, 0.55);
+      color: #fff;
+      padding: 0 14px;
+      outline: none;
+    }
+
+    .admin-table-search::placeholder {
+      color: rgba(255, 255, 255, 0.48);
+    }
+
+    .admin-no-results {
+      display: none;
+      padding: 18px;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: center;
+      border-top: 1px solid rgba(255, 47, 85, 0.25);
+    }
+
+    .admin-details[data-table-collapsed="true"] .table-wrap {
+      display: none;
+    }
+
+    .tbl-btn-invoice {
+      border-color: rgba(255, 47, 85, 0.78) !important;
+      background: rgba(255, 47, 85, 0.15) !important;
+      color: #fff !important;
+    }
+
+    .invoice-service-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(6px);
+    }
+
+    .invoice-service-overlay.active {
+      display: flex;
+    }
+
+    .invoice-service-box {
+      width: min(560px, 100%);
+      padding: 32px;
+      background: linear-gradient(145deg, rgba(28, 0, 7, 0.97), rgba(5, 5, 8, 0.98));
+      border: 1px solid #ff2f55;
+      box-shadow: 0 0 35px rgba(255, 47, 85, 0.22);
+    }
+
+    .invoice-service-box p {
+      color: rgba(255,255,255,.68);
+    }
+
+    .invoice-service-box input,
+    .invoice-service-box textarea {
+      width: 100%;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,47,85,.55);
+      background: #050507;
+      color: #fff;
+      outline: none;
+    }
+
+    .invoice-service-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .admin-topbar {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 10px 28px;
+      background: rgba(0, 0, 0, 0.72);
+      border-bottom: 1px solid rgba(255, 47, 85, 0.45);
+    }
+
+    .admin-topbar .brand-mark,
+    .admin-topbar .topbar-nav {
+      display: none !important;
+    }
+
+    .topbar-user {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      min-height: 190px;
+      padding: 34px 28px 42px;
+      margin: 0 0 24px;
+      text-align: center;
+    }
+
+    .panel-heading > div {
+      max-width: 860px;
+    }
+
+    .panel-heading .btn-dmi {
+      display: none !important;
+    }
+
+    .panel-heading .admin-kicker {
+      margin-bottom: 6px;
+    }
+
+    .panel-heading h1 {
+      margin: 0;
+    }
+
+    .panel-heading p:last-child {
+      display: none !important;
+    }
+
+    .section-title-strip {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      min-height: 126px;
+      margin: 0 0 24px;
+      padding: 28px;
+      text-align: center;
+      background:
+        linear-gradient(rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.86)),
+        radial-gradient(circle at center, rgba(255, 47, 85, 0.14), transparent 52%);
+      border-bottom: 1px solid rgba(255, 47, 85, 0.35);
+    }
+
+    .section-title-strip.is-visible {
+      display: flex;
+    }
+
+    .section-title-strip p {
+      margin: 0 0 6px;
+      color: rgba(255, 255, 255, 0.56);
+      font-size: 0.85rem;
+      font-weight: 900;
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+    }
+
+    .section-title-strip h1 {
+      margin: 0;
+      color: #ffffff;
+      font-size: clamp(2.25rem, 5vw, 4.8rem);
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-shadow: 0 0 26px rgba(255, 47, 85, 0.26);
+    }
+
+    .section-title-strip h1 span {
+      color: #ff2f55;
+    }
+
+    @media (max-width: 900px) {
+      .admin-topbar,
+      .topbar-user {
+        justify-content: center;
+      }
+
+      .panel-heading {
+        min-height: 150px;
+        padding: 28px 18px;
+      }
+
+      .panel-heading > div {
+        max-width: 100%;
+      }
+    }
+
+    #userProfileModal .modal-dialog {
+      max-width: min(1040px, calc(100vw - 36px));
+    }
+
+    #userProfileModal .user-profile-modal {
+      overflow: hidden !important;
+      border: 1px solid rgba(255, 45, 85, 0.45) !important;
+      border-top: 5px solid #ff2f55 !important;
+      border-radius: 24px !important;
+      background: #151014 !important;
+      box-shadow: 0 0 42px rgba(255, 45, 85, 0.22), 0 32px 90px rgba(0,0,0,0.78) !important;
+    }
+
+    #userProfileModal .modal-header {
+      padding: 34px 48px 8px !important;
+    }
+
+    #userProfileModal .user-profile-kicker {
+      margin: 0 !important;
+      color: rgba(255,255,255,.62) !important;
+      font-family: var(--font-titulo) !important;
+      font-weight: 800 !important;
+      letter-spacing: 3.5px !important;
+      text-transform: uppercase !important;
+    }
+
+    #userProfileModal .modal-title,
+    #userProfileModal .user-profile-subtitle {
+      display: none !important;
+    }
+
+    #userProfileModal .modal-body {
+      max-height: min(66vh, 720px);
+      overflow-y: auto;
+      padding: 0 48px 24px !important;
+    }
+
+    #userProfileModal .user-profile-hero {
+      min-height: 160px;
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      padding: 18px 0 34px;
+    }
+
+    #userProfileModal .user-profile-avatar {
+      width: 112px;
+      height: 112px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,45,85,.62);
+      border-radius: 50%;
+      background: rgba(255,45,85,.12);
+      color: #ff606f;
+      font: 900 2.4rem var(--font-titulo);
+      letter-spacing: 1px;
+    }
+
+    #userProfileModal .user-profile-headline h4 {
+      margin: 0;
+      color: #fff;
+      font: 900 clamp(2rem, 4vw, 3.1rem) var(--font-titulo);
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    #userProfileModal .user-profile-headline span {
+      display: block;
+      margin-top: 8px;
+      color: rgba(255,255,255,.56);
+      font: 700 1.1rem var(--font-texto);
+      overflow-wrap: anywhere;
+    }
+
+    #userProfileModal .user-profile-role {
+      padding: 10px 22px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.78);
+      font: 900 .92rem var(--font-titulo);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    #userProfileModal .user-profile-section {
+      margin: 0;
+      padding: 34px 0;
+      border: 0;
+      border-top: 1px solid rgba(255,255,255,.12);
+      background: transparent;
+    }
+
+    #userProfileModal .user-profile-section h6 {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin: 0 0 22px;
+      color: rgba(255,255,255,.8);
+      font: 900 1.12rem var(--font-titulo);
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+    }
+
+    #userProfileModal .user-profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px 92px;
+    }
+
+    #userProfileModal .user-profile-info {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    #userProfileModal .user-profile-info span {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(255,255,255,.48);
+      font: 700 1rem var(--font-texto);
+    }
+
+    #userProfileModal .user-profile-info strong {
+      display: block;
+      color: #fff;
+      font: 800 1.32rem var(--font-texto);
+      overflow-wrap: anywhere;
+    }
+
+    #userProfileModal .user-profile-table {
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      background: rgba(255,255,255,.02);
+    }
+
+    #userProfileModal .user-profile-table thead th {
+      padding: 18px 20px;
+      background: rgba(255,45,85,.12);
+      color: #ff606f;
+      font-size: .86rem;
+    }
+
+    #userProfileModal .user-profile-table tbody td {
+      padding: 19px 20px;
+      color: rgba(255,255,255,.82);
+      font-size: 1.05rem;
+    }
+
+    #userProfileModal .user-profile-appointments {
+      display: grid;
+      gap: 16px;
+    }
+
+    #userProfileModal .user-profile-appointment {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 22px 28px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      background: rgba(255,255,255,.03);
+    }
+
+    #userProfileModal .user-profile-appointment strong {
+      display: block;
+      color: #fff;
+      font: 900 1.15rem var(--font-texto);
+    }
+
+    #userProfileModal .user-profile-appointment span {
+      display: block;
+      margin-top: 7px;
+      color: rgba(255,255,255,.5);
+      font: 700 .95rem var(--font-texto);
+    }
+
+    #userProfileModal .user-profile-appointment em {
+      padding: 8px 20px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.68);
+      font: 900 .9rem var(--font-texto);
+      font-style: normal;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+
+    #userProfileModal .user-profile-appointment em.active {
+      background: rgba(141,204,75,.16);
+      color: #9bd358;
+    }
+
+    #userProfileModal .user-profile-appointment em.danger {
+      background: rgba(255,45,85,.14);
+      color: #ff7184;
+    }
+
+    #userProfileModal .user-profile-footer {
+      position: sticky;
+      bottom: 0;
+      justify-content: flex-end;
+      gap: 20px;
+      padding: 24px 48px 34px !important;
+      background: linear-gradient(180deg, rgba(21,16,20,.72), #151014 34%);
+      border-top: 1px solid rgba(255,255,255,.08) !important;
+    }
+
+    #userProfileModal .user-profile-edit-link {
+      min-width: 210px;
+      justify-content: center;
+      text-decoration: none;
+    }
+
+    @media (max-width: 700px) {
+      #userProfileModal .modal-header,
+      #userProfileModal .modal-body,
+      #userProfileModal .user-profile-footer {
+        padding-left: 22px !important;
+        padding-right: 22px !important;
+      }
+
+      #userProfileModal .user-profile-hero,
+      #userProfileModal .user-profile-appointment {
+        grid-template-columns: 1fr;
+      }
+
+      #userProfileModal .user-profile-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
+  {% set total_vehiculos = data|length if data else 0 %}
+  {% set total_usuarios = usuarios_data|length if usuarios_data else 0 %}
+  {% set total_citas = citas_data|length if citas_data else 0 %}
+  {% set total_registros = total_vehiculos + total_usuarios + total_citas %}
 
-<!-- ===== NAVBAR ===== -->
-<div class="topbar">
-    <div class="topbar-brand">
-        <i class="bi bi-truck-front-fill"></i>
-        DMI Vehículos
-    </div>
-    <div class="topbar-links">
-        <a href="/"><i class="bi bi-car-front"></i> Vehículos</a>
+  <div class="admin-app">
+    <header class="admin-topbar">
+      <a class="brand-mark" href="/">
+        <i class="bi bi-speedometer2"></i>
+        <span>DMI Admin</span>
+      </a>
+
+      <nav class="topbar-nav" aria-label="Navegacion principal">
+        <a href="/"><i class="bi bi-car-front"></i> Vehiculos</a>
         <a href="/citas"><i class="bi bi-calendar-check"></i> Citas</a>
-        <a href="/configuracion"><i class="bi bi-sliders"></i> Administrador</a>
-    </div>
-    <div class="topbar-user">
+        <a href="/configuracion" class="active"><i class="bi bi-sliders"></i> Administrador</a>
+      </nav>
+
+      <div class="topbar-user">
         {% if usuario %}
-            <div class="user-chip"><i class="bi bi-person-circle"></i> {{ usuario.nombre }}</div>
-            <form action="/logout" method="post" style="margin:0">
-                <button type="submit" class="btn-salir"><i class="bi bi-box-arrow-right"></i> Salir</button>
-            </form>
+          <span class="user-chip"><i class="bi bi-person-circle"></i>{{ usuario.nombre }}</span>
+          <form action="/logout" method="post">
+            <button type="submit" class="btn-salir"><i class="bi bi-box-arrow-right"></i> Salir</button>
+          </form>
         {% else %}
-            <span style="color:#475569;font-size:.82rem">No has iniciado sesión</span>
+          <span class="session-empty">No has iniciado sesion</span>
         {% endif %}
-    </div>
-</div>
+      </div>
+    </header>
 
-<!-- ===== MODAL NOTIFICACIÓN ===== -->
-<div class="modal fade" id="notifModal" tabindex="-1" aria-labelledby="notifModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" id="notifModalContent" style="border-top: 4px solid #4f63f5;">
-            <div class="modal-header border-0 pb-1" id="notifModalHeader">
-                <h6 class="modal-title fw-bold" id="notifModalLabel"></h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body pt-1 pb-2" id="notifModalBody" style="color:#94a3b8;font-size:.9rem"></div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn-dmi" id="notifModalBtn" data-bs-dismiss="modal" style="width:auto;padding:.38rem 1.4rem">Aceptar</button>
-            </div>
+    <div class="admin-layout">
+      <aside class="admin-sidebar">
+        <div class="sidebar-head">
+          <span class="sidebar-dot"></span>
+          <strong>DMI Admin</strong>
         </div>
-    </div>
-</div>
 
-<!-- ===== LAYOUT PRINCIPAL ===== -->
-<div class="main-grid">
+        <div class="sidebar-group">
+          <p>General</p>
+          <a class="active" href="#panel-general">
+            <i class="bi bi-grid-1x2-fill"></i>
+            <span>Panel general</span>
+          </a>
+        </div>
 
-    <!-- ══ COLUMNA IZQUIERDA ══ -->
-    <div>
+        <div class="sidebar-group">
+          <p>Gestion</p>
+          <a href="#usuarios">
+            <i class="bi bi-people-fill"></i>
+            <span>Usuarios</span>
+            <b>{{ total_usuarios }}</b>
+          </a>
+          <a href="#vehiculos">
+            <i class="bi bi-truck-front-fill"></i>
+            <span>Vehiculos</span>
+            <b>{{ total_vehiculos }}</b>
+          </a>
+          <a href="#citas">
+            <i class="bi bi-calendar2-week-fill"></i>
+            <span>Citas</span>
+            <b>{{ total_citas }}</b>
+          </a>
+          <a href="#registros">
+            <i class="bi bi-database-fill"></i>
+            <span>Registros</span>
+          </a>
+        </div>
 
-        <!-- REGISTRO USUARIO -->
-        <div class="dmi-card">
-            <div class="dmi-card-header blue">
-                <i class="bi bi-person-plus-fill"></i> Registrar Usuario
+        <div class="sidebar-group">
+          <p>Sistema</p>
+          <a href="/configuracion">
+            <i class="bi bi-gear-fill"></i>
+            <span>Configuracion</span>
+          </a>
+        </div>
+      </aside>
+
+      <main class="admin-content">
+        <section class="section-title-strip" id="activeSectionTitle" aria-live="polite">
+          <div>
+            <p id="activeSectionKicker">Centro de administracion</p>
+            <h1 id="activeSectionHeading">Panel <span>general</span></h1>
+          </div>
+        </section>
+
+        <section class="panel-heading" id="panel-general">
+          <div>
+            <p class="admin-kicker">Centro de administracion</p>
+            <h1>Panel <span>general</span></h1>
+            <p>Control DMI - vision completa del sistema.</p>
+          </div>
+        </section>
+
+        <section class="summary-grid" aria-label="Resumen del sistema">
+          <article class="summary-card">
+            <i class="bi bi-truck-front-fill"></i>
+            <span>Vehiculos</span>
+            <strong>{{ total_vehiculos }}</strong>
+            <p>En base de datos</p>
+          </article>
+
+          <article class="summary-card">
+            <i class="bi bi-people-fill"></i>
+            <span>Usuarios</span>
+            <strong>{{ total_usuarios }}</strong>
+            <p>Registrados</p>
+          </article>
+
+          <article class="summary-card">
+            <i class="bi bi-calendar-check-fill"></i>
+            <span>Citas</span>
+            <strong>{{ total_citas }}</strong>
+            <p>Programadas</p>
+          </article>
+
+          <article class="summary-card">
+            <i class="bi bi-database-fill"></i>
+            <span>Registros</span>
+            <strong>{{ total_registros }}</strong>
+            <p>Total historico</p>
+          </article>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="dmi-card compact-card">
+            <div class="dmi-card-header">
+              <span><i class="bi bi-car-front-fill"></i> Vehiculos registrados</span>
+              <a href="#vehiculos">Ver todos</a>
             </div>
-            <div class="dmi-card-body">
+
+            <div class="mini-table-wrap">
+              {% if data %}
+                <table class="dmi-table mini-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Vehiculo</th>
+                      <th>Placa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in data[:6] %}
+                      <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ row[7] }} {{ row[9] }}</td>
+                        <td><span class="badge-placa">{{ row[5] }}</span></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              {% else %}
+                <div class="empty-state small-empty">
+                  <i class="bi bi-inbox"></i>
+                  No hay vehiculos registrados.
+                </div>
+              {% endif %}
+            </div>
+          </article>
+
+          <article class="dmi-card compact-card">
+            <div class="dmi-card-header">
+              <span><i class="bi bi-activity"></i> Actividad reciente</span>
+            </div>
+
+            <div class="activity-list">
+              {% if data %}
+                {% for row in data[:2] %}
+                  <div class="activity-item">
+                    <i class="bi bi-car-front"></i>
+                    <div>
+                      <strong>Vehiculo agregado</strong>
+                      <p>{{ row[7] }} {{ row[9] }} - Placa {{ row[5] }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+
+              {% if usuarios_data %}
+                {% for row in usuarios_data[:2] %}
+                  <div class="activity-item success">
+                    <i class="bi bi-person-check"></i>
+                    <div>
+                      <strong>Usuario registrado</strong>
+                      <p>{{ row[4] }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+
+              {% if citas_data %}
+                {% for cita in citas_data[:2] %}
+                  <div class="activity-item warning">
+                    <i class="bi bi-calendar-check"></i>
+                    <div>
+                      <strong>Cita programada</strong>
+                      <p>{{ cita[1] }} - {{ cita[4] }} {{ cita[5] }}</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+
+              {% if not data and not usuarios_data and not citas_data %}
+                <div class="empty-state small-empty">
+                  <i class="bi bi-clock-history"></i>
+                  Sin actividad registrada.
+                </div>
+              {% endif %}
+            </div>
+          </article>
+        </section>
+
+        <section class="dmi-card quick-actions">
+          <div class="dmi-card-header">
+            <span><i class="bi bi-lightning-charge-fill"></i> Acciones rapidas</span>
+          </div>
+
+          <div class="quick-grid">
+            <a href="#usuarios"><i class="bi bi-person-plus-fill"></i><span>Nuevo usuario</span></a>
+            <a href="#vehiculos"><i class="bi bi-plus-square-fill"></i><span>Nuevo vehiculo</span></a>
+            <a href="/citas"><i class="bi bi-calendar-plus-fill"></i><span>Nueva cita</span></a>
+            <a href="/configuracion"><i class="bi bi-database-fill-gear"></i><span>Configurar datos</span></a>
+          </div>
+        </section>
+
+        <section class="management-grid">
+          <div class="admin-column">
+            <div class="dmi-card" id="usuarios">
+              <div class="dmi-card-header">
+                <span><i class="bi bi-person-plus-fill"></i> Registrar usuario</span>
+              </div>
+
+              <div class="dmi-card-body">
                 <form action="/registro" method="post">
-                    <div class="form-section">Acceso</div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Contraseña</label>
-                            <input type="password" name="password" class="form-control" required>
-                        </div>
-                    </div>
+                  <div class="form-section">Acceso</div>
+
+                  <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Nombre de usuario</label>
-                        <input type="text" name="usuarionombre" class="form-control" required>
+                      <label class="form-label">Email</label>
+                      <input type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
                     </div>
 
-                    <div class="form-section">Datos personales</div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Nombre</label>
-                            <input type="text" name="nombre" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Apellidos</label>
-                            <input type="text" name="apellidos" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tipo documento</label>
-                            <select name="tipodedocumento" class="form-select" required>
-                                <option value="" disabled selected>Seleccione</option>
-                                <option value="CC">Cédula Ciudadanía</option>
-                                <option value="TI">Tarjeta Identidad</option>
-                                <option value="CE">Cédula Extranjería</option>
-                                <option value="PA">Pasaporte</option>
-                                <option value="RC">Registro Civil</option>
-                                <option value="NIT">NIT</option>
-                                <option value="PEP">PEP</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">N° Documento</label>
-                            <input type="text" name="documento" class="form-control" required pattern="[0-9]+" inputmode="numeric">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Fecha nacimiento</label>
-                            <input type="date" name="fechadenacimiento" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Teléfono</label>
-                            <input type="text" name="telefono" class="form-control" required>
-                        </div>
+                    <div class="form-group">
+                      <label class="form-label">Contrasena</label>
+                      <input type="password" name="password" class="form-control" required>
                     </div>
-                    <button type="submit" class="btn-dmi btn-primary-dmi" style="margin-top:.6rem">
-                        <i class="bi bi-person-check-fill"></i> Crear cuenta
-                    </button>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Nombre de usuario</label>
+                    <input type="text" name="usuarionombre" class="form-control" required>
+                  </div>
+
+                  <div class="form-section">Datos personales</div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Nombre</label>
+                      <input type="text" name="nombre" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Apellidos</label>
+                      <input type="text" name="apellidos" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Tipo documento</label>
+                      <select name="tipodedocumento" class="form-select" required>
+                        <option value="" disabled selected>Seleccione</option>
+                        <option value="CC">Cedula Ciudadania</option>
+                        <option value="TI">Tarjeta Identidad</option>
+                        <option value="CE">Cedula Extranjeria</option>
+                        <option value="PA">Pasaporte</option>
+                        <option value="RC">Registro Civil</option>
+                        <option value="NIT">NIT</option>
+                        <option value="PEP">PEP</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">No. Documento</label>
+                      <input type="text" name="documento" class="form-control" required pattern="[0-9]+" inputmode="numeric">
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Fecha nacimiento</label>
+                      <input type="date" name="fechadenacimiento" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Telefono</label>
+                      <input type="text" name="telefono" class="form-control" required>
+                    </div>
+                  </div>
+
+                  <button type="submit" class="btn-dmi btn-primary-dmi">
+                    <i class="bi bi-person-check-fill"></i> Crear cuenta
+                  </button>
                 </form>
+              </div>
             </div>
-        </div>
 
-        <!-- INICIO SESIÓN -->
-        <div class="dmi-card">
-            <div class="dmi-card-header slate">
-                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-            </div>
-            <div class="dmi-card-body">
+            <div class="dmi-card">
+              <div class="dmi-card-header">
+                <span><i class="bi bi-box-arrow-in-right"></i> Iniciar sesion</span>
+              </div>
+
+              <div class="dmi-card-body">
                 <form action="/login" method="post">
+                  <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Contrasena</label>
+                    <input type="password" name="password" class="form-control" required>
+                  </div>
+
+                  <button type="submit" class="btn-dmi btn-primary-dmi">
+                    <i class="bi bi-unlock-fill"></i> Iniciar sesion
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div class="dmi-card" id="vehiculos">
+              <div class="dmi-card-header">
+                <span>
+                  {% if vehicle_to_edit %}
+                    <i class="bi bi-pencil-square"></i> Editar vehiculo
+                  {% else %}
+                    <i class="bi bi-truck-front-fill"></i> Registrar vehiculo
+                  {% endif %}
+                </span>
+              </div>
+
+              <div class="dmi-card-body">
+                {% if vehicle_to_edit %}
+                  <form action="/vehiculo/editar/{{ vehicle_to_edit[0] }}" method="post">
+                {% else %}
+                  <form action="/vehiculo/nuevo" method="post">
+                {% endif %}
+
+                  <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
+                      <label class="form-label">Codigo</label>
+                      <input type="text" name="codigovehiculo" class="form-control" value="{{ vehicle_to_edit[1] if vehicle_to_edit else '' }}" required>
                     </div>
+
                     <div class="form-group">
-                        <label class="form-label">Contraseña</label>
-                        <input type="password" name="password" class="form-control" required>
+                      <label class="form-label">Placa</label>
+                      <input type="text" name="placa" class="form-control" value="{{ vehicle_to_edit[5] if vehicle_to_edit else '' }}" required maxlength="10">
                     </div>
-                    <button type="submit" class="btn-dmi btn-primary-dmi" style="margin-top:.5rem">
-                        <i class="bi bi-unlock-fill"></i> Iniciar sesión
+
+                    <div class="form-group">
+                      <label class="form-label">Marca</label>
+                      <input type="text" name="marca" class="form-control" value="{{ vehicle_to_edit[8] if vehicle_to_edit else '' }}" required>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Tipo vehiculo</label>
+                      <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
+                        <option value="" disabled selected>Seleccione</option>
+                        {% for tipo in tipos %}
+                          <option value="{{ tipo[0] if tipo[0] else tipo.idtipovehiculos }}">
+                            {{ tipo[1] if tipo[1] else tipo.codigotipovehiculos }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <div class="form-group form-wide">
+                      <label class="form-label">Descripcion</label>
+                      <input type="text" name="descripcionvehiculo" class="form-control" value="{{ vehicle_to_edit[2] if vehicle_to_edit else '' }}">
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Motor</label>
+                      <input type="text" name="motor" class="form-control" value="{{ vehicle_to_edit[3] if vehicle_to_edit else '' }}">
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Asientos</label>
+                      <input type="text" name="cantidad_asientos" class="form-control" value="{{ vehicle_to_edit[4] if vehicle_to_edit else '' }}">
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Capacidad</label>
+                      <input type="text" name="capacidad" class="form-control" value="{{ vehicle_to_edit[6] if vehicle_to_edit else '' }}">
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label">Modelo</label>
+                      <input type="text" name="modelo" class="form-control" value="{{ vehicle_to_edit[7] if vehicle_to_edit else '' }}">
+                    </div>
+                  </div>
+
+                  <div class="btn-flex">
+                    <button type="submit" class="btn-dmi btn-primary-dmi">
+                      <i class="bi bi-floppy-fill"></i>
+                      {% if vehicle_to_edit %}Guardar cambios{% else %}Guardar vehiculo{% endif %}
                     </button>
+
+                    {% if vehicle_to_edit %}
+                      <a href="/configuracion" class="btn-dmi btn-outline-dmi">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                      </a>
+                    {% endif %}
+                  </div>
                 </form>
+              </div>
             </div>
-        </div>
+          </div>
 
-        <!-- VEHÍCULO: Editar o Crear -->
-        {% if vehicle_to_edit %}
-        <div class="dmi-card">
-            <div class="dmi-card-header amber">
-                <i class="bi bi-pencil-square"></i> Editar Vehículo
-            </div>
-            <div class="dmi-card-body">
-                <form action="/vehiculo/editar/{{ vehicle_to_edit[0] }}" method="post">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Código</label>
-                            <input type="text" name="codigovehiculo" class="form-control" value="{{ vehicle_to_edit[1] }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Placa</label>
-                            <input type="text" name="placa" class="form-control" value="{{ vehicle_to_edit[5] }}" required maxlength="10">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Marca</label>
-                            <input type="text" name="marca" class="form-control" value="{{ vehicle_to_edit[8] }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tipo vehículo</label>
-                            <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
-                                {% for tipo in tipos %}
-                                    <option value="{{ tipo[0] }}" {% if tipo[0] == vehicle_to_edit[9] %}selected{% endif %}>{{ tipo[1] }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group" style="grid-column: span 2">
-                            <label class="form-label">Descripción</label>
-                            <input type="text" name="descripcionvehiculo" class="form-control" value="{{ vehicle_to_edit[2] }}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Motor</label>
-                            <input type="text" name="motor" class="form-control" value="{{ vehicle_to_edit[3] }}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Asientos</label>
-                            <input type="text" name="cantidad_asientos" class="form-control" value="{{ vehicle_to_edit[4] }}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Capacidad</label>
-                            <input type="text" name="capacidad" class="form-control" value="{{ vehicle_to_edit[6] }}">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Modelo</label>
-                            <input type="text" name="modelo" class="form-control" value="{{ vehicle_to_edit[7] }}">
-                        </div>
-                    </div>
-                    <div class="btn-flex">
-                        <button type="submit" class="btn-dmi btn-success-dmi"><i class="bi bi-floppy-fill"></i> Guardar cambios</button>
-                        <a href="/" class="btn-dmi btn-outline-dmi"><i class="bi bi-x-circle"></i> Cancelar</a>
-                    </div>
-                </form>
-            </div>
-        </div>
+          <div class="admin-column">
+            <details class="admin-details" open>
+              <summary>
+                <span><i class="bi bi-car-front-fill"></i> Listado de vehiculos</span>
+                <strong>{{ total_vehiculos }}</strong>
+              </summary>
 
-        {% else %}
-
-        <div class="dmi-card">
-            <div class="dmi-card-header green">
-                <i class="bi bi-truck-front"></i> Registrar Vehículo
-            </div>
-            <div class="dmi-card-body">
-                <form action="/vehiculo/nuevo" method="post">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Código</label>
-                            <input type="text" name="codigovehiculo" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Placa</label>
-                            <input type="text" name="placa" class="form-control" required maxlength="10">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Marca</label>
-                            <input type="text" name="marca" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tipo vehículo</label>
-                            <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
-                                <option value="" disabled selected>Seleccione</option>
-                                {% for tipo in tipos %}
-                                    <option value="{{ tipo.idtipovehiculos }}">{{ tipo.codigotipovehiculos }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="form-group" style="grid-column: span 2">
-                            <label class="form-label">Descripción</label>
-                            <input type="text" name="descripcionvehiculo" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Motor</label>
-                            <input type="text" name="motor" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Asientos</label>
-                            <input type="text" name="cantidad_asientos" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Capacidad</label>
-                            <input type="text" name="capacidad" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Modelo</label>
-                            <input type="text" name="modelo" class="form-control">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-dmi btn-primary-dmi" style="margin-top:.6rem">
-                        <i class="bi bi-plus-circle-fill"></i> Guardar vehículo
-                    </button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- ══ COLUMNA DERECHA ══ -->
-    <div>
-
-        <!-- TABLA VEHÍCULOS -->
-        <div class="dmi-card">
-            <div class="dmi-card-header">Listado de Vehículos</div>
-            <div class="dmi-card-body" style="padding:0">
+              <div class="table-wrap table-responsive">
                 {% if data %}
-                <div class="table-wrap table-responsive">
-                    <table class="dmi-table">
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Descripción</th>
-                                <th>Motor</th>
-                                <th>Asientos</th>
-                                <th>Placa</th>
-                                <th>Capacidad</th>
-                                <th>Modelo</th>
-                                <th>Marca</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in data %}
-                            <tr>
-                                <td><span class="badge-code">{{ row[1] }}</span></td>
-                                <td>{{ row[2] }}</td>
-                                <td>{{ row[3] }}</td>
-                                <td style="text-align:center">{{ row[4] }}</td>
-                                <td><span class="badge-placa">{{ row[5] }}</span></td>
-                                <td style="text-align:center">{{ row[6] }}</td>
-                                <td>{{ row[9] }}</td>
-                                <td>{{ row[7] }}</td>
-                                <td>
-                                    <div class="tbl-actions">
-                                        <a href="/vehiculo/editar/{{ row[0] }}" class="tbl-btn tbl-btn-edit" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" style="margin:0">
-                                            <button type="submit"
-                                                onclick="return confirm('¿Eliminar este vehículo?')"
-                                                class="tbl-btn tbl-btn-delete" title="Eliminar">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                  <table class="dmi-table">
+                    <thead>
+                      <tr>
+                        <th>Codigo</th>
+                        <th>Descripcion</th>
+                        <th>Motor</th>
+                        <th>Asientos</th>
+                        <th>Placa</th>
+                        <th>Capacidad</th>
+                        <th>Modelo</th>
+                        <th>Marca</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {% for row in data %}
+                        <tr>
+                          <td><span class="badge-code">{{ row[1] }}</span></td>
+                          <td>{{ row[2] }}</td>
+                          <td>{{ row[3] }}</td>
+                          <td>{{ row[4] }}</td>
+                          <td><span class="badge-placa">{{ row[5] }}</span></td>
+                          <td>{{ row[6] }}</td>
+                          <td>{{ row[9] }}</td>
+                          <td>{{ row[7] }}</td>
+                          <td>
+                            <div class="tbl-actions">
+                              <a href="/vehiculo/editar/{{ row[0] }}" class="tbl-btn tbl-btn-edit" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                              </a>
+
+                              <form action="/vehiculo/eliminar/{{ row[0] }}" method="post" data-confirm-title="Eliminar vehiculo" data-confirm-message="Vas a eliminar este vehiculo del sistema. Revisa antes de continuar.">
+                                <button type="submit" class="tbl-btn tbl-btn-delete" title="Eliminar">
+                                  <i class="bi bi-trash"></i>
+                                </button>
+                              </form>
+                            </div>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 {% else %}
-                <div class="empty-state">
+                  <div class="empty-state">
                     <i class="bi bi-inbox"></i>
-                    No hay vehículos registrados.
-                </div>
+                    No hay vehiculos registrados.
+                  </div>
                 {% endif %}
-            </div>
-        </div>
+              </div>
+            </details>
 
-        <!-- TABLA USUARIOS (solo admin) -->
-        {% if usuario and usuario.rol == 'admin' %}
-        <div class="dmi-card" style="margin-top:1rem">
-            <div class="dmi-card-header slate">
-                <i class="bi bi-people-fill"></i> Gestión de Usuarios y Roles
-            </div>
-            <div class="dmi-card-body" style="padding:0">
-                {% if usuarios_data %}
-                <div class="table-wrap table-responsive">
-                    <table class="dmi-table">
-                        <thead>
-                            <tr>
-                                <th>Usuario</th>
-                                <th>Nombre</th>
-                                <th>Apellidos</th>
-                                <th>Email</th>
-                                <th>Rol</th>
-                                <th>Cambiar rol</th>
-                                <th>Eliminar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in usuarios_data %}
-                            <tr>
-                                <td style="font-weight:600;color:#e2e8f0">{{ row[6] }}</td>
-                                <td>{{ row[1] }}</td>
-                                <td>{{ row[2] }}</td>
-                                <td style="color:#64748b;font-size:.8rem">{{ row[4] }}</td>
-                                <td>
-                                    {% set rol_actual = row[14] if row[14] else 'usuario' %}
-                                    {% if rol_actual == 'admin' %}
-                                        <span class="badge-admin"><i class="bi bi-shield-fill"></i> admin</span>
-                                    {% else %}
-                                        <span class="badge-user"><i class="bi bi-person"></i> usuario</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <form action="/usuario/rol/{{ row[0] }}" method="post" class="role-form">
-                                        <select name="rol" class="form-select">
-                                            <option value="usuario" {% if row[14] != 'admin' %}selected{% endif %}>usuario</option>
-                                            <option value="admin"   {% if row[14] == 'admin' %}selected{% endif %}>admin</option>
-                                        </select>
-                                        <button type="submit" class="role-btn" title="Aplicar">
-                                            <i class="bi bi-check-lg"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                                <td>
-                                    <form action="/usuario/eliminar/{{ row[0] }}" method="post" style="margin:0">
-                                        <button type="submit"
-                                            onclick="return confirm('¿Eliminar este usuario permanentemente?')"
-                                            class="tbl-btn tbl-btn-delete" title="Eliminar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <details class="admin-details" id="citas" open>
+              <summary>
+                <span><i class="bi bi-calendar-check-fill"></i> Citas registradas</span>
+                <strong>{{ total_citas }}</strong>
+              </summary>
+
+              <div class="table-wrap table-responsive">
+                {% if citas_data %}
+                  <table class="dmi-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Vehiculo</th>
+                        <th>Placa</th>
+                        <th>Servicio</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {% for cita in citas_data %}
+                        <tr>
+                          <td><span class="badge-code">{{ cita[1] }}</span></td>
+                          <td><span class="badge-placa">{{ cita[2] }}</span></td>
+                          <td>{{ cita[3] }}</td>
+                          <td><span class="badge-placa">{{ cita[4] }}</span></td>
+                          <td>{{ cita[5] }}</td>
+                          <td>{{ cita[6] }}</td>
+                          <td>{{ cita[7] }}</td>
+                          <td>
+                            <div class="tbl-actions">
+                              <a href="/cita/editar/{{ cita[0] }}" class="tbl-btn tbl-btn-edit" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                              </a>
+
+                              <button
+                                type="button"
+                                class="tbl-btn tbl-btn-invoice service-invoice-btn"
+                                title="Facturar servicio"
+                                data-cita-id="{{ cita[0] }}"
+                                data-fecha="{{ cita[1] }}"
+                                data-hora="{{ cita[2] }}"
+                                data-vehiculo="{{ cita[3] }}"
+                                data-placa="{{ cita[4] }}"
+                                data-motivo="{{ cita[5] }}"
+                              >
+                                <i class="bi bi-receipt"></i>
+                              </button>
+
+                              <form action="/cita/eliminar/{{ cita[0] }}" method="post" data-confirm-title="Eliminar cita" data-confirm-message="Vas a eliminar esta cita registrada. Esta accion no se podra deshacer.">
+                                <button type="submit" class="tbl-btn tbl-btn-delete" title="Eliminar">
+                                  <i class="bi bi-trash"></i>
+                                </button>
+                              </form>
+                            </div>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 {% else %}
-                <div class="empty-state">
-                    <i class="bi bi-people"></i>
-                    No hay usuarios registrados.
-                </div>
+                  <div class="empty-state">
+                    <i class="bi bi-calendar-x"></i>
+                    No hay citas registradas.
+                  </div>
                 {% endif %}
-            </div>
-        </div>
-        {% endif %}
+              </div>
+            </details>
 
+            {% if usuario and usuario.rol == 'admin' %}
+              <details class="admin-details" id="registros" open>
+                <summary>
+                  <span><i class="bi bi-people-fill"></i> Gestion de usuarios y roles</span>
+                  <strong>{{ total_usuarios }}</strong>
+                </summary>
+
+                <div class="table-wrap table-responsive">
+                  {% if usuarios_data %}
+                    <table class="dmi-table">
+                      <thead>
+                        <tr>
+                          <th>Usuario</th>
+                          <th>Nombre</th>
+                          <th>Apellidos</th>
+                           <th>Email</th>
+                           <th>Rol</th>
+                           <th>Ficha</th>
+                           <th>Cambiar rol</th>
+                           <th>Eliminar</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {% for row in usuarios_data %}
+                          <tr>
+                            <td>{{ row[6] }}</td>
+                            <td>{{ row[1] }}</td>
+                            <td>{{ row[2] }}</td>
+                            <td>{{ row[4] }}</td>
+                            <td>
+                              {% set rol_actual = row[14] if row[14] else 'usuario' %}
+                              {% if rol_actual == 'admin' %}
+                                <span class="badge-admin"><i class="bi bi-shield-fill"></i> admin</span>
+                              {% else %}
+                                <span class="badge-user"><i class="bi bi-person"></i> usuario</span>
+                             {% endif %}
+                           </td>
+                           <td>
+                             <button type="button" class="tbl-btn tbl-btn-profile user-profile-btn" data-user-id="{{ row[0] }}" title="Ver ficha del usuario">
+                               <i class="bi bi-person-lines-fill"></i>
+                             </button>
+                           </td>
+                           <td>
+                             <form action="/usuario/rol/{{ row[0] }}" method="post" class="role-form" data-confirm-title="Cambiar rol" data-confirm-message="Confirma que quieres guardar este cambio de rol para el usuario seleccionado.">
+                                <select name="rol" class="form-select">
+                                  <option value="usuario" {% if row[14] != 'admin' %}selected{% endif %}>usuario</option>
+                                  <option value="admin" {% if row[14] == 'admin' %}selected{% endif %}>admin</option>
+                                </select>
+
+                                <button type="submit" class="role-btn" title="Aplicar">
+                                  <i class="bi bi-check-lg"></i>
+                                </button>
+                              </form>
+                            </td>
+                            <td>
+                              <form action="/usuario/eliminar/{{ row[0] }}" method="post" data-confirm-title="Eliminar usuario" data-confirm-message="Vas a eliminar este usuario permanentemente. Revisa bien antes de confirmar.">
+                                <button type="submit" class="tbl-btn tbl-btn-delete" title="Eliminar">
+                                  <i class="bi bi-trash"></i>
+                                </button>
+                              </form>
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  {% else %}
+                    <div class="empty-state">
+                      <i class="bi bi-people"></i>
+                      No hay usuarios registrados.
+                    </div>
+                  {% endif %}
+                </div>
+              </details>
+            {% endif %}
+          </div>
+        </section>
+      </main>
     </div>
-</div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-(function () {
-    const successMsg = {{ success_msg | tojson }};
-    const errorMsg   = {{ error | tojson }};
+  <div class="modal fade" id="notifModal" tabindex="-1" aria-labelledby="notifModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content dmi-modal" id="notifModalContent">
+        <div class="modal-header border-0 pb-1">
+          <h6 class="modal-title fw-bold" id="notifModalLabel"></h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body pt-1 pb-2" id="notifModalBody"></div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn-dmi btn-primary-dmi" id="notifModalBtn" data-bs-dismiss="modal">
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content dmi-modal" style="border:1px solid #ff2f55;background:linear-gradient(145deg,rgba(28,0,7,.97),rgba(5,5,8,.98));box-shadow:0 0 35px rgba(255,47,85,.22);border-radius:0;">
+        <div class="modal-header border-0 pb-1">
+          <div>
+            <p class="text-uppercase mb-2" style="color:#ff2f55;letter-spacing:3px;font-size:.78rem;">Confirmacion requerida</p>
+            <h5 class="modal-title fw-bold" id="confirmActionTitle" style="color:#ff2f55;letter-spacing:1px;"></h5>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body pt-1 pb-3" id="confirmActionMessage" style="color:#c9bcc2;line-height:1.6;"></div>
+
+        <div class="modal-footer border-0 pt-0 d-flex gap-3">
+          <button type="button" class="btn-dmi btn-primary-dmi flex-fill" id="confirmActionBtn">
+            Confirmar
+          </button>
+          <button type="button" class="btn-dmi btn-outline-dmi flex-fill" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="userProfileModal" tabindex="-1" aria-labelledby="userProfileTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content dmi-modal user-profile-modal">
+        <div class="modal-header border-0">
+          <div>
+            <p class="user-profile-kicker">Ficha de usuario</p>
+            <h5 class="modal-title" id="userProfileTitle">Detalle completo</h5>
+            <span id="userProfileSubtitle" class="user-profile-subtitle">Informacion relacionada con el cliente</span>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body" id="userProfileBody">
+          <div class="user-profile-loading">
+            <i class="bi bi-arrow-repeat"></i>
+            Cargando informacion...
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 user-profile-footer">
+          <button type="button" class="btn-dmi btn-outline-dmi" data-bs-dismiss="modal">
+            Cerrar
+          </button>
+          <a href="/configuracion#usuarios" class="btn-dmi btn-primary-dmi user-profile-edit-link" id="userProfileEditBtn">
+            Editar usuario
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="invoice-service-overlay" id="invoiceServiceOverlay" aria-hidden="true">
+    <div class="invoice-service-box">
+      <p class="text-uppercase mb-2" style="color:#ff2f55;letter-spacing:3px;font-size:.78rem;">Factura de servicio</p>
+      <h5 class="fw-bold mb-3" style="color:#ff2f55;letter-spacing:1px;">Costo de reparacion o mantenimiento</h5>
+      <p id="invoiceServiceSummary">Ingresa el valor final cobrado al cliente.</p>
+
+      <input type="number" id="invoiceServiceCost" min="0" step="1000" placeholder="Costo final del servicio">
+      <textarea id="invoiceServiceConcept" rows="3" placeholder="Concepto de la factura: mantenimiento, reparacion, repuestos, mano de obra..."></textarea>
+
+      <div class="invoice-service-actions">
+        <button type="button" class="btn-dmi btn-primary-dmi flex-fill" id="invoiceServiceConfirm">
+          Generar factura
+        </button>
+        <button type="button" class="btn-dmi btn-outline-dmi flex-fill" id="invoiceServiceCancel">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+  (function () {
+    const overlay = document.getElementById("invoiceServiceOverlay");
+    const summary = document.getElementById("invoiceServiceSummary");
+    const costInput = document.getElementById("invoiceServiceCost");
+    const conceptInput = document.getElementById("invoiceServiceConcept");
+    const confirmBtn = document.getElementById("invoiceServiceConfirm");
+    const cancelBtn = document.getElementById("invoiceServiceCancel");
+    let activeCita = null;
+
+    if (!overlay || !summary || !costInput || !conceptInput || !confirmBtn || !cancelBtn) return;
+
+    const money = (value) => `$${Number(value || 0).toLocaleString("es-CO")}`;
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[char]));
+
+    const closeInvoiceModal = () => {
+      overlay.classList.remove("active");
+      overlay.setAttribute("aria-hidden", "true");
+      activeCita = null;
+      costInput.value = "";
+      conceptInput.value = "";
+    };
+
+    const openServiceInvoice = (invoice) => {
+      const invoiceWindow = window.open("", "_blank", "width=980,height=900");
+      if (!invoiceWindow) {
+        alert("El navegador bloqueo la factura. Permite ventanas emergentes para descargarla.");
+        return;
+      }
+
+      const cliente = invoice.cliente || {};
+      invoiceWindow.document.write(`
+        <!doctype html>
+        <html lang="es">
+        <head>
+          <meta charset="utf-8">
+          <title>Factura servicio ${escapeHtml(invoice.numero)}</title>
+          <style>
+            *{box-sizing:border-box} body{margin:0;background:#111;color:#1d1d1f;font-family:Arial,sans-serif}
+            .toolbar{position:sticky;top:0;display:flex;justify-content:flex-end;gap:12px;padding:14px 24px;background:#050505;border-bottom:3px solid #e23345}
+            .toolbar button{border:1px solid #e23345;background:#e23345;color:#fff;padding:12px 18px;font-weight:800;cursor:pointer}.toolbar .secondary{background:transparent}
+            .invoice{width:min(920px,calc(100vw - 32px));margin:26px auto;background:#fff;padding:38px;border-top:8px solid #e23345}
+            .head{display:grid;grid-template-columns:1fr auto;gap:24px;border-bottom:2px solid #eee;padding-bottom:24px}
+            .brand{display:flex;gap:16px;align-items:center}.brand img{width:82px;height:82px;object-fit:contain}.brand h1{margin:0;font-size:24px;text-transform:uppercase}
+            .brand p,.meta p,.customer p{margin:4px 0;color:#666}.meta{text-align:right}.meta h2{margin:0 0 8px;color:#e23345;font-size:28px;text-transform:uppercase}
+            .section{margin-top:24px}.section h3{margin:0 0 12px;color:#e23345;text-transform:uppercase;letter-spacing:2px;font-size:13px}
+            .customer{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;background:#f7f7f8;padding:16px}
+            table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#2a1116;color:#fff;text-align:left;padding:12px;font-size:12px;text-transform:uppercase}
+            td{border-bottom:1px solid #eee;padding:12px}.totals{width:min(360px,100%);margin-left:auto;margin-top:20px}
+            .totals div{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}.grand{color:#e23345;font-size:22px;font-weight:900}
+            .legal{margin-top:28px;color:#666;font-size:12px;line-height:1.55;border-top:1px solid #eee;padding-top:16px}
+            @media print{body{background:#fff}.toolbar{display:none}.invoice{width:100%;margin:0}}
+          </style>
+        </head>
+        <body>
+          <div class="toolbar">
+            <button onclick="window.print()">Descargar PDF</button>
+            <button class="secondary" onclick="window.close()">Cerrar</button>
+          </div>
+          <main class="invoice">
+            <header class="head">
+              <div class="brand">
+                <img src="/assets/images/logoempresaXD.png" alt="Logo DMI">
+                <div>
+                  <h1>Disol Motors Injections</h1>
+                  <p>NIT/CC: Por definir</p>
+                  <p>Telefono: Por definir</p>
+                  <p>Direccion: Por definir - Colombia</p>
+                </div>
+              </div>
+              <div class="meta">
+                <h2>Factura de servicio</h2>
+                <p><strong>No.</strong> ${escapeHtml(invoice.numero)}</p>
+                <p><strong>Fecha:</strong> ${escapeHtml(invoice.fecha)}</p>
+                <p><strong>Estado:</strong> Servicio completado</p>
+              </div>
+            </header>
+            <section class="section">
+              <h3>Cliente y vehiculo</h3>
+              <div class="customer">
+                <p><strong>Nombre:</strong> ${escapeHtml(cliente.nombre || "Cliente")}</p>
+                <p><strong>Documento:</strong> ${escapeHtml(cliente.documento || "No registrado")}</p>
+                <p><strong>Correo:</strong> ${escapeHtml(cliente.email || "No registrado")}</p>
+                <p><strong>Telefono:</strong> ${escapeHtml(cliente.telefono || "No registrado")}</p>
+                <p><strong>Vehiculo:</strong> ${escapeHtml(invoice.vehiculo || "No registrado")}</p>
+                <p><strong>Placa:</strong> ${escapeHtml(invoice.placa || "Sin placa")}</p>
+              </div>
+            </section>
+            <section class="section">
+              <h3>Detalle del servicio</h3>
+              <table>
+                <thead><tr><th>Concepto</th><th>Fecha cita</th><th>Cant.</th><th>Valor</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>${escapeHtml(invoice.concepto)}</td>
+                    <td>${escapeHtml(invoice.fechaCita || "Sin fecha")} ${escapeHtml(invoice.horaCita || "")}</td>
+                    <td>1</td>
+                    <td>${money(invoice.total)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            <section class="totals">
+              <div><span>Subtotal</span><strong>${money(invoice.total)}</strong></div>
+              <div><span>IVA</span><strong>Incluido/segun regimen</strong></div>
+              <div class="grand"><span>Total</span><strong>${money(invoice.total)}</strong></div>
+            </section>
+            <p class="legal">
+              Documento generado por sistema para soporte del servicio. Completa NIT, direccion fiscal, regimen,
+              numeracion autorizada y responsabilidades fiscales antes de usarlo como factura electronica legal ante la DIAN.
+            </p>
+          </main>
+        </body>
+        </html>
+      `);
+      invoiceWindow.document.close();
+    };
+
+    document.querySelectorAll(".service-invoice-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        activeCita = {
+          id: button.dataset.citaId,
+          fecha: button.dataset.fecha,
+          hora: button.dataset.hora,
+          vehiculo: button.dataset.vehiculo,
+          placa: button.dataset.placa,
+          motivo: button.dataset.motivo
+        };
+        summary.textContent = `${activeCita.motivo || "Servicio"} - ${activeCita.placa || "Sin placa"} - ${activeCita.fecha || "Sin fecha"}`;
+        conceptInput.value = activeCita.motivo || "Mantenimiento o reparacion";
+        overlay.classList.add("active");
+        overlay.setAttribute("aria-hidden", "false");
+        costInput.focus();
+      });
+    });
+
+    cancelBtn.addEventListener("click", closeInvoiceModal);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) closeInvoiceModal();
+    });
+
+    confirmBtn.addEventListener("click", async () => {
+      if (!activeCita) return;
+      const costo = Number(costInput.value || 0);
+      const concepto = conceptInput.value.trim() || activeCita.motivo || "Servicio tecnico automotriz";
+      if (!costo || costo <= 0) {
+        alert("Ingresa el costo final del servicio.");
+        return;
+      }
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Generando...";
+      try {
+        const response = await fetch(`/api/citas/${activeCita.id}/factura-servicio`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          credentials: "include",
+          body: JSON.stringify({ costo, concepto })
+        });
+        const data = await response.json();
+        if (!response.ok || data.error) throw new Error(data.error || "No se pudo generar la factura");
+
+        const cita = data.cita || {};
+        const fullName = `${cita.nombre || ""} ${cita.apellidos || ""}`.trim() || cita.usuarionombre || "Cliente";
+        openServiceInvoice({
+          numero: `DMI-SERV-${new Date().toISOString().replace(/\D/g, "").slice(0, 14)}`,
+          fecha: new Date().toLocaleString("es-CO"),
+          cliente: {
+            nombre: fullName,
+            documento: cita.documento,
+            email: cita.email,
+            telefono: cita.telefono
+          },
+          vehiculo: [cita.marca, cita.modelo].filter(Boolean).join(" ") || activeCita.vehiculo,
+          placa: cita.placa || activeCita.placa,
+          concepto,
+          fechaCita: cita.fecha || activeCita.fecha,
+          horaCita: cita.hora || activeCita.hora,
+          total: costo
+        });
+
+        closeInvoiceModal();
+        alert("Factura generada. La cita quedo marcada como completada.");
+        window.location.href = "/?admin_section=citas&success=Factura de servicio generada";
+      } catch (error) {
+        alert(error.message || "No se pudo generar la factura");
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Generar factura";
+      }
+    });
+  })();
+
+  </script>
+
+  <script>
+  (function () {
+    const modalElement = document.getElementById("userProfileModal");
+    const body = document.getElementById("userProfileBody");
+    const title = document.getElementById("userProfileTitle");
+    const subtitle = document.getElementById("userProfileSubtitle");
+
+    if (!modalElement || !body || !title || !subtitle) return;
+
+    const modal = new bootstrap.Modal(modalElement);
+    const escapeHtml = (value) => String(value ?? "Sin registrar").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[char]));
+
+    const showValue = (value) => escapeHtml(value || value === 0 ? value : "Sin registrar");
+
+    const infoItem = (label, value) => `
+      <div class="user-profile-info">
+        <span>${escapeHtml(label)}</span>
+        <strong>${showValue(value)}</strong>
+      </div>
+    `;
+
+    const emptyBlock = (text) => `
+      <div class="user-profile-empty">
+        <i class="bi bi-inbox"></i>
+        ${escapeHtml(text)}
+      </div>
+    `;
+
+    const getInitials = (name) => {
+      const parts = String(name || "Usuario").trim().split(/\s+/).filter(Boolean);
+      return (parts[0]?.[0] || "U") + (parts[1]?.[0] || "");
+    };
+
+    const statusClass = (value) => {
+      const normalized = String(value || "").toLowerCase();
+      if (normalized.includes("confirm") || normalized.includes("pendiente")) return "active";
+      if (normalized.includes("complet")) return "done";
+      if (normalized.includes("cancel")) return "danger";
+      return "neutral";
+    };
+
+    const dateLine = (row) => {
+      const pieces = [row.fecha, row.hora, row.placa || row.vehiculo].filter(Boolean);
+      return pieces.length ? pieces.map(showValue).join(" - ") : "Sin fecha registrada";
+    };
+
+    const renderTable = (titleText, icon, rows, columns, emptyText) => {
+      if (!rows || !rows.length) {
+        return `
+          <section class="user-profile-section">
+            <h6><i class="bi ${icon}"></i>${escapeHtml(titleText)}</h6>
+            ${emptyBlock(emptyText)}
+          </section>
+        `;
+      }
+
+      const head = columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("");
+      const tableRows = rows.map((row) => `
+        <tr>
+          ${columns.map((column) => `<td>${showValue(row[column.key])}</td>`).join("")}
+        </tr>
+      `).join("");
+
+      return `
+        <section class="user-profile-section">
+          <h6><i class="bi ${icon}"></i>${escapeHtml(titleText)}</h6>
+          <div class="table-responsive">
+            <table class="dmi-table user-profile-table">
+              <thead><tr>${head}</tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+        </section>
+      `;
+    };
+
+    const renderAppointmentCards = (rows) => {
+      if (!rows || !rows.length) {
+        return `
+          <section class="user-profile-section">
+            <h6><i class="bi bi-calendar-check"></i>Citas</h6>
+            ${emptyBlock("Este usuario no tiene citas registradas.")}
+          </section>
+        `;
+      }
+
+      const cards = rows.map((row) => `
+        <article class="user-profile-appointment">
+          <div>
+            <strong>${showValue(row.motivo)}</strong>
+            <span>${dateLine(row)}</span>
+          </div>
+          <em class="${statusClass(row.estado)}">${showValue(row.estado)}</em>
+        </article>
+      `).join("");
+
+      return `
+        <section class="user-profile-section">
+          <h6><i class="bi bi-calendar-check"></i>Citas</h6>
+          <div class="user-profile-appointments">${cards}</div>
+        </section>
+      `;
+    };
+
+    const renderProfile = (data) => {
+      const usuario = data.usuario || {};
+      const fullName = `${usuario.nombre || ""} ${usuario.apellidos || ""}`.trim() || usuario.usuarionombre || "Usuario";
+      const documentText = `${usuario.tipodedocumento || ""} ${usuario.documento || ""}`.trim();
+
+      title.textContent = fullName;
+      subtitle.textContent = usuario.email || "Informacion relacionada con el cliente";
+
+      const notes = (data.notas || []).map((note) => `
+        <div class="user-profile-note"><i class="bi bi-info-circle"></i>${escapeHtml(note)}</div>
+      `).join("");
+
+      body.innerHTML = `
+        <section class="user-profile-hero">
+          <div class="user-profile-avatar">${escapeHtml(getInitials(fullName).toUpperCase())}</div>
+          <div class="user-profile-headline">
+            <h4>${showValue(fullName)}</h4>
+            <span>${showValue(usuario.email)}</span>
+          </div>
+          <div class="user-profile-role">${showValue(usuario.rol)}</div>
+        </section>
+
+        <section class="user-profile-section user-profile-main">
+          <h6><i class="bi bi-person-badge"></i>Datos basicos</h6>
+          <div class="user-profile-grid">
+            ${infoItem("Usuario", usuario.usuarionombre)}
+            ${infoItem("Documento", documentText)}
+            ${infoItem("Telefono", usuario.telefono)}
+            ${infoItem("Fecha nacimiento", usuario.fechadenacimiento)}
+          </div>
+        </section>
+
+        ${renderTable("Vehiculos", "bi-car-front-fill", data.vehiculos, [
+          { label: "Placa", key: "placa" },
+          { label: "Marca", key: "marca" },
+          { label: "Modelo", key: "modelo" },
+          { label: "Tipo", key: "tipo_vehiculo" },
+          { label: "Motor", key: "motor" }
+        ], "Este usuario no tiene vehiculo asignado.")}
+
+        ${renderAppointmentCards(data.citas)}
+
+        ${renderTable("Pedidos y pagos", "bi-receipt", data.pagos, [
+          { label: "Codigo", key: "codigo" },
+          { label: "Metodo", key: "metodo" },
+          { label: "Estado", key: "estado" },
+          { label: "Total", key: "total" },
+          { label: "Fecha", key: "fecha" }
+        ], "No hay pagos o pedidos vinculados a este usuario.")}
+
+        ${renderTable("Productos del carrito", "bi-cart-check", data.productos, [
+          { label: "Codigo", key: "codigoproductos" },
+          { label: "Producto", key: "descripcionproductos" },
+          { label: "Precio", key: "valor_precio" },
+          { label: "Pedido", key: "pedido_idpedido" }
+        ], "No hay productos de carrito guardados para este usuario.")}
+
+        ${notes ? `<section class="user-profile-notes">${notes}</section>` : ""}
+      `;
+    };
+
+    document.querySelectorAll(".user-profile-btn").forEach((button) => {
+      button.addEventListener("click", async function () {
+        const userId = button.dataset.userId;
+        title.textContent = "Cargando ficha";
+        subtitle.textContent = "Consultando informacion del usuario";
+        body.innerHTML = '<div class="user-profile-loading"><i class="bi bi-arrow-repeat"></i>Cargando informacion...</div>';
+        modal.show();
+
+        try {
+          const response = await fetch(`/admin/usuario/${userId}/ficha`, {
+            headers: { "Accept": "application/json" }
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "No se pudo cargar la ficha del usuario.");
+          }
+
+          renderProfile(data);
+        } catch (error) {
+          title.textContent = "No se pudo cargar";
+          subtitle.textContent = "Revisa la informacion e intenta de nuevo";
+          body.innerHTML = `
+            <div class="user-profile-empty error">
+              <i class="bi bi-exclamation-triangle"></i>
+              ${escapeHtml(error.message || "Ocurrio un error cargando la ficha.")}
+            </div>
+          `;
+        }
+      });
+    });
+  })();
+  </script>
+
+  <script>
+  (function () {
+    const modalElement = document.getElementById("confirmActionModal");
+    const titleElement = document.getElementById("confirmActionTitle");
+    const messageElement = document.getElementById("confirmActionMessage");
+    const confirmButton = document.getElementById("confirmActionBtn");
+
+    if (!modalElement || !titleElement || !messageElement || !confirmButton) return;
+
+    const modal = new bootstrap.Modal(modalElement);
+    let pendingForm = null;
+
+    document.querySelectorAll("form[data-confirm-title]").forEach((form) => {
+      form.addEventListener("submit", function (event) {
+        if (form.dataset.confirmed === "true") {
+          form.dataset.confirmed = "";
+          return;
+        }
+
+        event.preventDefault();
+        pendingForm = form;
+        titleElement.textContent = form.dataset.confirmTitle || "Confirmar accion";
+        messageElement.textContent = form.dataset.confirmMessage || "Confirma que deseas continuar con esta accion.";
+        modal.show();
+      });
+    });
+
+    confirmButton.addEventListener("click", function () {
+      if (!pendingForm) return;
+      pendingForm.dataset.confirmed = "true";
+      modal.hide();
+      pendingForm.submit();
+    });
+  })();
+  </script>
+
+  <script>
+  (function () {
+    const buildBackButton = () => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "admin-tool-btn";
+      button.innerHTML = '<i class="bi bi-arrow-left"></i> Volver';
+      button.addEventListener("click", () => {
+        if (window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+        window.location.href = "/";
+      });
+      return button;
+    };
+
+    const filterTable = (table, value, emptyState) => {
+      const query = value.trim().toLowerCase();
+      const rows = Array.from(table.querySelectorAll("tbody tr"));
+      let visibleRows = 0;
+
+      rows.forEach((row) => {
+        const isEmptyRow = row.querySelector("td[colspan]");
+        const match = !query || row.textContent.toLowerCase().includes(query);
+        row.style.display = match ? "" : "none";
+        if (match && !isEmptyRow) visibleRows += 1;
+      });
+
+      if (emptyState) {
+        emptyState.style.display = query && visibleRows === 0 ? "block" : "none";
+      }
+    };
+
+    document.querySelectorAll(".admin-details").forEach((section, index) => {
+      if (section.querySelector(".admin-workbar")) return;
+
+      const summary = section.querySelector("summary");
+      const table = section.querySelector("table");
+      const tableWrap = section.querySelector(".table-wrap");
+
+      if (!summary) return;
+
+      const workbar = document.createElement("div");
+      workbar.className = "admin-workbar";
+
+      const actions = document.createElement("div");
+      actions.className = "admin-workbar-actions";
+      actions.appendChild(buildBackButton());
+
+      if (section.id === "citas") {
+        const citaButton = document.createElement("a");
+        citaButton.href = "/citas";
+        citaButton.className = "admin-tool-btn primary";
+        citaButton.innerHTML = '<i class="bi bi-calendar-plus"></i> Registrar cita';
+        actions.appendChild(citaButton);
+      }
+
+      if (tableWrap) {
+        const toggleButton = document.createElement("button");
+        toggleButton.type = "button";
+        toggleButton.className = "admin-tool-btn";
+        toggleButton.innerHTML = '<i class="bi bi-layout-sidebar-inset"></i> Ocultar tabla';
+        toggleButton.addEventListener("click", () => {
+          const isCollapsed = section.dataset.tableCollapsed === "true";
+          section.dataset.tableCollapsed = isCollapsed ? "false" : "true";
+          toggleButton.innerHTML = isCollapsed
+            ? '<i class="bi bi-layout-sidebar-inset"></i> Ocultar tabla'
+            : '<i class="bi bi-table"></i> Ver tabla';
+        });
+        actions.appendChild(toggleButton);
+      }
+
+      workbar.appendChild(actions);
+
+      if (table) {
+        const searchBox = document.createElement("div");
+        searchBox.className = "admin-searchbox";
+        const searchInput = document.createElement("input");
+        searchInput.type = "search";
+        searchInput.className = "admin-table-search";
+        searchInput.placeholder = "Buscar en esta tabla...";
+        searchInput.setAttribute("aria-label", "Buscar en tabla");
+
+        const emptyState = document.createElement("div");
+        emptyState.className = "admin-no-results";
+        emptyState.textContent = "No se encontraron resultados para esa busqueda.";
+        table.parentElement.appendChild(emptyState);
+
+        searchInput.addEventListener("input", () => filterTable(table, searchInput.value, emptyState));
+        searchBox.appendChild(searchInput);
+        workbar.appendChild(searchBox);
+      }
+
+      summary.insertAdjacentElement("afterend", workbar);
+
+      if (index > 0 && !new URLSearchParams(window.location.search).get("admin_section")) {
+        section.open = false;
+      }
+    });
+  })();
+  </script>
+
+  <script>
+  (function () {
+    const successMsg = null;
+    const errorMsg = null;
+
     if (!successMsg && !errorMsg) return;
 
     const isSuccess = !!successMsg;
-    const mensaje   = successMsg || errorMsg;
+    const mensaje = successMsg || errorMsg;
 
-    const content = document.getElementById('notifModalContent');
-    const label   = document.getElementById('notifModalLabel');
-    const body    = document.getElementById('notifModalBody');
-    const btn     = document.getElementById('notifModalBtn');
+    const content = document.getElementById("notifModalContent");
+    const label = document.getElementById("notifModalLabel");
+    const body = document.getElementById("notifModalBody");
 
     if (isSuccess) {
-        content.style.borderTopColor = '#059669';
-        label.innerHTML = '<i class="bi bi-check-circle-fill me-2" style="color:#059669"></i>Operación exitosa';
-        btn.style.background = '#059669';
-        btn.style.color = '#fff';
+      content.classList.add("success");
+      label.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Operacion exitosa';
     } else {
-        content.style.borderTopColor = '#dc2626';
-        label.innerHTML = '<i class="bi bi-x-circle-fill me-2" style="color:#dc2626"></i>Ocurrió un error';
-        btn.style.background = '#dc2626';
-        btn.style.color = '#fff';
+      content.classList.add("error");
+      label.innerHTML = '<i class="bi bi-x-circle-fill me-2"></i>Ocurrio un error';
     }
 
     body.textContent = mensaje;
-    new bootstrap.Modal(document.getElementById('notifModal')).show();
+    new bootstrap.Modal(document.getElementById("notifModal")).show();
+  })();
+</script>
+
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const section = params.get("admin_section") || "panel";
+  const sectionTitles = {
+    panel: { kicker: "Centro de administracion", title: 'Panel <span>general</span>' },
+    usuarios: { kicker: "Gestion de administracion", title: '<span>Usuarios</span>' },
+    vehiculos: { kicker: "Gestion de flota", title: '<span>Vehiculos</span>' },
+    citas: { kicker: "Agenda del taller", title: '<span>Citas</span>' },
+    registros: { kicker: "Sistema", title: '<span>Registros</span>' }
+  };
+
+  const setSectionTitle = (target) => {
+    const titleBar = document.getElementById("activeSectionTitle");
+    const kicker = document.getElementById("activeSectionKicker");
+    const heading = document.getElementById("activeSectionHeading");
+    const data = sectionTitles[target] || sectionTitles.panel;
+
+    if (!titleBar || !kicker || !heading) return;
+
+    kicker.textContent = data.kicker;
+    heading.innerHTML = data.title;
+
+    if (target === "panel") {
+      titleBar.classList.remove("is-visible");
+    } else {
+      titleBar.classList.add("is-visible");
+    }
+  };
+
+  const go = (target) => {
+    if (target === "configuracion" || target === "registros") {
+      window.location.href = "/configuracion";
+      return;
+    }
+
+    window.location.href = `/?admin_section=${target}`;
+  };
+
+  setSectionTitle(section);
+
+  document.querySelectorAll('a[href="#panel-general"]').forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      go("panel");
+    });
+  });
+
+  document.querySelectorAll('a[href="#usuarios"]').forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      go("usuarios");
+    });
+  });
+
+  document.querySelectorAll('a[href="#vehiculos"]').forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      go("vehiculos");
+    });
+  });
+
+  document.querySelectorAll('a[href="#registros"], a[href="/configuracion"]').forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      go("registros");
+    });
+  });
+
+  document.querySelectorAll('.admin-sidebar a[href="#citas"]').forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      go("citas");
+    });
+  });
+
+  if (section === "panel") return;
+
+  const hide = (selector) => {
+    document.querySelectorAll(selector).forEach((el) => {
+      el.style.setProperty("display", "none", "important");
+    });
+  };
+
+  const show = (selector) => {
+    document.querySelectorAll(selector).forEach((el) => {
+      el.style.removeProperty("display");
+    });
+  };
+
+  hide(".panel-heading");
+  hide(".summary-grid");
+  hide(".dashboard-grid");
+  hide(".quick-actions");
+  hide(".management-grid > *");
+  hide(".admin-details");
+  hide(".dmi-card");
+
+  show(".management-grid");
+
+  if (section === "usuarios") {
+    show("#usuarios");
+    show("#registros");
+    show("#usuarios.dmi-card");
+
+    const usuariosCard = document.querySelector("#usuarios");
+    const usuariosDetails = document.querySelector("#registros");
+
+      if (usuariosCard && usuariosCard.parentElement) {
+      usuariosCard.parentElement.style.removeProperty("display");
+    }
+
+    if (usuariosDetails && usuariosDetails.parentElement) {
+      usuariosDetails.parentElement.style.removeProperty("display");
+    }
+  }
+
+  if (section === "vehiculos") {
+    show("#vehiculos");
+
+    document.querySelectorAll(".admin-details").forEach((details) => {
+      const text = details.textContent.toLowerCase();
+      if (text.includes("listado de vehiculos")) {
+        details.style.display = "";
+      }
+    });
+
+    const vehiculosCard = document.querySelector("#vehiculos");
+
+    if (vehiculosCard && vehiculosCard.parentElement) {
+      vehiculosCard.parentElement.style.removeProperty("display");
+    }
+  }
+
+  if (section === "citas") {
+    show("#citas");
+
+    const citasDetails = document.querySelector("#citas");
+    if (citasDetails) {
+      citasDetails.style.removeProperty("display");
+      citasDetails.open = true;
+
+      if (citasDetails.parentElement) {
+        citasDetails.parentElement.style.removeProperty("display");
+      }
+    }
+  }
+
+  document.querySelectorAll(".admin-sidebar a, .sidebar-group a").forEach((item) => {
+    item.classList.remove("active");
+  });
+
+  const activeLink = document.querySelector(`a[href="#${section}"]`);
+  if (activeLink) activeLink.classList.add("active");
 })();
 </script>
 </body>
