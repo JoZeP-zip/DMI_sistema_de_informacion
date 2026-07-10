@@ -807,7 +807,7 @@ function App() {
       return;
     }
 
-    if (view === 'admin-dashboard' && user.role !== 'admin') {
+    if (view === 'admin-dashboard' && user.role !== 'es_admin') {
       setView('login');
     }
     
