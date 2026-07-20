@@ -1,0 +1,621 @@
+:root {
+  --ot-bg: #050506;
+  --ot-panel: #101113;
+  --ot-card: rgba(12, 12, 14, 0.96);
+  --ot-red: #ff2f55;
+  --ot-red-dark: #3a0710;
+  --ot-line: rgba(255, 47, 85, 0.48);
+  --ot-text: #ffffff;
+  --ot-muted: rgba(255, 255, 255, 0.62);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(255, 47, 85, 0.08), transparent 34%), var(--ot-bg);
+  color: var(--ot-text);
+  font-family: 'Orbitron', Arial, sans-serif;
+}
+
+.ot-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px clamp(18px, 4vw, 58px);
+  background: rgba(0, 0, 0, 0.92);
+  border-bottom: 1px solid var(--ot-line);
+}
+
+.ot-logo,
+.ot-nav a,
+.ot-nav button {
+  color: var(--ot-text);
+  text-decoration: none;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.ot-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ot-logo span {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--ot-red);
+  background: var(--ot-red-dark);
+  color: var(--ot-red);
+}
+
+.ot-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ot-nav a {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+}
+
+.ot-nav a:hover,
+.ot-nav a.active {
+  border-color: var(--ot-red);
+  background: rgba(255, 47, 85, 0.16);
+}
+
+.ot-page {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 36px 0 60px;
+}
+
+.ot-hero,
+.ot-card,
+.ot-flow,
+.ot-stats article {
+  border: 1px solid var(--ot-line);
+  background: linear-gradient(145deg, rgba(18, 19, 21, 0.98), rgba(5, 5, 6, 0.98));
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.42);
+}
+
+.ot-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: clamp(24px, 4vw, 44px);
+  margin-bottom: 24px;
+}
+
+.ot-hero p,
+.ot-card-head p,
+.ot-flow small,
+.ot-stats span,
+.ot-empty span {
+  color: var(--ot-muted);
+}
+
+.ot-hero p {
+  margin: 0 0 8px;
+  color: var(--ot-red);
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.ot-hero h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 6vw, 5rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.ot-hero h1 span,
+.ot-card h2 i {
+  color: var(--ot-red);
+}
+
+.ot-hero small {
+  display: block;
+  max-width: 760px;
+  margin-top: 14px;
+  color: var(--ot-muted);
+  line-height: 1.7;
+}
+
+.ot-main-btn,
+.ot-outline-btn,
+.ot-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid var(--ot-red);
+  color: var(--ot-text);
+  text-decoration: none;
+  text-transform: uppercase;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ot-main-btn {
+  background: var(--ot-red);
+}
+
+.ot-outline-btn,
+.ot-icon-btn {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.ot-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.ot-stats article {
+  min-height: 128px;
+  padding: 20px;
+}
+
+.ot-stats i {
+  color: var(--ot-red);
+  font-size: 1.8rem;
+}
+
+.ot-stats span {
+  display: block;
+  margin-top: 18px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.ot-stats strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ot-red);
+  font-size: 2rem;
+}
+
+.ot-flow {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.ot-flow article {
+  min-height: 112px;
+  padding: 16px;
+  background: rgba(255, 47, 85, 0.05);
+}
+
+.ot-flow article.active {
+  background: rgba(255, 47, 85, 0.16);
+}
+
+.ot-flow span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 12px;
+  background: var(--ot-red);
+  color: #fff;
+  font-weight: 900;
+}
+
+.ot-flow strong,
+.ot-flow small {
+  display: block;
+}
+
+.ot-flow strong {
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  font-size: 0.83rem;
+}
+
+.ot-card {
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.ot-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.ot-card h2 {
+  margin: 0;
+  text-transform: uppercase;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.ot-card-head p {
+  margin: 8px 0 0;
+}
+
+.ot-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 47, 85, 0.24);
+}
+
+.ot-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.ot-table th,
+.ot-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 47, 85, 0.18);
+  text-align: left;
+}
+
+.ot-table th {
+  background: rgba(255, 47, 85, 0.16);
+  color: var(--ot-red);
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+}
+
+.ot-table td {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.ot-plate,
+.ot-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 47, 85, 0.48);
+  background: rgba(255, 47, 85, 0.1);
+}
+
+.ot-status {
+  color: var(--ot-red);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.ot-empty,
+.ot-alert {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 190px;
+  padding: 28px;
+  text-align: center;
+  color: var(--ot-muted);
+}
+
+.ot-empty i {
+  color: var(--ot-red);
+  font-size: 2.7rem;
+}
+
+.ot-empty strong {
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.ot-alert {
+  min-height: auto;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 18px;
+  border: 1px solid var(--ot-line);
+}
+
+.ot-alert.success {
+  background: rgba(0, 140, 85, 0.16);
+}
+
+.ot-alert.error {
+  background: rgba(255, 47, 85, 0.12);
+  color: #ff9cad;
+}
+
+@media (max-width: 920px) {
+  .ot-topbar,
+  .ot-hero,
+  .ot-card-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ot-nav {
+    justify-content: flex-start;
+  }
+
+  .ot-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ot-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .ot-page {
+    width: min(100% - 18px, 1180px);
+  }
+
+  .ot-stats,
+  .ot-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-main-btn,
+  .ot-outline-btn {
+    width: 100%;
+  }
+}
+
+.ot-detail-card {
+  margin-bottom: 18px;
+}
+
+.ot-state-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ot-state-form select,
+.ot-state-form button {
+  min-height: 44px;
+  border: 1px solid var(--ot-red);
+  background: #050506;
+  color: #fff;
+  font-family: 'Orbitron', Arial, sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.ot-state-form select {
+  padding: 0 14px;
+}
+
+.ot-state-form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px;
+  background: var(--ot-red);
+  cursor: pointer;
+}
+
+.ot-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.ot-detail-grid article,
+.ot-subsections article {
+  border: 1px solid rgba(255, 47, 85, 0.3);
+  background: rgba(255, 47, 85, 0.05);
+  padding: 16px;
+}
+
+.ot-detail-grid span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ot-muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ot-detail-grid strong {
+  display: block;
+  color: #fff;
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.ot-subsections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ot-subsections h3 {
+  margin: 0 0 12px;
+  color: var(--ot-red);
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.ot-subsections p {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.55;
+}
+
+.ot-subsections small {
+  color: var(--ot-muted);
+}
+
+@media (max-width: 760px) {
+  .ot-detail-grid,
+  .ot-subsections {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-state-form,
+  .ot-state-form select,
+  .ot-state-form button {
+    width: 100%;
+  }
+}
+
+.ot-workflow-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.ot-form-panel {
+  border: 1px solid var(--ot-line);
+  background: rgba(0, 0, 0, 0.34);
+  padding: 18px;
+}
+
+.ot-form-panel h3 {
+  margin: 0 0 14px;
+  color: var(--ot-text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.95rem;
+}
+
+.ot-form-panel h3 i {
+  color: var(--ot-red);
+}
+
+.ot-form-panel form {
+  display: grid;
+  gap: 10px;
+}
+
+.ot-form-panel label {
+  color: var(--ot-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.ot-form-panel input,
+.ot-form-panel select,
+.ot-form-panel textarea,
+.ot-state-form select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(255, 47, 85, 0.55);
+  background: #050506;
+  color: var(--ot-text);
+  padding: 10px 12px;
+  font: inherit;
+  outline: none;
+}
+
+.ot-form-panel textarea {
+  resize: vertical;
+  min-height: 92px;
+}
+
+.ot-form-panel input:focus,
+.ot-form-panel select:focus,
+.ot-form-panel textarea:focus,
+.ot-state-form select:focus {
+  border-color: var(--ot-red);
+  box-shadow: 0 0 0 2px rgba(255, 47, 85, 0.18);
+}
+
+.ot-form-panel button,
+.ot-state-form button {
+  min-height: 44px;
+  border: 1px solid var(--ot-red);
+  background: var(--ot-red);
+  color: var(--ot-text);
+  font: inherit;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ot-form-panel button:hover,
+.ot-state-form button:hover {
+  filter: brightness(1.08);
+}
+
+.ot-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ot-process-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ot-payment-form,
+.ot-delivery-form {
+  margin-top: 12px;
+}
+
+.ot-muted-note {
+  color: var(--ot-muted);
+  line-height: 1.6;
+  margin: 10px 0;
+}
+
+.ot-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ot-actions form {
+  margin: 0;
+}
+
+.ot-icon-btn.danger {
+  border-color: #ff2f55;
+  color: #fff;
+  background: rgba(255, 47, 85, 0.22);
+}
+
+@media (max-width: 860px) {
+  .ot-workflow-actions,
+  .ot-form-row,
+  .ot-process-buttons {
+    grid-template-columns: 1fr;
+  }
+}

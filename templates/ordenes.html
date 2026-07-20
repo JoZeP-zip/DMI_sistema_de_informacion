@@ -1,0 +1,332 @@
+
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ordenes de Trabajo | DMI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/ordenes.css">
+</head>
+<body>
+  <header class="ot-topbar">
+    <a class="ot-logo" href="/">
+      <span>DMI</span>
+      <strong>Ordenes</strong>
+    </a>
+
+    <nav class="ot-nav">
+      <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
+      <a href="/admin/citas"><i class="bi bi-calendar-check"></i> Citas</a>
+      <a href="/admin/ordenes" class="active"><i class="bi bi-clipboard2-check-fill"></i> Ordenes</a>
+      <a href="/admin/inventario"><i class="bi bi-box-seam-fill"></i> Inventario</a>
+      <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
+    </nav>
+  </header>
+
+  <main class="ot-page">
+    <section class="ot-hero">
+      <div>
+        <p>Centro operativo del taller</p>
+        <h1>Ordenes de <span>Trabajo</span></h1>
+        <small>Controla el flujo completo: cita, diagnostico, cotizacion, reparacion, factura, pago y entrega.</small>
+      </div>
+      <a class="ot-main-btn" href="/admin/citas"><i class="bi bi-calendar-plus"></i> Crear desde cita</a>
+    </section>
+
+    {% if success_msg %}
+      <div class="ot-alert success"><i class="bi bi-check-circle-fill"></i>{{ success_msg }}</div>
+    {% endif %}
+    {% if error %}
+      <div class="ot-alert error"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>
+    {% endif %}
+
+    <section class="ot-stats">
+      <article><i class="bi bi-clipboard2-check-fill"></i><span>Total</span><strong>{{ total_ordenes or 0 }}</strong></article>
+      <article><i class="bi bi-search"></i><span>Diagnostico</span><strong>{{ total_diagnostico or 0 }}</strong></article>
+      <article><i class="bi bi-tools"></i><span>Reparacion</span><strong>{{ total_reparacion or 0 }}</strong></article>
+      <article><i class="bi bi-receipt-cutoff"></i><span>Facturadas</span><strong>{{ total_facturadas or 0 }}</strong></article>
+    </section>
+
+    <section class="ot-flow">
+      <article class="active"><span>1</span><strong>Cita</strong><small>Entrada del cliente</small></article>
+      <article><span>2</span><strong>Orden</strong><small>Apertura del trabajo</small></article>
+      <article><span>3</span><strong>Diagnostico</strong><small>Revision tecnica</small></article>
+      <article><span>4</span><strong>Cotizacion</strong><small>Aprobacion cliente</small></article>
+      <article><span>5</span><strong>Reparacion</strong><small>Servicios y repuestos</small></article>
+      <article><span>6</span><strong>Factura</strong><small>Pago y entrega</small></article>
+    </section>
+
+
+    {% if orden_detalle %}
+      <section class="ot-card ot-detail-card">
+        <div class="ot-card-head">
+          <div>
+            <h2><i class="bi bi-clipboard2-pulse"></i> Ficha de orden</h2>
+            <p>{{ orden_detalle.codigo_orden }} - {{ orden_detalle.cliente }}</p>
+          </div>
+          <form class="ot-state-form" action="/admin/ordenes/{{ orden_detalle.idorden }}/estado" method="post">
+            <select name="estado">
+              {% for estado in ['abierta','diagnostico','cotizada','aprobada','en_reparacion','finalizada','facturada','pagada','entregada','cancelada'] %}
+                <option value="{{ estado }}" {% if orden_detalle.estado == estado %}selected{% endif %}>{{ estado }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit"><i class="bi bi-check2-square"></i> Guardar estado</button>
+          </form>
+        </div>
+
+        <div class="ot-detail-grid">
+          <article><span>Cliente</span><strong>{{ orden_detalle.cliente }}</strong></article>
+          <article><span>Vehiculo</span><strong>{{ orden_detalle.marca }} {{ orden_detalle.modelo }}</strong></article>
+          <article><span>Placa</span><strong>{{ orden_detalle.placa }}</strong></article>
+          <article><span>Estado</span><strong>{{ orden_detalle.estado }}</strong></article>
+          <article><span>Fecha apertura</span><strong>{{ orden_detalle.fecha_apertura }}</strong></article>
+          <article><span>Total</span><strong>${{ orden_detalle.total_orden or 0 }}</strong></article>
+        </div>
+
+        <div class="ot-subsections">
+          <article>
+            <h3><i class="bi bi-search"></i> Diagnostico</h3>
+            {% if diagnostico %}
+              <p>{{ diagnostico.diagnostico_tecnico }}</p>
+              <small>{{ diagnostico.recomendacion or 'Sin recomendacion registrada.' }}</small>
+            {% else %}
+              <p>No hay diagnostico registrado todavia.</p>
+            {% endif %}
+          </article>
+
+          <article>
+            <h3><i class="bi bi-tools"></i> Servicios</h3>
+            {% if servicios_orden %}
+              {% for item in servicios_orden %}
+                <p>{{ item.descripcion }} - ${{ item.subtotal or 0 }}</p>
+              {% endfor %}
+            {% else %}
+              <p>No hay servicios cargados en esta orden.</p>
+            {% endif %}
+          </article>
+
+          <article>
+            <h3><i class="bi bi-box-seam"></i> Repuestos</h3>
+            {% if repuestos_orden %}
+              {% for item in repuestos_orden %}
+                <p>{{ item.descripcion }} x {{ item.cantidad }} - ${{ item.subtotal or 0 }}</p>
+              {% endfor %}
+            {% else %}
+              <p>No hay repuestos consumidos en esta orden.</p>
+            {% endif %}
+          </article>
+
+          <article>
+            <h3><i class="bi bi-receipt"></i> Factura y pagos</h3>
+            {% if factura_orden %}
+              <p>Factura {{ factura_orden.codigo_factura }} - {{ factura_orden.estado }}</p>
+              <small>Total: ${{ factura_orden.total or 0 }} | Saldo: ${{ factura_orden.saldo or 0 }}</small>
+            {% else %}
+              <p>La orden aun no tiene factura generada.</p>
+            {% endif %}
+          </article>
+        </div>
+        <div class="ot-workflow-actions">
+          <article class="ot-form-panel">
+            <h3><i class="bi bi-search"></i> Registrar diagnostico</h3>
+            <form action="/admin/ordenes/{{ orden_detalle.idorden }}/diagnostico" method="post">
+              <label>Diagnostico tecnico</label>
+              <textarea name="diagnostico_tecnico" rows="4" required placeholder="Describe la revision tecnica realizada...">{{ diagnostico.diagnostico_tecnico if diagnostico else '' }}</textarea>
+              <label>Recomendacion</label>
+              <textarea name="recomendacion" rows="3" placeholder="Recomendacion para el cliente...">{{ diagnostico.recomendacion if diagnostico else '' }}</textarea>
+              <button type="submit"><i class="bi bi-check2-square"></i> Guardar diagnostico</button>
+            </form>
+          </article>
+
+          <article class="ot-form-panel">
+            <h3><i class="bi bi-tools"></i> Agregar servicio</h3>
+            <form action="/admin/ordenes/{{ orden_detalle.idorden }}/servicio" method="post">
+              <label>Servicio realizado</label>
+              <input name="descripcion" required placeholder="Ej: Limpieza de inyectores">
+              <div class="ot-form-row">
+                <div><label>Cantidad</label><input name="cantidad" type="number" step="0.01" value="1"></div>
+                <div><label>Valor unitario</label><input id="ordenServicioPrecio" name="valor_unitario" type="number" step="0.01" value="0"></div>
+              </div>
+              <button type="submit"><i class="bi bi-plus-square"></i> Agregar servicio</button>
+            </form>
+          </article>
+
+          <article class="ot-form-panel">
+    <h3><i class="bi bi-box-seam"></i> Repuesto usado</h3>
+
+    <form action="/admin/ordenes/{{ orden_detalle.idorden }}/repuesto" method="post">
+
+        <label>Producto del inventario</label>
+
+        <select name="inventario_id" id="ordenInventarioSelect">
+            <option value="">Seleccionar producto</option>
+
+            {% for producto in productos_inventario or [] %}
+            <option
+                value="{{ producto.id }}"
+                data-price="{{ producto.precio_venta or 0 }}"
+                data-name="{{ producto.nombre }}"
+                data-stock="{{ producto.cantidad }}">
+
+                {{ producto.nombre }} - {{ producto.codigo }} - Stock {{ producto.cantidad }}
+
+            </option>
+            {% endfor %}
+
+        </select>
+
+        <label>Descripcion manual</label>
+        <input
+            name="descripcion"
+            placeholder="Opcional si seleccionas producto">
+
+        <div class="ot-form-row">
+
+            <div>
+                <label>Cantidad</label>
+                <input
+                    name="cantidad"
+                    type="number"
+                    step="0.01"
+                    value="1"
+                    min="1">
+            </div>
+
+            <div>
+                <label>Valor unitario</label>
+                <input
+                    id="ordenRepuestoPrecio"
+                    name="valor_unitario"
+                    type="number"
+                    step="0.01"
+                    value="0"
+                    readonly>
+            </div>
+
+        </div>
+
+        <button type="submit">
+            <i class="bi bi-box-arrow-down"></i>
+            Usar repuesto
+        </button>
+
+    </form>
+
+</article>
+          <article class="ot-form-panel ot-process-panel">
+            <h3><i class="bi bi-receipt"></i> Cotizacion, factura y pago</h3>
+            <div class="ot-process-buttons">
+              <form action="/admin/ordenes/{{ orden_detalle.idorden }}/cotizacion" method="post">
+                <button type="submit"><i class="bi bi-file-earmark-text"></i> Generar cotizacion</button>
+              </form>
+              <form action="/admin/ordenes/{{ orden_detalle.idorden }}/factura" method="post">
+                <button type="submit"><i class="bi bi-receipt-cutoff"></i> Generar factura</button>
+              </form>
+            </div>
+
+            {% if factura_orden %}
+              <form action="/admin/ordenes/{{ orden_detalle.idorden }}/pago" method="post" class="ot-payment-form">
+                <label>Valor del pago</label>
+                <input name="valor" type="number" step="0.01" value="{{ factura_orden.saldo or factura_orden.total or 0 }}" required>
+                <label>Metodo de pago</label>
+                <select name="metodopago_id">
+                  <option value="">Sin metodo</option>
+                  {% for metodo in metodos_pago or [] %}
+                    <option value="{{ metodo.idmetodopago }}">{{ metodo.descripcionmpago }}</option>
+                  {% endfor %}
+                </select>
+                <label>Referencia</label>
+                <input name="referencia" placeholder="Numero de comprobante o nota">
+                <button type="submit"><i class="bi bi-cash-coin"></i> Registrar pago</button>
+              </form>
+            {% else %}
+              <p class="ot-muted-note">Genera la factura para habilitar el registro de pagos.</p>
+            {% endif %}
+
+            <form action="/admin/ordenes/{{ orden_detalle.idorden }}/entrega" method="post" class="ot-delivery-form">
+              <button type="submit"><i class="bi bi-check2-circle"></i> Entregar vehiculo</button>
+            </form>
+          </article>
+        </div>
+      </section>
+    {% endif %}
+    <section class="ot-card">
+      <div class="ot-card-head">
+        <div>
+          <h2><i class="bi bi-list-check"></i> Ordenes registradas</h2>
+          <p>Informacion conectada a dmi.orden_trabajo y dmi.v_ordenes_resumen.</p>
+        </div>
+        <a class="ot-outline-btn" href="/"><i class="bi bi-arrow-left"></i> Volver</a>
+      </div>
+
+      <div class="ot-table-wrap">
+        {% if ordenes %}
+          <table class="ot-table">
+            <thead>
+              <tr>
+                <th>Orden</th>
+                <th>Cliente</th>
+                <th>Vehiculo</th>
+                <th>Placa</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for orden in ordenes %}
+                <tr>
+                  <td><strong>{{ orden.codigo_orden }}</strong></td>
+                  <td>{{ orden.cliente }}</td>
+                  <td>{{ orden.marca }} {{ orden.modelo }}</td>
+                  <td><span class="ot-plate">{{ orden.placa }}</span></td>
+                  <td><span class="ot-status {{ orden.estado }}">{{ orden.estado }}</span></td>
+                  <td>{{ orden.fecha_apertura }}</td>
+                  <td>${{ orden.total_orden or 0 }}</td>
+                  <td>
+                    <a class="ot-icon-btn" href="/admin/ordenes/{{ orden.idorden }}"><i class="bi bi-eye"></i></a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="ot-empty">
+            <i class="bi bi-clipboard-x"></i>
+            <strong>No hay ordenes de trabajo todavia</strong>
+            <span>Cuando conectemos el backend, las citas confirmadas podran convertirse en ordenes desde esta seccion.</span>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+
+  <script>
+document.addEventListener("DOMContentLoaded",function(){
+const select=document.getElementById("ordenInventarioSelect");
+const precio=document.getElementById("ordenRepuestoPrecio");
+const descripcion=document.querySelector('form[action$="/repuesto"] input[name="descripcion"]');
+if(!select||!precio)return;
+function actualizar(){
+ const op=select.options[select.selectedIndex];
+ if(!op||!op.value){precio.value=0;if(descripcion)descripcion.value="";return;}
+ precio.value=op.dataset.price||0;
+ if(descripcion)descripcion.value=op.dataset.name||"";
+}
+select.addEventListener("change",actualizar);
+actualizar();
+});
+</script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehiculos Registrados | DMI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/ordenes.css">
+</head>
+<body>
+  <header class="ot-topbar">
+    <a class="ot-logo" href="/"><span>DMI</span><strong>Vehiculos</strong></a>
+    <nav class="ot-nav">
+      <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
+      <a href="/admin/usuarios"><i class="bi bi-people-fill"></i> Usuarios</a>
+      <a href="/admin/vehiculos" class="active"><i class="bi bi-truck-front-fill"></i> Vehiculos</a>
+      <a href="/admin/citas"><i class="bi bi-calendar-check"></i> Citas</a>
+      <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
+    </nav>
+  </header>
+
+  <main class="ot-page">
+    <section class="ot-hero">
+      <div>
+        <p>Gestion de unidades y flota</p>
+        <h1>Vehiculos <span>Registrados</span></h1>
+        <small>Consulta placas, modelos, motores y datos tecnicos de las unidades guardadas en DMI.</small>
+      </div>
+      <a class="ot-main-btn" href="/registrar-unidad"><i class="bi bi-plus-square-fill"></i> Registrar unidad</a>
+    </section>
+
+    {% if success_msg %}<div class="ot-alert success"><i class="bi bi-check-circle-fill"></i>{{ success_msg }}</div>{% endif %}
+    {% if error %}<div class="ot-alert error"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>{% endif %}
+
+    <section class="ot-stats">
+      <article><i class="bi bi-truck-front-fill"></i><span>Total</span><strong>{{ total_vehiculos or 0 }}</strong></article>
+      <article><i class="bi bi-postcard-fill"></i><span>Con placa</span><strong>{{ con_placa or 0 }}</strong></article>
+      <article><i class="bi bi-exclamation-square-fill"></i><span>Por definir</span><strong>{{ por_definir or 0 }}</strong></article>
+      <article><i class="bi bi-clipboard2-check-fill"></i><span>Listos</span><strong>{{ total_listos or 0 }}</strong></article>
+    </section>
+
+    <section class="ot-card">
+      <div class="ot-card-head">
+        <div>
+          <h2><i class="bi bi-list-check"></i> Vehiculos registrados</h2>
+          <p>Informacion conectada a dmi.vehiculos y dmi.tipovehiculos.</p>
+        </div>
+        <a class="ot-outline-btn" href="/"><i class="bi bi-arrow-left"></i> Volver</a>
+      </div>
+      <div class="ot-table-wrap">
+        {% if vehiculos %}
+          <table class="ot-table">
+            <thead>
+              <tr><th>ID</th><th>Codigo</th><th>Placa</th><th>Marca</th><th>Modelo</th><th>Motor</th><th>Tipo</th><th>Capacidad</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+              {% for item in vehiculos %}
+              <tr>
+                <td><strong>{{ item.idvehiculo }}</strong></td>
+                <td>{{ item.codigovehiculo }}</td>
+                <td><span class="ot-plate">{{ item.placa }}</span></td>
+                <td>{{ item.marca }}</td>
+                <td>{{ item.modelo }}</td>
+                <td>{{ item.motor }}</td>
+                <td>{{ item.tipo_vehiculo }}</td>
+                <td>{{ item.capacidad }}</td>
+                <td><a class="ot-icon-btn" href="/vehiculo/editar/{{ item.idvehiculo }}" title="Editar"><i class="bi bi-pencil"></i></a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="ot-empty"><i class="bi bi-truck"></i><strong>No hay vehiculos registrados</strong><span>Cuando se registren unidades apareceran aqui.</span></div>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+

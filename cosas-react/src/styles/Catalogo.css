@@ -3693,3 +3693,261 @@ main {
   }
 }
 
+
+.admin-add-product-btn {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 47, 85, 0.85);
+  background: #e63246;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.admin-add-product-btn:hover {
+  background: #ff2f55;
+  border-color: #ff2f55;
+  transform: translateY(-1px);
+}
+
+.create-product-modal {
+  max-height: min(90vh, 780px);
+  overflow-y: auto;
+}
+
+.create-product-error {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 47, 85, 0.7);
+  background: rgba(255, 47, 85, 0.12);
+  color: #ff4d5a;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+/* =========================
+   AJUSTE ADMIN NUEVO PRODUCTO
+   Mantiene el diseno rosado/negro del catalogo
+========================= */
+.top-bar {
+  grid-template-columns: minmax(260px, 0.6fr) minmax(0, 1.8fr) !important;
+  gap: 22px !important;
+}
+
+.top-bar .header-right {
+  display: grid !important;
+  grid-template-columns: minmax(132px, auto) minmax(152px, auto) minmax(190px, 1fr) minmax(132px, auto) minmax(112px, auto) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.top-bar .categories-toggle,
+.top-bar .admin-add-product-btn,
+.top-bar .header-search,
+.top-bar .mis-compras-btn,
+.top-bar .cart-btn {
+  width: 100% !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: clamp(12px, 1vw, 15px) !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+}
+
+.top-bar .admin-add-product-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 16px !important;
+  border: 1px solid #ff2f55 !important;
+  background: #e63246 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 24px rgba(255, 47, 85, 0.38) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+.top-bar .admin-add-product-btn:hover,
+.top-bar .admin-add-product-btn:focus {
+  background: #ff2f55 !important;
+  border-color: #ff2f55 !important;
+  color: #ffffff !important;
+  outline: none !important;
+  transform: translateY(-1px) !important;
+}
+
+.create-product-modal {
+  width: min(560px, calc(100vw - 32px)) !important;
+  max-height: calc(100dvh - 112px) !important;
+  padding: 36px !important;
+  border: 2px solid #ff2f55 !important;
+  background: linear-gradient(145deg, rgba(38, 0, 9, 0.98), rgba(3, 0, 2, 0.98)) !important;
+  box-shadow: 0 0 38px rgba(255, 47, 85, 0.28) !important;
+  scrollbar-color: #ff2f55 #110006 !important;
+}
+
+.create-product-modal h2,
+.create-product-modal .edit-product-field label {
+  color: #ff2f55 !important;
+}
+
+.create-product-modal .edit-product-field input {
+  background: rgba(0, 0, 0, 0.86) !important;
+  border: 1px solid #ff2f55 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 47, 85, 0.08) !important;
+}
+
+.create-product-modal .edit-product-field input:focus {
+  border-color: #ff4d6d !important;
+  box-shadow: 0 0 18px rgba(255, 47, 85, 0.48) !important;
+}
+
+.create-product-modal .edit-product-save {
+  background: #e63246 !important;
+  border: 1px solid #ff2f55 !important;
+  color: #ffffff !important;
+}
+
+.create-product-modal .edit-product-save:hover {
+  background: #ff2f55 !important;
+}
+
+.create-product-modal .edit-product-cancel {
+  border: 1px solid #ff2f55 !important;
+  color: #ffffff !important;
+}
+
+@media (max-width: 1120px) {
+  .top-bar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .top-bar .header-right {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .top-bar .header-search {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .top-bar .header-right {
+    grid-template-columns: 1fr !important;
+  }
+
+  .create-product-modal {
+    padding: 24px !important;
+  }
+}
+
+/* =========================
+   CORRECCION FINAL BARRA CATALOGO
+   Evita que los botones tapen el titulo
+========================= */
+.top-bar {
+  display: grid !important;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(650px, 1.55fr) !important;
+  align-items: center !important;
+  column-gap: 30px !important;
+  padding: 18px 32px !important;
+}
+
+.top-bar .logo {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding-left: 0 !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.top-bar .header-right {
+  display: grid !important;
+  grid-template-columns: minmax(108px, 0.8fr) minmax(118px, 0.9fr) minmax(170px, 1.3fr) minmax(118px, 0.9fr) minmax(106px, 0.8fr) !important;
+  gap: 10px !important;
+  align-items: center !important;
+  justify-self: stretch !important;
+  min-width: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.top-bar .categories-toggle,
+.top-bar .admin-add-product-btn,
+.top-bar .header-search,
+.top-bar .mis-compras-btn,
+.top-bar .cart-btn {
+  height: 54px !important;
+  min-height: 54px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  font-size: clamp(11px, 0.86vw, 14px) !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+
+.top-bar .admin-add-product-btn,
+.top-bar .categories-toggle,
+.top-bar .cart-btn {
+  background: #e63246 !important;
+  border-color: #ff2f55 !important;
+  color: #ffffff !important;
+}
+
+.top-bar .admin-add-product-btn:hover,
+.top-bar .categories-toggle:hover,
+.top-bar .cart-btn:hover {
+  background: #ff2f55 !important;
+}
+
+@media (max-width: 1180px) {
+  .top-bar {
+    grid-template-columns: 1fr !important;
+    row-gap: 16px !important;
+  }
+
+  .top-bar .logo {
+    white-space: normal !important;
+    text-overflow: clip !important;
+  }
+
+  .top-bar .header-right {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .top-bar .header-right {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .top-bar .header-search {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .top-bar .header-right {
+    grid-template-columns: 1fr !important;
+  }
+}

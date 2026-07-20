@@ -8,6 +8,7 @@ import Contacto from './js/Contacto.js';
 import AgendarCita from './js/AgendarCita.js';
 import Catalogo from './js/Catalogo.js';
 import DashboardAdmin from './js/DashboardAdmin.js';
+import MiCuenta from './js/MiCuenta';
 
 const getApiBaseUrl = () => {
   const { protocol, hostname } = window.location;
@@ -391,7 +392,7 @@ const DashboardUsuarioViejo = ({ user, showNotice, openConfirm }) => {
                 <tr key={cita.id} className="border-bottom border-secondary border-opacity-25">
                   <td className="fw-bold">{cita.fecha}</td>
                   <td>{cita.hora}</td>
-                  <td><span className="text-danger">ðŸš—</span> {cita.vehiculo}</td>
+                  <td><span className="text-danger">Ã°Å¸Å¡â€”</span> {cita.vehiculo}</td>
                   <td>{cita.servicio}</td>
                   <td>
                     <span className={`badge rounded-0 py-1 px-2 ${cita.estado === 'Completado' ? 'bg-secondary text-white' : 'bg-danger'}`}>
@@ -412,7 +413,7 @@ const DashboardUsuarioViejo = ({ user, showNotice, openConfirm }) => {
                         onClick={() => handleCancelarCita(cita.id)}
                         disabled={cita.estado === 'Completado'}
                       >
-                        ðŸ—‘ï¸ CANCELAR
+                        Ã°Å¸â€”â€˜Ã¯Â¸Â CANCELAR
                       </button>
                     </div>
                   </td>
@@ -552,14 +553,14 @@ const DashboardUsuario = ({ user, openConfirm, goToView }) => {
   };
 
   if (loading) {
-    return <section className="user-garage-shell"><div className="user-garage-loading">Cargando tu garaje...</div></section>;
+    return <section className="user-garage-shell"><div className="user-garage-loading">Cargando tu cuenta...</div></section>;
   }
 
   if (error) {
     return (
       <section className="user-garage-shell">
         <div className="user-garage-empty">
-          <h3>No pudimos cargar tu garaje</h3>
+          <h3>No pudimos cargar tu cuenta</h3>
           <p>{error}</p>
           <button type="button" onClick={() => window.location.reload()}>Intentar de nuevo</button>
         </div>
@@ -572,14 +573,14 @@ const DashboardUsuario = ({ user, openConfirm, goToView }) => {
       <div className="user-garage-hero">
         <div>
           <span>Centro del cliente</span>
-          <h3>Mi <strong>Garaje</strong></h3>
+          <h3>Mi <strong>Cuenta</strong></h3>
           <p>
-            Hola, <b>{usuario.nombre || getDisplayName(user)}</b>. Aqui puedes ver tu unidad,
-            tus citas y tus compras registradas en DMI.
+            Hola, <b>{usuario.nombre || getDisplayName(user)}</b>. Desde aqui administras tus vehiculos,
+            agregas nuevos, agendas citas y consultas tu historial en DMI.
           </p>
         </div>
         <div className="user-garage-actions">
-          <button type="button" onClick={() => goToView("registro")}>Registrar unidad</button>
+          <button type="button" onClick={() => goToView("registro")}>Agregar vehiculo</button>
           <button type="button" onClick={() => goToView("citas")}>Agendar cita</button>
         </div>
       </div>
@@ -587,14 +588,14 @@ const DashboardUsuario = ({ user, openConfirm, goToView }) => {
       <div className="user-garage-stats">
         <article><span>Vehiculos</span><strong>{vehiculos.length}</strong></article>
         <article><span>Citas activas</span><strong>{pendingCitas.length}</strong></article>
-        <article><span>Servicios completados</span><strong>{completedCitas.length}</strong></article>
+        <article><span>Historial</span><strong>{completedCitas.length}</strong></article>
         <article><span>Productos pendientes</span><strong>{pendingSessionsCount || pendingCart.length}</strong></article>
       </div>
 
       <div className="user-garage-grid">
         <section className="user-garage-card user-garage-vehicle">
           <div className="user-garage-card-head">
-            <span>Vehiculo principal</span>
+            <span>Vehiculos de mi cuenta</span>
             <button type="button" onClick={() => goToView("registro")}>Actualizar</button>
           </div>
           {activeVehicle ? (
@@ -632,7 +633,7 @@ const DashboardUsuario = ({ user, openConfirm, goToView }) => {
             )) : (
               <div className="user-garage-empty compact">
                 <h4>No hay citas registradas</h4>
-                <p>Agenda tu primer servicio para tu unidad.</p>
+                <p>Agenda tu primer servicio desde Mi Cuenta.</p>
               </div>
             )}
           </div>
@@ -699,7 +700,7 @@ const DashboardUsuario = ({ user, openConfirm, goToView }) => {
 
         <section className="user-garage-card">
           <div className="user-garage-card-head">
-            <span>Pagos recientes</span>
+            <span>Facturas y pagos</span>
           </div>
           <div className="payment-list">
             {pagos.length ? pagos.slice(0, 4).map((pago, index) => (
@@ -735,6 +736,7 @@ const BackButton = ({ onClick, user }) => (
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [adminFrameKey, setAdminFrameKey] = useState(0);
   const getInitialView = () => {
     const path = window.location.pathname;
     const routes = {
@@ -755,6 +757,7 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [dialog, setDialog] = useState(null);
   const [toast, setToast] = useState(null);
+  const [afterLoginView, setAfterLoginView] = useState(null);
 
   const closeDialog = () => setDialog(null);
 
@@ -791,6 +794,8 @@ function App() {
       if (initialView !== 'inicio') {
         setView(initialView);
       } else if (normalizedRole === 'admin') {
+        window.history.replaceState(null, '', '/');
+        setAdminFrameKey((key) => key + 1);
         setView('admin-dashboard');
       } else if (normalizedRole === 'usuario' || normalizedRole === 'cliente') {
         setView('user-dashboard');
@@ -799,7 +804,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    {view === 'admin-dashboard' && <DashboardAdmin onLogout={handleLogout} />}
     if (!user) {
       if (view === 'admin-dashboard' || view === 'user-dashboard') {
         setView('login');
@@ -807,7 +811,7 @@ function App() {
       return;
     }
 
-    if (view === 'admin-dashboard' && user.role !== 'es_admin') {
+    if (view === 'admin-dashboard' && user.role !== 'admin') {
       setView('login');
     }
     
@@ -882,10 +886,13 @@ function App() {
 
     setUser(normalizedUser);
     if (normalizedUser.role === 'admin') {
+      window.history.replaceState(null, '', '/');
+      setAdminFrameKey((key) => key + 1);
       setView('admin-dashboard');
     } else {
-      setView('user-dashboard');
+      setView(afterLoginView || 'user-dashboard');
     }
+    setAfterLoginView(null);
 
     setDialog({
       kicker: "Acceso confirmado",
@@ -970,6 +977,7 @@ function App() {
                           cancelText: "Cancelar",
                           onConfirm: () => {
                             setDialog(null);
+                            setAfterLoginView('citas');
                             setView('login');
                           }
                         });
@@ -994,6 +1002,8 @@ function App() {
                   <button
                     className={`nav-link text-danger fw-black p-2 bg-transparent border-0 dmi-nav-link ${view === 'admin-dashboard' ? 'active' : ''}`}
                     onClick={() => {
+                      window.history.replaceState(null, '', '/');
+                      setAdminFrameKey((key) => key + 1);
                       setView('admin-dashboard');
                       setMenuOpen(false);
                     }}
@@ -1003,29 +1013,24 @@ function App() {
                 </li>
               )}
               
-              {user && (user.role === 'usuario' || user.role === 'cliente') && (
-                <li className="nav-item">
-                  <button
-                    className={`nav-link text-danger fw-black p-2 bg-transparent border-0 dmi-nav-link ${view === 'user-dashboard' ? 'active' : ''}`}
-                    onClick={() => {
-                      setView('user-dashboard');
-                      setMenuOpen(false);
-                    }}
-                  >
-                    MI GARAJE
-                  </button>
-                </li>
-              )}
-
               <li className="nav-item">
                 <button
-                  className="btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta"
+                  className={`btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta ${view === 'user-dashboard' ? 'active' : ''}`}
                   onClick={() => {
-                    setView('registro'); 
+                    if (!user) {
+                      setView('login');
+                    } else if (user.role === 'admin') {
+                      window.history.replaceState(null, '', '/');
+                      setAdminFrameKey((key) => key + 1);
+                      setView('admin-dashboard');
+                    } else {
+                      setView('user-dashboard');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                     setMenuOpen(false);
                   }}
                 >
-                  REGISTRAR UNIDAD
+                  MI CUENTA
                 </button>
               </li>
 
@@ -1064,7 +1069,7 @@ function App() {
       <main className="flex-grow-1">
         {view === 'admin-dashboard' && (
           <section className="admin-full-width" style={{ width: '100%', minHeight: 'calc(100vh - 84px)' }}>
-            <DashboardAdmin onLogout={handleLogout} />
+            <DashboardAdmin key={adminFrameKey} onLogout={handleLogout} />
           </section>
         )}
 
@@ -1075,9 +1080,25 @@ function App() {
               <div className="col-12 col-xl-10 animate-slide-in dmi-view-column">
                 <div className="card bg-dark text-white border-danger border-opacity-50 shadow-lg p-4 p-md-5 dmi-view-card">
 
-                  {view === 'citas' && <AgendarCita onNeedLogin={() => setView('login')} />}
-                  {view === 'registro' && <RegistroVehiculo />}
-                  {view === 'catalogo' && <Catalogo />}
+                  {view === 'citas' && (
+                    <AgendarCita
+                      onNeedLogin={() => {
+                        setAfterLoginView('citas');
+                        setView('login');
+                      }}
+                      onNeedVehicle={() => setView('registro')}
+                      onGoGarage={() => setView('user-dashboard')}
+                    />
+                  )}
+                  {view === 'registro' && <RegistroVehiculo onComplete={() => setView('user-dashboard')} />}
+                  {view === 'catalogo' && (
+                    <Catalogo
+                      onNeedLogin={() => {
+                        setAfterLoginView('catalogo');
+                        setView('login');
+                      }}
+                    />
+                  )}
                   {view === 'contacto' && <Contacto />}
                   
                   {/* ASIGNACION DE VISTAS DE AUTENTICACION */}
@@ -1092,12 +1113,10 @@ function App() {
                   )}
 
                   {view === 'user-dashboard' && (
-                    <DashboardUsuario
-                      user={user}
-                      showNotice={showNotice}
-                      openConfirm={openConfirm}
-                      goToView={setView}
-                    />
+                   <MiCuenta
+                        onAddVehicle={() => setView('registro')}
+                          onScheduleAppointment={() => setView('citas')}
+                     />
                   )}
 
                   <BackButton onClick={goToInicio} user={user}/>

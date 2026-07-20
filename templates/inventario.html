@@ -1,0 +1,208 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario DMI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/inventario.css">
+</head>
+<body>
+  <header class="inv-topbar">
+    <a class="inv-logo" href="/">
+      <span class="inv-logo-mark">DMI</span>
+      <strong>Inventario</strong>
+    </a>
+
+    <nav class="inv-nav">
+      <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
+      <a href="/citas"><i class="bi bi-calendar-check"></i> Citas</a>
+      <a href="/admin/inventario" class="active"><i class="bi bi-box-seam-fill"></i> Inventario</a>
+      <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
+      <form action="/logout" method="post">
+        <button type="submit"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</button>
+      </form>
+    </nav>
+  </header>
+
+  <main class="inv-page">
+    <section class="inv-hero">
+      <div>
+        <p>Control de catalogo</p>
+        <h1>Inventario <span>DMI</span></h1>
+        <small>Productos conectados a Supabase para catalogo, ventas y reparaciones.</small>
+      </div>
+      <a class="inv-hero-btn" href="/"><i class="bi bi-arrow-left"></i> Volver al panel</a>
+    </section>
+
+    {% if success_msg %}
+      <div class="inv-alert success"><i class="bi bi-check-circle-fill"></i>{{ success_msg }}</div>
+    {% endif %}
+    {% if error %}
+      <div class="inv-alert error"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>
+    {% endif %}
+
+    <section class="inv-stats">
+      <article><i class="bi bi-box-seam-fill"></i><span>Productos</span><strong>{{ total_productos }}</strong></article>
+      <article><i class="bi bi-stack"></i><span>Unidades</span><strong>{{ stock_total }}</strong></article>
+      <article><i class="bi bi-arrow-down-circle-fill"></i><span>Stock bajo</span><strong>{{ stock_bajo }}</strong></article>
+      <article><i class="bi bi-x-octagon-fill"></i><span>Sin stock</span><strong>{{ sin_stock }}</strong></article>
+      <article><i class="bi bi-cash-stack"></i><span>Valor venta</span><strong>${{ "{:,.0f}".format(valor_total) }}</strong></article>
+    </section>
+
+    <section class="inv-toolbar">
+      <form class="inv-filter" method="get" action="/admin/inventario">
+        <input type="search" name="q" value="{{ q }}" placeholder="Buscar producto, codigo, categoria...">
+        <select name="categoria" onchange="this.form.submit()">
+          <option value="">Todas las categorias</option>
+          {% for cat in categorias %}
+            <option value="{{ cat }}" {% if categoria_actual == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+        <select name="estado" onchange="this.form.submit()">
+          <option value="" {% if not estado_actual %}selected{% endif %}>Todos</option>
+          <option value="activos" {% if estado_actual == 'activos' %}selected{% endif %}>Activos</option>
+          <option value="inactivos" {% if estado_actual == 'inactivos' %}selected{% endif %}>Inactivos</option>
+          <option value="stock_bajo" {% if estado_actual == 'stock_bajo' %}selected{% endif %}>Stock bajo</option>
+          <option value="sin_stock" {% if estado_actual == 'sin_stock' %}selected{% endif %}>Sin stock</option>
+        </select>
+        <button type="submit"><i class="bi bi-search"></i> Buscar</button>
+      </form>
+    </section>
+
+    <section class="inv-layout">
+      <aside class="inv-card inv-form-card">
+        <h2 class="inv-form-title"><i class="bi bi-plus-square-fill"></i> Nuevo producto</h2>
+        <form action="/admin/inventario/nuevo" method="post">
+          <label>Nombre</label>
+          <input type="text" name="nombre" required>
+
+          <label>Codigo</label>
+          <input type="text" name="codigo">
+
+          <div class="inv-two">
+            <div><label>Costo</label><input type="number" step="0.01" name="precio_costo" value="0"></div>
+            <div><label>Venta</label><input type="number" step="0.01" name="precio_venta" value="0"></div>
+          </div>
+
+          <div class="inv-two">
+            <div><label>Cantidad</label><input type="number" name="cantidad" value="0"></div>
+            <div><label>Categoria</label><input type="text" name="categoria"></div>
+          </div>
+
+          <label>Departamento</label>
+          <input type="text" name="departamento">
+
+          <label>Imagen URL</label>
+          <input type="url" name="imagen_url">
+
+          <button type="submit"><i class="bi bi-floppy-fill"></i> Guardar producto</button>
+        </form>
+      </aside>
+
+      <section class="inv-card inv-list-card">
+        <div class="inv-card-head">
+          <div>
+            <h2><i class="bi bi-list-check"></i> Productos registrados</h2>
+            <p>Mostrando {{ productos_pagina }} de {{ total_productos }} resultados</p>
+          </div>
+          <button class="inv-toggle-table" type="button" id="toggleInventoryTable">
+            <i class="bi bi-eye-slash"></i> Ocultar tabla
+          </button>
+        </div>
+
+        <div class="inv-table-wrap" id="inventoryTableWrap">
+          {% if productos %}
+            <table class="inv-table">
+              <thead>
+                <tr>
+                  <th>Imagen</th>
+                  <th>Producto</th>
+                  <th>Codigo</th>
+                  <th>Costo</th>
+                  <th>Venta</th>
+                  <th>Cant.</th>
+                  <th>Categoria</th>
+                  <th>Departamento</th>
+                  <th>Activo</th>
+                  <th>Guardar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in productos %}
+                  <tr>
+                    <td>
+                      {% if item.imagen_url %}
+                        <img src="{{ item.imagen_url }}" alt="{{ item.nombre }}">
+                      {% else %}
+                        <span class="inv-no-img"><i class="bi bi-image"></i></span>
+                      {% endif %}
+                    </td>
+                    <td><input form="inv-form-{{ item.id }}" name="nombre" value="{{ item.nombre }}" required></td>
+                    <td><input form="inv-form-{{ item.id }}" name="codigo" value="{{ item.codigo or '' }}"></td>
+                    <td><input form="inv-form-{{ item.id }}" type="number" step="0.01" name="precio_costo" value="{{ item.precio_costo }}"></td>
+                    <td><input form="inv-form-{{ item.id }}" type="number" step="0.01" name="precio_venta" value="{{ item.precio_venta }}"></td>
+                    <td><input form="inv-form-{{ item.id }}" type="number" name="cantidad" value="{{ item.cantidad }}"></td>
+                    <td><input form="inv-form-{{ item.id }}" name="categoria" value="{{ item.categoria or '' }}"></td>
+                    <td><input form="inv-form-{{ item.id }}" name="departamento" value="{{ item.departamento or '' }}"></td>
+                    <td class="inv-center"><input form="inv-form-{{ item.id }}" type="checkbox" name="activo" {% if item.activo %}checked{% endif %}></td>
+                    <td>
+                      <form id="inv-form-{{ item.id }}" action="/admin/inventario/{{ item.id }}/actualizar" method="post">
+                        <input type="hidden" name="imagen_url" value="{{ item.imagen_url or '' }}">
+                        <button class="inv-save" type="submit"><i class="bi bi-floppy"></i></button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <div class="inv-empty">
+              <i class="bi bi-box-seam"></i>
+              <strong>No hay productos para mostrar</strong>
+              <span>Verifica que la tabla dmi.inventario_catalogo exista en Supabase o cambia los filtros.</span>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if total_pages > 1 %}
+          <nav class="inv-pagination" aria-label="Paginacion de productos">
+            {% if has_prev %}
+              <a href="/admin/inventario?{% if page_query_base %}{{ page_query_base }}&{% endif %}page={{ prev_page }}">Anterior</a>
+            {% else %}
+              <span class="disabled">Anterior</span>
+            {% endif %}
+
+            <strong>Pagina {{ page }} de {{ total_pages }}</strong>
+
+            {% if has_next %}
+              <a href="/admin/inventario?{% if page_query_base %}{{ page_query_base }}&{% endif %}page={{ next_page }}">Siguiente</a>
+            {% else %}
+              <span class="disabled">Siguiente</span>
+            {% endif %}
+          </nav>
+        {% endif %}
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const button = document.getElementById("toggleInventoryTable");
+      const table = document.getElementById("inventoryTableWrap");
+      if (!button || !table) return;
+
+      button.addEventListener("click", function () {
+        const hidden = table.classList.toggle("is-hidden");
+        button.innerHTML = hidden
+          ? '<i class="bi bi-table"></i> Mostrar tabla'
+          : '<i class="bi bi-eye-slash"></i> Ocultar tabla';
+      });
+    })();
+  </script>
+</body>
+</html>

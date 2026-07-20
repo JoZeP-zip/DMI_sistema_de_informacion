@@ -865,3 +865,412 @@ body {
         width: 100%;
     }
 }
+
+/* =============================================
+   Panel del usuario - Mi Cuenta con ordenes
+   ============================================= */
+.user-account-shell {
+    width: min(1120px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 38px 0 70px;
+    color: #ffffff;
+}
+
+.user-account-hero,
+.user-account-card,
+.user-account-summary article,
+.user-account-loading,
+.user-account-error {
+    border: 1px solid rgba(220, 53, 69, 0.45);
+    background: linear-gradient(145deg, rgba(18, 19, 21, 0.98), rgba(5, 5, 6, 0.98));
+    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.42);
+}
+
+.user-account-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 24px;
+    align-items: end;
+    padding: clamp(24px, 4vw, 44px);
+    margin-bottom: 20px;
+    border-top: 4px solid #dc3545;
+}
+
+.user-account-hero span,
+.user-account-card-head h3,
+.user-account-summary span {
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+}
+
+.user-account-hero span {
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.user-account-hero h1 {
+    margin: 8px 0 12px;
+    font-size: clamp(2.5rem, 6vw, 5.3rem);
+    line-height: 0.92;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.user-account-hero h1 strong,
+.user-account-card-head i,
+.user-account-summary strong {
+    color: #ff4057;
+}
+
+.user-account-hero p {
+    max-width: 720px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.7;
+}
+
+.user-account-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.user-account-actions button {
+    min-height: 46px;
+    padding: 0 18px;
+    border: 1px solid #ff4057;
+    background: #dc3545;
+    color: #fff;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.user-account-actions button.outline {
+    background: transparent;
+}
+
+.user-account-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.user-account-summary article {
+    min-height: 118px;
+    padding: 20px;
+}
+
+.user-account-summary span {
+    display: block;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+.user-account-summary strong {
+    display: block;
+    margin-top: 16px;
+    font-size: 2.2rem;
+    line-height: 1;
+}
+
+.user-account-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.user-account-card.wide {
+    grid-column: 1 / -1;
+}
+
+.user-account-card {
+    min-width: 0;
+    padding: 22px;
+}
+
+.user-account-card-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(220, 53, 69, 0.32);
+}
+
+.user-account-card-head h3 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.user-account-list,
+.user-order-list,
+.user-history-list {
+    display: grid;
+    gap: 12px;
+}
+
+.user-account-item,
+.user-order-card,
+.user-history-item,
+.user-empty-state {
+    min-width: 0;
+    border: 1px solid rgba(220, 53, 69, 0.28);
+    background: rgba(255, 255, 255, 0.035);
+    padding: 16px;
+}
+
+.user-account-item strong,
+.user-order-top strong,
+.user-history-item strong {
+    display: block;
+    color: #ffffff;
+    font-size: 1.02rem;
+    line-height: 1.35;
+}
+
+.user-account-item span,
+.user-order-top span,
+.user-history-item span,
+.user-order-card small,
+.user-account-item small {
+    display: block;
+    margin-top: 6px;
+    color: rgba(255, 255, 255, 0.64);
+    line-height: 1.5;
+}
+
+.user-order-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: start;
+}
+
+.user-order-top b,
+.user-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 64, 87, 0.52);
+    background: rgba(255, 64, 87, 0.12);
+    color: #ff4057;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.user-progress {
+    width: 100%;
+    height: 12px;
+    margin: 16px 0 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 64, 87, 0.4);
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.user-progress span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #dc3545, #ff6b7d);
+    box-shadow: 0 0 18px rgba(255, 64, 87, 0.38);
+}
+
+.user-history-item p {
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 1.6;
+}
+
+.user-empty-state,
+.user-account-loading,
+.user-account-error {
+    min-height: 160px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.68);
+}
+
+.user-empty-state i {
+    color: #ff4057;
+    font-size: 2rem;
+}
+
+.user-account-error {
+    border-color: #ff4057;
+    color: #ffb0bb;
+}
+
+@media (max-width: 920px) {
+    .user-account-hero,
+    .user-account-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .user-account-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .user-account-actions button {
+        flex: 1 1 220px;
+    }
+}
+
+@media (max-width: 560px) {
+    .user-account-shell {
+        width: min(100% - 18px, 1120px);
+    }
+
+    .user-account-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .user-order-top {
+        flex-direction: column;
+    }
+
+    .user-account-actions,
+    .user-account-actions button {
+        width: 100%;
+    }
+}
+
+
+.user-action-item button {
+    width: fit-content;
+    min-height: 38px;
+    margin-top: 10px;
+    padding: 0 16px;
+    border: 1px solid #ff2f55;
+    background: #ff2f55;
+    color: #fff;
+    font: inherit;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.user-action-item button:hover {
+    filter: brightness(1.08);
+}
+
+.user-detail-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.76);
+    backdrop-filter: blur(8px);
+}
+
+.user-detail-modal {
+    position: relative;
+    width: min(980px, 100%);
+    max-height: min(86vh, 820px);
+    overflow: auto;
+    padding: clamp(22px, 4vw, 38px);
+    border: 1px solid rgba(255, 47, 85, 0.72);
+    border-top: 5px solid #ff2f55;
+    background: linear-gradient(145deg, rgba(18, 18, 20, 0.98), rgba(7, 0, 3, 0.98));
+    color: #fff;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.58);
+}
+
+.user-detail-modal h2,
+.user-detail-modal h3 {
+    margin: 0 0 18px;
+    color: #fff;
+    text-transform: uppercase;
+    font-weight: 900;
+}
+
+.user-detail-modal h2 {
+    color: #ff2f55;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+}
+
+.user-detail-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ff2f55;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+}
+
+.user-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.user-detail-grid article,
+.user-detail-line {
+    border: 1px solid rgba(255, 47, 85, 0.34);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 14px;
+}
+
+.user-detail-grid span,
+.user-muted {
+    color: rgba(255, 255, 255, 0.58);
+}
+
+.user-detail-grid span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.user-detail-grid strong {
+    color: #fff;
+    font-weight: 900;
+}
+
+.user-detail-description {
+    padding: 16px;
+    margin: 0 0 22px;
+    border-left: 3px solid #ff2f55;
+    background: rgba(255, 47, 85, 0.08);
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.6;
+}
+
+.user-detail-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.user-detail-line strong {
+    color: #ff4d6d;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .user-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .user-detail-line {
+        flex-direction: column;
+    }
+}

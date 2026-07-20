@@ -1,5 +1,9 @@
 
 
+
+
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -478,12 +482,47 @@
         grid-template-columns: 1fr;
       }
     }
+
+    .inventory-admin-wrap {
+      max-height: 72vh;
+    }
+
+    .inventory-admin-table {
+      min-width: 1280px;
+    }
+
+    .inventory-admin-table .table-input {
+      min-width: 92px;
+      padding: 8px 10px;
+      font-size: 0.78rem;
+    }
+
+    .inventory-admin-table td:first-child .table-input {
+      min-width: 230px;
+    }
+
+    .inventory-thumb {
+      width: 54px;
+      height: 42px;
+      object-fit: cover;
+      border: 1px solid rgba(255, 47, 89, 0.45);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .inventory-save-btn {
+      width: 42px;
+      height: 42px;
+    }
   </style>
 </head>
 <body>
   {% set total_vehiculos = data|length if data else 0 %}
   {% set total_usuarios = usuarios_data|length if usuarios_data else 0 %}
   {% set total_citas = citas_data|length if citas_data else 0 %}
+  {% set total_ordenes = ordenes_data|length if ordenes_data is defined and ordenes_data else 0 %}
+  {% set total_inventario_catalogo = inventario_catalogo|length if inventario_catalogo else 0 %}
+  {% set stock_total_catalogo = inventario_catalogo|sum(attribute='cantidad') if inventario_catalogo else 0 %}
   {% set total_registros = total_vehiculos + total_usuarios + total_citas %}
 
   <div class="admin-app">
@@ -494,9 +533,10 @@
       </a>
 
       <nav class="topbar-nav" aria-label="Navegacion principal">
-        <a href="/"><i class="bi bi-car-front"></i> Vehiculos</a>
+        <a href="/" class="active"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
         <a href="/citas"><i class="bi bi-calendar-check"></i> Citas</a>
-        <a href="/configuracion" class="active"><i class="bi bi-sliders"></i> Administrador</a>
+        <a href="/admin/inventario"><i class="bi bi-box-seam-fill"></i> Inventario</a>
+        <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
       </nav>
 
       <div class="topbar-user">
@@ -528,22 +568,32 @@
 
         <div class="sidebar-group">
           <p>Gestion</p>
-          <a href="#usuarios">
+          <a href="/admin/usuarios">
             <i class="bi bi-people-fill"></i>
             <span>Usuarios</span>
             <b>{{ total_usuarios }}</b>
           </a>
-          <a href="#vehiculos">
+          <a href="/admin/vehiculos">
             <i class="bi bi-truck-front-fill"></i>
             <span>Vehiculos</span>
             <b>{{ total_vehiculos }}</b>
           </a>
-          <a href="#citas">
+          <a href="/admin/citas">
             <i class="bi bi-calendar2-week-fill"></i>
             <span>Citas</span>
             <b>{{ total_citas }}</b>
           </a>
-          <a href="#registros">
+          <a href="/admin/ordenes">
+            <i class="bi bi-clipboard2-check-fill"></i>
+            <span>Ordenes</span>
+            <b>{{ total_ordenes }}</b>
+          </a>
+          <a href="/admin/inventario">
+            <i class="bi bi-box-seam-fill"></i>
+            <span>Inventario</span>
+            <b>{{ total_inventario_catalogo }}</b>
+          </a>
+          <a href="/admin/registros">
             <i class="bi bi-database-fill"></i>
             <span>Registros</span>
           </a>
@@ -597,6 +647,20 @@
           </article>
 
           <article class="summary-card">
+            <i class="bi bi-clipboard2-check-fill"></i>
+            <span>Ordenes</span>
+            <strong>{{ total_ordenes }}</strong>
+            <p>Trabajo activo</p>
+          </article>
+
+          <article class="summary-card">
+            <i class="bi bi-box-seam-fill"></i>
+            <span>Inventario</span>
+            <strong>{{ total_inventario_catalogo }}</strong>
+            <p>{{ stock_total_catalogo }} unidades</p>
+          </article>
+
+          <article class="summary-card">
             <i class="bi bi-database-fill"></i>
             <span>Registros</span>
             <strong>{{ total_registros }}</strong>
@@ -608,7 +672,7 @@
           <article class="dmi-card compact-card">
             <div class="dmi-card-header">
               <span><i class="bi bi-car-front-fill"></i> Vehiculos registrados</span>
-              <a href="#vehiculos">Ver todos</a>
+              <a href="/admin/vehiculos">Ver todos</a>
             </div>
 
             <div class="mini-table-wrap">
@@ -698,9 +762,10 @@
           </div>
 
           <div class="quick-grid">
-            <a href="#usuarios"><i class="bi bi-person-plus-fill"></i><span>Nuevo usuario</span></a>
-            <a href="#vehiculos"><i class="bi bi-plus-square-fill"></i><span>Nuevo vehiculo</span></a>
+            <a href="/admin/usuarios"><i class="bi bi-person-plus-fill"></i><span>Nuevo usuario</span></a>
+            <a href="/admin/vehiculos"><i class="bi bi-plus-square-fill"></i><span>Nuevo vehiculo</span></a>
             <a href="/citas"><i class="bi bi-calendar-plus-fill"></i><span>Nueva cita</span></a>
+            <a href="/admin/inventario"><i class="bi bi-box-seam-fill"></i><span>Ver inventario</span></a>
             <a href="/configuracion"><i class="bi bi-database-fill-gear"></i><span>Configurar datos</span></a>
           </div>
         </section>
@@ -1009,6 +1074,12 @@
                                 <i class="bi bi-receipt"></i>
                               </button>
 
+                              <form action="/admin/ordenes/desde-cita/{{ cita[0] }}" method="post" data-confirm-title="Crear orden de trabajo" data-confirm-message="Vas a convertir esta cita en una orden de trabajo para iniciar el flujo del taller.">
+                                <button type="submit" class="tbl-btn tbl-btn-profile" title="Crear orden de trabajo">
+                                  <i class="bi bi-clipboard2-plus"></i>
+                                </button>
+                              </form>
+
                               <form action="/cita/eliminar/{{ cita[0] }}" method="post" data-confirm-title="Eliminar cita" data-confirm-message="Vas a eliminar esta cita registrada. Esta accion no se podra deshacer.">
                                 <button type="submit" class="tbl-btn tbl-btn-delete" title="Eliminar">
                                   <i class="bi bi-trash"></i>
@@ -1026,6 +1097,81 @@
                     No hay citas registradas.
                   </div>
                 {% endif %}
+              </div>
+            </details>
+
+
+
+            <details class="admin-details" id="ordenes" open>
+              <summary>
+                <span><i class="bi bi-clipboard2-check-fill"></i> Ordenes de trabajo</span>
+                <strong>{{ total_ordenes }}</strong>
+              </summary>
+
+              <div class="empty-state inventory-link-state">
+                <i class="bi bi-clipboard2-check-fill"></i>
+                <strong>Centro de trabajo del taller</strong>
+                <p>Desde aqui se controlan diagnosticos, cotizaciones, reparaciones, repuestos usados, facturas, pagos e historial del vehiculo.</p>
+                <a class="admin-tool-btn primary" href="/admin/ordenes">
+                  <i class="bi bi-arrow-right-circle"></i> Abrir ordenes
+                </a>
+              </div>
+
+              <div class="table-wrap table-responsive">
+                {% if ordenes_data is defined and ordenes_data %}
+                  <table class="dmi-table">
+                    <thead>
+                      <tr>
+                        <th>Orden</th>
+                        <th>Cliente</th>
+                        <th>Vehiculo</th>
+                        <th>Placa</th>
+                        <th>Estado</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for orden in ordenes_data %}
+                        <tr>
+                          <td><span class="badge-code">{{ orden.codigo_orden or orden[1] }}</span></td>
+                          <td>{{ orden.cliente or orden[9] }}</td>
+                          <td>{{ orden.marca or orden[12] }} {{ orden.modelo or orden[13] }}</td>
+                          <td><span class="badge-placa">{{ orden.placa or orden[11] }}</span></td>
+                          <td>{{ orden.estado or orden[2] }}</td>
+                          <td>${{ orden.total_orden or orden[8] or 0 }}</td>
+                          <td>
+                            <div class="tbl-actions">
+                              <a href="/admin/ordenes/{{ orden.idorden or orden[0] }}" class="tbl-btn tbl-btn-edit" title="Ver orden">
+                                <i class="bi bi-eye"></i>
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                {% else %}
+                  <div class="empty-state">
+                    <i class="bi bi-clipboard-x"></i>
+                    No hay ordenes de trabajo registradas todavia.
+                  </div>
+                {% endif %}
+              </div>
+            </details>
+            <details class="admin-details" id="inventario" open>
+              <summary>
+                <span><i class="bi bi-box-seam-fill"></i> Inventario</span>
+                <strong>{{ total_inventario_catalogo }}</strong>
+              </summary>
+
+              <div class="empty-state inventory-link-state">
+                <i class="bi bi-box-seam-fill"></i>
+                <strong>Inventario conectado a Supabase</strong>
+                <p>Gestiona productos, precios, cantidades, categorias e imagenes desde la pagina completa de inventario.</p>
+                <a class="admin-tool-btn primary" href="/admin/inventario">
+                  <i class="bi bi-arrow-right-circle"></i> Abrir inventario
+                </a>
               </div>
             </details>
 
@@ -1399,7 +1545,7 @@
 
         closeInvoiceModal();
         alert("Factura generada. La cita quedo marcada como completada.");
-        window.location.href = "/?admin_section=citas&success=Factura de servicio generada";
+        window.location.href = "/admin/citas?success=Factura de servicio generada";
       } catch (error) {
         alert(error.message || "No se pudo generar la factura");
       } finally {
@@ -1786,12 +1932,29 @@
 (function () {
   const params = new URLSearchParams(window.location.search);
   const section = params.get("admin_section") || "panel";
+
+  const adminModuleRoutes = {
+    usuarios: "/admin/usuarios",
+    vehiculos: "/admin/vehiculos",
+    citas: "/admin/citas",
+    ordenes: "/admin/ordenes",
+    registros: "/admin/registros",
+    inventario: "/admin/inventario"
+  };
+
+  if (adminModuleRoutes[section]) {
+    window.location.replace(adminModuleRoutes[section]);
+    return;
+  }
+
   const sectionTitles = {
     panel: { kicker: "Centro de administracion", title: 'Panel <span>general</span>' },
     usuarios: { kicker: "Gestion de administracion", title: '<span>Usuarios</span>' },
     vehiculos: { kicker: "Gestion de flota", title: '<span>Vehiculos</span>' },
     citas: { kicker: "Agenda del taller", title: '<span>Citas</span>' },
-    registros: { kicker: "Sistema", title: '<span>Registros</span>' }
+    ordenes: { kicker: "Centro operativo", title: '<span>Ordenes de trabajo</span>' },
+    registros: { kicker: "Sistema", title: '<span>Registros</span>' },
+    inventario: { kicker: "Control de productos", title: '<span>Inventario</span>' }
   };
 
   const setSectionTitle = (target) => {
@@ -1813,7 +1976,7 @@
   };
 
   const go = (target) => {
-    if (target === "configuracion" || target === "registros") {
+    if (target === "configuracion") {
       window.location.href = "/configuracion";
       return;
     }
@@ -1830,33 +1993,41 @@
     });
   });
 
-  document.querySelectorAll('a[href="#usuarios"]').forEach((link) => {
+  document.querySelectorAll('a[href="/admin/usuarios"]').forEach((link) => {
     link.addEventListener("click", function (event) {
       event.preventDefault();
       go("usuarios");
     });
   });
 
-  document.querySelectorAll('a[href="#vehiculos"]').forEach((link) => {
+  document.querySelectorAll('a[href="/admin/vehiculos"]').forEach((link) => {
     link.addEventListener("click", function (event) {
       event.preventDefault();
       go("vehiculos");
     });
   });
 
-  document.querySelectorAll('a[href="#registros"], a[href="/configuracion"]').forEach((link) => {
+  document.querySelectorAll('a[href="/admin/registros"]').forEach((link) => {
     link.addEventListener("click", function (event) {
       event.preventDefault();
       go("registros");
     });
   });
 
-  document.querySelectorAll('.admin-sidebar a[href="#citas"]').forEach((link) => {
+  document.querySelectorAll('.admin-sidebar a[href="/admin/citas"]').forEach((link) => {
     link.addEventListener("click", function (event) {
       event.preventDefault();
       go("citas");
     });
   });
+
+  document.querySelectorAll('.admin-sidebar a[href="/admin/ordenes"]').forEach((link) => {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      go("ordenes");
+    });
+  });
+
 
   if (section === "panel") return;
 
@@ -1930,6 +2101,34 @@
     }
   }
 
+  if (section === "ordenes") {
+    show("#ordenes");
+
+    const ordenesDetails = document.querySelector("#ordenes");
+    if (ordenesDetails) {
+      ordenesDetails.style.removeProperty("display");
+      ordenesDetails.open = true;
+
+      if (ordenesDetails.parentElement) {
+        ordenesDetails.parentElement.style.removeProperty("display");
+      }
+    }
+  }
+
+  if (section === "inventario") {
+    show("#inventario");
+
+    const inventarioDetails = document.querySelector("#inventario");
+    if (inventarioDetails) {
+      inventarioDetails.style.removeProperty("display");
+      inventarioDetails.open = true;
+
+      if (inventarioDetails.parentElement) {
+        inventarioDetails.parentElement.style.removeProperty("display");
+      }
+    }
+  }
+
   document.querySelectorAll(".admin-sidebar a, .sidebar-group a").forEach((item) => {
     item.classList.remove("active");
   });
@@ -1940,3 +2139,11 @@
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+

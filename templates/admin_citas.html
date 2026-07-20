@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citas Registradas | DMI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/ordenes.css">
+</head>
+<body>
+  <header class="ot-topbar">
+    <a class="ot-logo" href="/"><span>DMI</span><strong>Citas</strong></a>
+    <nav class="ot-nav">
+      <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
+      <a href="/admin/citas" class="active"><i class="bi bi-calendar-check"></i> Citas</a>
+      <a href="/admin/ordenes"><i class="bi bi-clipboard2-check-fill"></i> Ordenes</a>
+      <a href="/admin/inventario"><i class="bi bi-box-seam-fill"></i> Inventario</a>
+      <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
+    </nav>
+  </header>
+
+  <main class="ot-page">
+    <section class="ot-hero">
+      <div>
+        <p>Agenda operativa del taller</p>
+        <h1>Citas <span>Registradas</span></h1>
+        <small>Consulta, edita y convierte citas en ordenes de trabajo desde una vista amplia y ordenada.</small>
+      </div>
+      <a class="ot-main-btn" href="/citas"><i class="bi bi-calendar-plus"></i> Registrar cita</a>
+    </section>
+
+    {% if success_msg %}<div class="ot-alert success"><i class="bi bi-check-circle-fill"></i>{{ success_msg }}</div>{% endif %}
+    {% if error %}<div class="ot-alert error"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>{% endif %}
+
+    <section class="ot-stats">
+      <article><i class="bi bi-calendar-check-fill"></i><span>Total</span><strong>{{ total_citas or 0 }}</strong></article>
+      <article><i class="bi bi-hourglass-split"></i><span>Pendientes</span><strong>{{ total_pendientes or 0 }}</strong></article>
+      <article><i class="bi bi-clipboard2-plus-fill"></i><span>Confirmadas</span><strong>{{ total_confirmadas or 0 }}</strong></article>
+      <article><i class="bi bi-check2-circle"></i><span>Completadas</span><strong>{{ total_completadas or 0 }}</strong></article>
+    </section>
+
+
+    <section class="ot-card ot-today-card">
+      <div class="ot-card-head">
+        <div>
+          <h2><i class="bi bi-calendar-day"></i> Citas de hoy</h2>
+          <p>Agenda disponible para el dia actual del taller.</p>
+        </div>
+        <strong class="ot-today-count">{{ citas_hoy|length }} citas</strong>
+      </div>
+      <div class="ot-table-wrap">
+        {% if citas_hoy %}
+          <table class="ot-table">
+            <thead>
+              <tr><th>Hora</th><th>Vehiculo</th><th>Placa</th><th>Servicio</th><th>Estado</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+              {% for cita in citas_hoy %}
+              <tr>
+                <td><strong>{{ cita.hora }}</strong></td>
+                <td>{{ cita.vehiculo }}</td>
+                <td><span class="ot-plate">{{ cita.placa }}</span></td>
+                <td>{{ cita.motivo }}</td>
+                <td><span class="ot-status {{ cita.estado }}">{{ cita.estado }}</span></td>
+                <td>
+                  <form action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
+                    <button class="ot-icon-btn" type="submit" title="Crear orden"><i class="bi bi-clipboard2-plus"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="ot-empty"><i class="bi bi-calendar2-x"></i><strong>No hay citas para hoy</strong><span>Cuando un cliente agende para el dia actual aparecera aqui.</span></div>
+        {% endif %}
+      </div>
+    </section>
+    <section class="ot-card">
+      <div class="ot-card-head">
+        <div>
+          <h2><i class="bi bi-list-check"></i> Citas registradas</h2>
+          <p>Informacion conectada a dmi.citas y dmi.vehiculos.</p>
+        </div>
+        <a class="ot-outline-btn" href="/"><i class="bi bi-arrow-left"></i> Volver</a>
+      </div>
+      <div class="ot-table-wrap">
+        {% if citas %}
+          <table class="ot-table">
+            <thead>
+              <tr><th>Fecha</th><th>Hora</th><th>Vehiculo</th><th>Placa</th><th>Servicio</th><th>Estado</th><th>Notas</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+              {% for cita in citas %}
+              <tr>
+                <td><strong>{{ cita.fecha }}</strong></td>
+                <td>{{ cita.hora }}</td>
+                <td>{{ cita.vehiculo }}</td>
+                <td><span class="ot-plate">{{ cita.placa }}</span></td>
+                <td>{{ cita.motivo }}</td>
+                <td><span class="ot-status {{ cita.estado }}">{{ cita.estado }}</span></td>
+                <td>{{ cita.notas }}</td>
+                <td>
+                  <div class="ot-actions">
+                    <a class="ot-icon-btn" href="/cita/editar/{{ cita.idcita }}" title="Editar"><i class="bi bi-pencil"></i></a>
+                    <form action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
+                      <button class="ot-icon-btn" type="submit" title="Crear orden"><i class="bi bi-clipboard2-plus"></i></button>
+                    </form>
+                    <form action="/cita/eliminar/{{ cita.idcita }}" method="post">
+                      <button class="ot-icon-btn danger" type="submit" title="Eliminar"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="ot-empty"><i class="bi bi-calendar-x"></i><strong>No hay citas registradas</strong><span>Cuando se agenden citas apareceran aqui.</span></div>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+
