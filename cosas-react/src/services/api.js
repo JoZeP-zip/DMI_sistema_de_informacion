@@ -1,7 +1,7 @@
 /**
- * api.js â€” Capa de servicios para DMI Motors
+ * api.js — Capa de servicios para DMI Motors
  * Centraliza todas las llamadas al backend FastAPI.
- * UbicaciÃ³n sugerida: src/services/api.js
+ * Ubicación sugerida: src/services/api.js
  *
  * USO EN CUALQUIER COMPONENTE:
  *   import { AuthService, VehiculosService, CitasService } from '../services/api';
@@ -43,12 +43,27 @@ const authHeaders = () => {
   };
 };
 /**
- * Wrapper genÃ©rico de fetch.
+ * Wrapper generico de fetch.
  * Lanza un Error si el servidor responde con { error: "..." }
  * o si el status HTTP no es 2xx.
  */
 const request = async (path, options = {}) => {
-  const res = await fetch(`${BASE_URL}${path}`, options);
+  console.log("BASE_URL:", BASE_URL);
+console.log("URL:", `${BASE_URL}${path}`);
+
+let res;
+
+try {
+  res = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    credentials: "include",
+  });
+} catch (error) {
+  console.error("ERROR DE CONEXIÓN CON API:", error);
+  console.error("BASE_URL:", BASE_URL);
+  console.error("PATH:", path);
+  throw error;
+}
   const contentType = res.headers.get("content-type") || "";
 
   if (contentType.includes("application/json")) {
@@ -62,12 +77,12 @@ const request = async (path, options = {}) => {
 };
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// 
 //  AUTH SERVICE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// 
 export const AuthService = {
   /**
-   * Login â€” guarda token, role y email en localStorage.
+   * Login — guarda token, role y email en localStorage.
    * @returns {{ token, role, email, nombre }}
    */
   login: async (email, password) => {
@@ -96,7 +111,7 @@ export const AuthService = {
     });
   },
 
-  /** Limpia localStorage y cierra sesiÃ³n local. */
+  /** Limpia localStorage y cierra sesión local. */
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -119,15 +134,15 @@ export const AuthService = {
 };
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  VEHÃCULOS SERVICE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+//  VEHICULOS SERVICIO
+
 export const VehiculosService = {
-  /** Lista todos los vehÃ­culos. */
+  /** Lista todos los vehículos. */
   listar: () => request("/api/vehiculos", { headers: authHeaders() }),
 
-  /** Crea un vehÃ­culo nuevo.
-   * @param {Object} datos â€” campos del formulario
+  /** Crea un vehículo nuevo.
+   * @param {Object} datos — campos del formulario
    */
   crear: async (datos) => {
     const form = new URLSearchParams(datos);
@@ -142,11 +157,11 @@ export const VehiculosService = {
       credentials: "include",
       body: form.toString(),
     });
-    if (!res.ok) throw new Error(`Error al crear vehÃ­culo: ${res.status}`);
+    if (!res.ok) throw new Error(`Error al crear vehículo: ${res.status}`);
     return res;
   },
   /**
-   * Actualiza un vehÃ­culo existente.
+   * Actualiza un vehículo existente.
    * @param {number} id
    * @param {Object} datos
    */
@@ -158,28 +173,28 @@ export const VehiculosService = {
       credentials: "include",
       body: form.toString(),
     });
-    if (!res.ok) throw new Error(`Error al editar vehÃ­culo: ${res.status}`);
+    if (!res.ok) throw new Error(`Error al editar vehículo: ${res.status}`);
     return res;
   },
 
-  /** Elimina un vehÃ­culo. */
+  /** Elimina un vehículo. */
   eliminar: async (id) => {
     const res = await fetch(`${BASE_URL}/vehiculo/eliminar/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       credentials: "include",
     });
-    if (!res.ok) throw new Error(`Error al eliminar vehÃ­culo: ${res.status}`);
+    if (!res.ok) throw new Error(`Error al eliminar vehículo: ${res.status}`);
     return res;
   },
 };
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// 
 //  CITAS SERVICE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// 
 export const CitasService = {
-  /** Lista todas las citas con datos del vehÃ­culo. */
+  /** Lista todas las citas con datos del vehículo. */
   listar: () => request("/api/citas", { headers: authHeaders() }),
 
   /**
@@ -229,10 +244,10 @@ export const CitasService = {
 };
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  CONFIGURACIÃ“N SERVICE
+// 
+//  CONFIGURACIONN SERVICIOS
 //  Cubre las 11 entidades del panel admin
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// 
 
 /** Helper interno para los endpoints de config que usan form-urlencoded */
 const configPost = async (path, datos = {}) => {
@@ -248,7 +263,7 @@ const configPost = async (path, datos = {}) => {
 };
 
 export const ConfigService = {
-  // â”€â”€ Ciudades â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Ciudades 
   ciudades: {
     listar:   () => request("/api/ciudades", { headers: authHeaders() }),
     crear:    (d) => configPost("/config/ciudades/nueva", d),
@@ -256,7 +271,7 @@ export const ConfigService = {
     eliminar: (id) => configPost(`/config/ciudades/eliminar/${id}`),
   },
 
-  // â”€â”€ Tipos de vehÃ­culo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Tipos de vehiculos
   tipovehiculos: {
     listar:   () => request("/api/vehiculos", { headers: authHeaders() }), // reutiliza el general
     crear:    (d) => configPost("/config/tipovehiculos/nuevo", d),
@@ -264,7 +279,7 @@ export const ConfigService = {
     eliminar: (id) => configPost(`/config/tipovehiculos/eliminar/${id}`),
   },
 
-  // â”€â”€ MÃ©todos de pago â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Metodos de pago 
   metodopago: {
     listar:   () => request("/api/metodospago", { headers: authHeaders() }),
     crear:    (d) => configPost("/config/metodopago/nuevo", d),
@@ -272,21 +287,21 @@ export const ConfigService = {
     eliminar: (id) => configPost(`/config/metodopago/eliminar/${id}`),
   },
 
-  // â”€â”€ Precio producto â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Precio producto 
   productoprecio: {
     crear:    (d) => configPost("/config/productoprecio/nuevo", d),
     editar:   (id, d) => configPost(`/config/productoprecio/editar/${id}`, d),
     eliminar: (id) => configPost(`/config/productoprecio/eliminar/${id}`),
   },
 
-  // â”€â”€ Precio servicio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Precio servicio 
   serviciosprecio: {
     crear:    (d) => configPost("/config/serviciosprecio/nuevo", d),
     editar:   (id, d) => configPost(`/config/serviciosprecio/editar/${id}`, d),
     eliminar: (id) => configPost(`/config/serviciosprecio/eliminar/${id}`),
   },
 
-  // â”€â”€ Inventario â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Inventario 
   inventario: {
     crear:    (d) => configPost("/config/inventario/nuevo", d),
     editar:   (id, d) => configPost(`/config/inventario/editar/${id}`, d),
@@ -294,7 +309,7 @@ export const ConfigService = {
     movimiento: (d) => configPost("/config/movimientos/nuevo", d),
   },
 
-  // â”€â”€ Oficinas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Oficinas 
   oficinas: {
     listar:   () => request("/api/oficinas", { headers: authHeaders() }),
     crear:    (d) => configPost("/config/oficinas/nuevo", d),
@@ -302,7 +317,7 @@ export const ConfigService = {
     eliminar: (id) => configPost(`/config/oficinas/eliminar/${id}`),
   },
 
-  // â”€â”€ Servicios â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //Servicios 
   servicios: {
     listar:   () => request("/api/servicios", { headers: authHeaders() }),
     crear:    (d) => configPost("/config/servicios/nuevo", d),
@@ -310,14 +325,14 @@ export const ConfigService = {
     eliminar: (id) => configPost(`/config/servicios/eliminar/${id}`),
   },
 
-  // â”€â”€ Tipo reparaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //Tipo reparacion
   tiporeparacion: {
     crear:    (d) => configPost("/config/tiporeparacion/nuevo", d),
     editar:   (id, d) => configPost(`/config/tiporeparacion/editar/${id}`, d),
     eliminar: (id) => configPost(`/config/tiporeparacion/eliminar/${id}`),
   },
 
-  // â”€â”€ Pedidos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Pedidos
   pedidos: {
     listar:   () => request("/api/pedidos", { headers: authHeaders() }),
     crear:    (d) => configPost("/config/pedidos/nuevo", d),
@@ -325,7 +340,7 @@ export const ConfigService = {
     eliminar: (id) => configPost(`/config/pedidos/eliminar/${id}`),
   },
 
-  // â”€â”€ Productos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Productos 
   productos: {
     listar:   () => request("/api/productos", { headers: authHeaders() }),
     crear:    (d) => configPost("/config/productos/nuevo", d),

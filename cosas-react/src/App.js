@@ -385,7 +385,7 @@ const DashboardUsuarioViejo = ({ user, showNotice, openConfirm }) => {
                 <tr key={cita.id} className="border-bottom border-secondary border-opacity-25">
                   <td className="fw-bold">{cita.fecha}</td>
                   <td>{cita.hora}</td>
-                  <td><span className="text-danger">Ã°Å¸Å¡â€”</span> {cita.vehiculo}</td>
+                  <td><span className="text-danger">🚗</span> {cita.vehiculo}</td>
                   <td>{cita.servicio}</td>
                   <td>
                     <span className={`badge rounded-0 py-1 px-2 ${cita.estado === 'Completado' ? 'bg-secondary text-white' : 'bg-danger'}`}>
