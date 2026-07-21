@@ -1,9 +1,3 @@
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -660,7 +654,7 @@
                     <div class="mb-2"><label class="form-label">Nombre</label><input type="text" class="form-control form-control-sm" name="nombre" required></div>
                     <div class="mb-2"><label class="form-label">Apellidos</label><input type="text" class="form-control form-control-sm" name="apellidos" required></div>
                     <div class="mb-2"><label class="form-label">Documento</label><input type="number" class="form-control form-control-sm" name="documento" required></div>
-                    <div class="mb-2"><label class="form-label">Tipo Documento</label><input type="text" class="form-control form-control-sm" name="tipodedocumento" placeholder="C.C, Pasaporte" required></div>
+                    <div class="mb-2"><label class="form-label">Tipo Documento</label><select class="form-select form-select-sm" name="tipodedocumento" required><option value="CC">CC - Cedula de Ciudadania</option><option value="CE">CE - Cedula de Extranjeria</option><option value="TI">TI - Tarjeta de Identidad</option><option value="RC">RC - Registro Civil</option><option value="NIT">NIT - Numero de Identificacion Tributaria</option></select></div>
                     <div class="mb-2"><label class="form-label">Email</label><input type="email" class="form-control form-control-sm" name="email" required></div>
                     <div class="mb-2"><label class="form-label">Telefono</label><input type="text" class="form-control form-control-sm" name="telefono" required></div>
                     <div class="mb-2"><label class="form-label">Username Unico</label><input type="text" class="form-control form-control-sm" name="usuarionombre" required></div>
@@ -669,8 +663,8 @@
                     <div class="mb-2"><label class="form-label">Rol</label><select class="form-select form-select-sm" name="rol"><option value="usuario">usuario</option><option value="admin">admin</option><option value="mecanico">mecanico</option></select></div>
                     <button type="submit" class="btn btn-primary w-100 btn-sm mt-2">Guardar Usuario</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Usuarios en Sistema</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle text-nowrap"><thead class="table-dark"><tr><th>ID</th><th>Nombre Completo</th><th>Doc</th><th>Username</th><th>Rol</th><th>Acciones</th></tr></thead><tbody>
-                {% for u in usuarios %}<tr><td>{{u.idusuarios}}</td><td>{{u.nombre}} {{u.apellidos}}</td><td>{{u.documento}}</td><td>{{u.usuarionombre}}</td><td>{{u.rol}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-usuarios'), '{{ u.idusuarios }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-usuarios'), '{{ u.idusuarios }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Usuarios en Sistema</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle text-nowrap"><thead class="table-dark"><tr><th>ID</th><th>Nombre Completo</th><th>Doc</th><th>Tipo Doc</th><th>Username</th><th>Rol</th><th>Acciones</th></tr></thead><tbody>
+                {% for u in usuarios %}<tr><td>{{u.idusuarios}}</td><td>{{u.nombre}} {{u.apellidos}}</td><td>{{u.documento}}</td><td>{{u.tipodedocumento or 'CC'}}</td><td>{{u.usuarionombre}}</td><td>{{u.rol}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-usuarios'), '{{ u.idusuarios }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-usuarios'), '{{ u.idusuarios }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="7" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
@@ -916,21 +910,26 @@
         form.submit();
     }
 
+    function getFrontendOrigin() {
+        const { protocol, hostname } = window.location;
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return `${protocol}//localhost:3000`;
+        }
+        if (hostname.endsWith('.app.github.dev')) {
+            return `${protocol}//${hostname.replace('-8000.app.github.dev', '-3000.app.github.dev')}`;
+        }
+        return window.location.origin;
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const initial = (window.location.hash || '').replace('#', '') || cfgCurrentPanel;
         show(initial, cfgFindMenuLink(initial));
+
+        document.querySelectorAll('.frontend-catalogo-link').forEach(link => {
+            const path = link.getAttribute('href') || '/catalogo';
+            link.href = getFrontendOrigin() + path;
+        });
     });
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-

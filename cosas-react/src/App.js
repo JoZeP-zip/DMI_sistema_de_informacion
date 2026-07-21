@@ -229,6 +229,11 @@ const RegistroUsuarioView = ({ onRegisterSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombre, setNombre] = useState('');
+  const [apellidos, setApellidos] = useState('');
+  const [documento, setDocumento] = useState('');
+  const [tipodedocumento, setTipodedocumento] = useState('CC');
+  const [telefono, setTelefono] = useState('');
+  const [usuarionombre, setUsuarionombre] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
@@ -242,7 +247,17 @@ const RegistroUsuarioView = ({ onRegisterSuccess }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ nombre, email, password, role: "usuario" }),
+        body: JSON.stringify({
+          nombre,
+          apellidos,
+          documento: documento ? Number(documento) : undefined,
+          tipodedocumento,
+          telefono,
+          usuarionombre,
+          email,
+          password,
+          role: "usuario"
+        }),
       });
 
       const data = await response.json().catch(() => ({}));
@@ -275,6 +290,63 @@ const RegistroUsuarioView = ({ onRegisterSuccess }) => {
             className="form-control bg-black text-white border-secondary rounded-0 focus-red"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
+            required 
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label text-white small fw-bold">APELLIDOS</label>
+          <input 
+            type="text" 
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={apellidos}
+            onChange={(e) => setApellidos(e.target.value)}
+            required 
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label text-white small fw-bold">NOMBRE DE USUARIO</label>
+          <input 
+            type="text" 
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={usuarionombre}
+            onChange={(e) => setUsuarionombre(e.target.value)}
+            required 
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label text-white small fw-bold">TIPO DE DOCUMENTO</label>
+          <select
+            className="form-select bg-black text-white border-secondary rounded-0 focus-red"
+            value={tipodedocumento}
+            onChange={(e) => setTipodedocumento(e.target.value)}
+            required
+          >
+            <option value="CC">CC - Cedula de Ciudadania</option>
+            <option value="CE">CE - Cedula de Extranjeria</option>
+            <option value="TI">TI - Tarjeta de Identidad</option>
+            <option value="RC">RC - Registro Civil</option>
+            <option value="NIT">NIT - Numero de Identificacion Tributaria</option>
+          </select>
+        </div>
+        <div className="mb-3">
+          <label className="form-label text-white small fw-bold">DOCUMENTO</label>
+          <input 
+            type="text" 
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={documento}
+            onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))}
+            required 
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label text-white small fw-bold">TELEFONO</label>
+          <input 
+            type="tel" 
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
             required 
           />
         </div>

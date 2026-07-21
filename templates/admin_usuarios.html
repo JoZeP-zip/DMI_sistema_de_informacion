@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -55,7 +54,7 @@
         {% if usuarios %}
           <table class="ot-table">
             <thead>
-              <tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Telefono</th><th>Documento</th><th>Rol</th></tr>
+              <tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Telefono</th><th>Documento</th><th>Tipo Doc.</th><th>Rol</th></tr>
             </thead>
             <tbody>
               {% for item in usuarios %}
@@ -67,6 +66,7 @@
                 <td>{{ item.email }}</td>
                 <td>{{ item.telefono }}</td>
                 <td>{{ item.documento }}</td>
+                <td>{{ item.tipodedocumento or 'CC' }}</td>
                 <td><span class="ot-status {{ item.rol }}">{{ item.rol }}</span></td>
               </tr>
               {% endfor %}
