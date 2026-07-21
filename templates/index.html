@@ -4,6 +4,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -593,6 +594,11 @@
             <span>Inventario</span>
             <b>{{ total_inventario_catalogo }}</b>
           </a>
+          <a href="/configuracion#empleados">
+            <i class="bi bi-person-badge-fill"></i>
+            <span>Empleados</span>
+            <b>{{ empleados|length if empleados is defined else 0 }}</b>
+          </a>
           <a href="/admin/registros">
             <i class="bi bi-database-fill"></i>
             <span>Registros</span>
@@ -766,6 +772,7 @@
             <a href="/admin/vehiculos"><i class="bi bi-plus-square-fill"></i><span>Nuevo vehiculo</span></a>
             <a href="/citas"><i class="bi bi-calendar-plus-fill"></i><span>Nueva cita</span></a>
             <a href="/admin/inventario"><i class="bi bi-box-seam-fill"></i><span>Ver inventario</span></a>
+            <a href="/configuracion#empleados"><i class="bi bi-person-badge-fill"></i><span>Gestionar empleados</span></a>
             <a href="/configuracion"><i class="bi bi-database-fill-gear"></i><span>Configurar datos</span></a>
           </div>
         </section>
@@ -1221,8 +1228,9 @@
                            <td>
                              <form action="/usuario/rol/{{ row[0] }}" method="post" class="role-form" data-confirm-title="Cambiar rol" data-confirm-message="Confirma que quieres guardar este cambio de rol para el usuario seleccionado.">
                                 <select name="rol" class="form-select">
-                                  <option value="usuario" {% if row[14] != 'admin' %}selected{% endif %}>usuario</option>
+                                  <option value="usuario" {% if row[14] not in ['admin', 'mecanico'] %}selected{% endif %}>usuario</option>
                                   <option value="admin" {% if row[14] == 'admin' %}selected{% endif %}>admin</option>
+                                  <option value="mecanico" {% if row[14] == 'mecanico' %}selected{% endif %}>mecanico</option>
                                 </select>
 
                                 <button type="submit" class="role-btn" title="Aplicar">

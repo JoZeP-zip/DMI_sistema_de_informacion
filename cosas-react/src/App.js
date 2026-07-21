@@ -24,6 +24,15 @@ const getApiBaseUrl = () => {
   return "";
 };
 
+const isMechanicRole = (role) => {
+  const normalizedRole = String(role || "").toLowerCase();
+  return normalizedRole === "mecanico" || normalizedRole === "mecanico_taller";
+};
+
+const goToMechanicPanel = () => {
+  window.location.href = `${getApiBaseUrl()}/mecanico`;
+};
+
 const getDisplayName = (userData) => {
   const rawName = userData?.nombre || userData?.name || userData?.usuarionombre || "";
   const fallback = userData?.email ? userData.email.split("@")[0] : "conductor";
@@ -777,6 +786,17 @@ function App() {
   };
 
   useEffect(() => {
+    if (window.location.pathname === '/login') {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("email");
+      localStorage.removeItem("nombre");
+      localStorage.removeItem("dmiSessionStartedAt");
+      setUser(null);
+      setView('login');
+      return;
+    }
+
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     const email = localStorage.getItem("email");
@@ -797,6 +817,8 @@ function App() {
         window.history.replaceState(null, '', '/');
         setAdminFrameKey((key) => key + 1);
         setView('admin-dashboard');
+      } else if (isMechanicRole(normalizedRole)) {
+        setView('inicio');
       } else if (normalizedRole === 'usuario' || normalizedRole === 'cliente') {
         setView('user-dashboard');
       }
@@ -816,6 +838,10 @@ function App() {
     }
     
     if (view === 'user-dashboard' && user.role !== 'usuario' && user.role !== 'cliente') {
+      if (isMechanicRole(user.role)) {
+        goToMechanicPanel();
+        return;
+      }
       setView('login');
     }
   }, [view, user]);
@@ -868,13 +894,13 @@ function App() {
 
   const goToInicio = () => {
     setMenuOpen(false);
-    if (user) {
-      setView(user.role === 'admin' ? 'admin-dashboard' : 'user-dashboard');
-    } else {
-      setView('inicio');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      window.history.replaceState(null, '', '/');
+    if (user && user.role === 'admin') {
+      setView('admin-dashboard');
+      return;
     }
+    setView('inicio');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.history.replaceState(null, '', '/');
   };
 
   const handleLoginSuccess = (userData) => {
@@ -889,6 +915,8 @@ function App() {
       window.history.replaceState(null, '', '/');
       setAdminFrameKey((key) => key + 1);
       setView('admin-dashboard');
+    } else if (isMechanicRole(normalizedUser.role)) {
+      setView(afterLoginView || 'inicio');
     } else {
       setView(afterLoginView || 'user-dashboard');
     }
@@ -901,7 +929,7 @@ function App() {
       confirmText: "Entrar al sistema",
       details: [
         { label: "Usuario", value: displayName },
-        { label: "Rol", value: normalizedUser.role === "admin" ? "Administrador" : "Usuario" }
+        { label: "Rol", value: normalizedUser.role === "admin" ? "Administrador" : isMechanicRole(normalizedUser.role) ? "Mecanico" : "Usuario" }
       ],
       onConfirm: () => {
         setDialog(null);
@@ -1023,6 +1051,10 @@ function App() {
                       window.history.replaceState(null, '', '/');
                       setAdminFrameKey((key) => key + 1);
                       setView('admin-dashboard');
+                    } else if (isMechanicRole(user.role)) {
+                      setMenuOpen(false);
+                      goToMechanicPanel();
+                      return;
                     } else {
                       setView('user-dashboard');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1030,7 +1062,7 @@ function App() {
                     setMenuOpen(false);
                   }}
                 >
-                  MI CUENTA
+                  {user && isMechanicRole(user.role) ? 'MECANICO' : 'MI CUENTA'}
                 </button>
               </li>
 

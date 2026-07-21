@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,6 +11,31 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/static/ordenes.css">
+
+  <style>
+    .ot-click-row { cursor: pointer; transition: background .18s ease, transform .18s ease; }
+    .ot-click-row:hover { background: rgba(255, 47, 85, .08); }
+    .cita-modal-backdrop { position: fixed; inset: 0; z-index: 6000; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(0, 0, 0, .78); backdrop-filter: blur(8px); }
+    .cita-modal-backdrop.is-visible { display: flex; }
+    .cita-modal-card { width: min(920px, 96vw); max-height: 88vh; overflow: hidden; border: 1px solid var(--ot-red); background: linear-gradient(145deg, rgba(25, 3, 9, .98), rgba(5, 5, 7, .98)); color: #fff; box-shadow: 0 0 36px rgba(255, 47, 85, .25); }
+    .cita-modal-head { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; padding: 28px; border-bottom: 1px solid rgba(255, 47, 85, .45); background: rgba(255, 47, 85, .08); }
+    .cita-modal-head p { margin: 0 0 8px; color: var(--ot-red); font-size: .78rem; font-weight: 900; letter-spacing: .22em; text-transform: uppercase; }
+    .cita-modal-head h2 { margin: 0; font-size: clamp(1.7rem, 4vw, 3rem); line-height: 1; text-transform: uppercase; }
+    .cita-modal-close { width: 48px; height: 48px; border: 1px solid var(--ot-red); background: transparent; color: #fff; font-size: 1.6rem; }
+    .cita-modal-body { max-height: calc(88vh - 110px); overflow: auto; padding: 28px; }
+    .cita-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 22px; }
+    .cita-detail-item { border: 1px solid rgba(255, 47, 85, .32); background: rgba(255, 255, 255, .035); padding: 14px; }
+    .cita-detail-item span { display: block; margin-bottom: 6px; color: rgba(255,255,255,.54); font-size: .76rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .cita-detail-item strong { display: block; color: #fff; font-size: 1.05rem; word-break: break-word; }
+    .cita-detail-notes { border: 1px solid rgba(255, 47, 85, .32); padding: 16px; background: rgba(0,0,0,.28); color: rgba(255,255,255,.78); }
+    .cita-modal-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+    .cita-modal-actions .ot-main-btn, .cita-modal-actions .ot-outline-btn { min-height: 46px; }
+    .ot-order-form { display: flex; align-items: center; gap: 8px; }
+    .ot-mini-select { min-height: 38px; max-width: 190px; border: 1px solid rgba(255,47,85,.62); background: #090909; color: #fff; padding: 0 10px; font-family: inherit; font-size: .78rem; }
+    .cita-modal-actions .ot-order-form { flex-wrap: wrap; }
+    .cita-modal-actions .ot-mini-select { max-width: 260px; min-height: 46px; }
+    @media (max-width: 720px) { .cita-modal-actions .ot-main-btn, .cita-modal-actions .ot-outline-btn, .cita-modal-actions .ot-mini-select { width: 100%; max-width: 100%; justify-content: center; } .ot-order-form { flex-wrap: wrap; } }
+  </style>
 </head>
 <body>
   <header class="ot-topbar">
@@ -60,16 +86,25 @@
             </thead>
             <tbody>
               {% for cita in citas_hoy %}
-              <tr>
+              <tr class="ot-click-row" data-cita='{{ cita|tojson }}' onclick="openCitaModal(this)">
                 <td><strong>{{ cita.hora }}</strong></td>
                 <td>{{ cita.vehiculo }}</td>
                 <td><span class="ot-plate">{{ cita.placa }}</span></td>
                 <td>{{ cita.motivo }}</td>
                 <td><span class="ot-status {{ cita.estado }}">{{ cita.estado }}</span></td>
                 <td>
-                  <form action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
-                    <button class="ot-icon-btn" type="submit" title="Crear orden"><i class="bi bi-clipboard2-plus"></i></button>
-                  </form>
+                  <div class="ot-actions" onclick="event.stopPropagation()">
+                    <button class="ot-icon-btn" type="button" title="Ver detalle" onclick="openCitaModal(this.closest('tr'))"><i class="bi bi-eye"></i></button>
+                    <form class="ot-order-form" action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
+                      <select class="ot-mini-select" name="empleado_id" title="Empleado asignado">
+                        <option value="">Sin asignar</option>
+                        {% for empleado in empleados %}
+                        <option value="{{ empleado.idempleado }}">{{ empleado.nombre }} {{ empleado.apellido }} - {{ empleado.rol }}</option>
+                        {% endfor %}
+                      </select>
+                      <button class="ot-icon-btn" type="submit" title="Crear orden"><i class="bi bi-clipboard2-plus"></i></button>
+                    </form>
+                  </div>
                 </td>
               </tr>
               {% endfor %}
@@ -107,7 +142,13 @@
                 <td>
                   <div class="ot-actions">
                     <a class="ot-icon-btn" href="/cita/editar/{{ cita.idcita }}" title="Editar"><i class="bi bi-pencil"></i></a>
-                    <form action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
+                    <form class="ot-order-form" action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
+                      <select class="ot-mini-select" name="empleado_id" title="Empleado asignado">
+                        <option value="">Sin asignar</option>
+                        {% for empleado in empleados %}
+                        <option value="{{ empleado.idempleado }}">{{ empleado.nombre }} {{ empleado.apellido }} - {{ empleado.rol }}</option>
+                        {% endfor %}
+                      </select>
                       <button class="ot-icon-btn" type="submit" title="Crear orden"><i class="bi bi-clipboard2-plus"></i></button>
                     </form>
                     <form action="/cita/eliminar/{{ cita.idcita }}" method="post">
@@ -125,6 +166,77 @@
       </div>
     </section>
   </main>
+
+  <div class="cita-modal-backdrop" id="citaDetailModal" aria-hidden="true">
+    <div class="cita-modal-card" role="dialog" aria-modal="true">
+      <div class="cita-modal-head">
+        <div>
+          <p>Cita del taller</p>
+          <h2 id="citaModalTitle">Detalle de cita</h2>
+        </div>
+        <button type="button" class="cita-modal-close" onclick="closeCitaModal()" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="cita-modal-body" id="citaModalBody"></div>
+    </div>
+  </div>
+  <script>
+    function citaText(value, fallback = 'Sin informacion') {
+      return value === null || value === undefined || value === '' ? fallback : value;
+    }
+
+    function openCitaModal(row) {
+      const modal = document.getElementById('citaDetailModal');
+      const body = document.getElementById('citaModalBody');
+      const title = document.getElementById('citaModalTitle');
+      if (!modal || !row) return;
+
+      let cita = {};
+      try { cita = JSON.parse(row.dataset.cita || '{}'); } catch (error) { cita = {}; }
+      title.textContent = `${citaText(cita.hora, '')} - ${citaText(cita.placa, 'Sin placa')}`;
+      body.innerHTML = `
+        <div class="cita-detail-grid">
+          <div class="cita-detail-item"><span>Fecha</span><strong>${citaText(cita.fecha)}</strong></div>
+          <div class="cita-detail-item"><span>Hora</span><strong>${citaText(cita.hora)}</strong></div>
+          <div class="cita-detail-item"><span>Cliente</span><strong>${citaText(cita.cliente)}</strong></div>
+          <div class="cita-detail-item"><span>Telefono</span><strong>${citaText(cita.telefono)}</strong></div>
+          <div class="cita-detail-item"><span>Correo</span><strong>${citaText(cita.email)}</strong></div>
+          <div class="cita-detail-item"><span>Vehiculo</span><strong>${citaText(cita.vehiculo)}</strong></div>
+          <div class="cita-detail-item"><span>Placa</span><strong>${citaText(cita.placa)}</strong></div>
+          <div class="cita-detail-item"><span>Estado</span><strong>${citaText(cita.estado)}</strong></div>
+          <div class="cita-detail-item"><span>Servicio</span><strong>${citaText(cita.motivo)}</strong></div>
+        </div>
+        <div class="cita-detail-notes"><strong>Notas:</strong><br>${citaText(cita.notas, 'Sin notas registradas.')}</div>
+        <div class="cita-modal-actions">
+          <a class="ot-outline-btn" href="/cita/editar/${cita.idcita}"><i class="bi bi-pencil"></i> Editar cita</a>
+          <form class="ot-order-form" action="/admin/ordenes/desde-cita/${cita.idcita}" method="post">
+            <select class="ot-mini-select" name="empleado_id">
+              <option value="">Sin asignar</option>
+              {% for empleado in empleados %}
+              <option value="{{ empleado.idempleado }}">{{ empleado.nombre }} {{ empleado.apellido }} - {{ empleado.rol }}</option>
+              {% endfor %}
+            </select>
+            <button class="ot-main-btn" type="submit"><i class="bi bi-clipboard2-plus"></i> Crear orden</button>
+          </form>
+        </div>`;
+      modal.classList.add('is-visible');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeCitaModal() {
+      const modal = document.getElementById('citaDetailModal');
+      if (!modal) return;
+      modal.classList.remove('is-visible');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeCitaModal();
+    });
+    document.addEventListener('click', (event) => {
+      const modal = document.getElementById('citaDetailModal');
+      if (event.target === modal) closeCitaModal();
+    });
+  </script>
 </body>
 </html>
 

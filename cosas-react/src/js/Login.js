@@ -56,12 +56,14 @@ function Login() {
       }
 
       const token = data.access_token || data.token;
-      const role = data.role || data.rol || 'usuario';
+      const role = String(data.role || data.rol || 'usuario').toLowerCase();
 
       guardarSesion(token, role, email);
 
       if (role === 'admin') {
         navigate('/dashboard-admin');
+      } else if (role === 'mecanico' || role === 'mecanico_taller') {
+        navigate('/home');
       } else {
         navigate('/home');
       }

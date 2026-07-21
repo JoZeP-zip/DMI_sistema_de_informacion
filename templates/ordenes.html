@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -15,28 +16,34 @@
 </head>
 <body>
   <header class="ot-topbar">
-    <a class="ot-logo" href="/">
+    <a class="ot-logo" href="{% if modo_mecanico %}/mecanico{% else %}/{% endif %}">
       <span>DMI</span>
-      <strong>Ordenes</strong>
+      <strong>{% if modo_mecanico %}Mecanico{% else %}Ordenes{% endif %}</strong>
     </a>
 
     <nav class="ot-nav">
+      {% if modo_mecanico %}
+      <a href="/mecanico" class="active"><i class="bi bi-tools"></i> Panel Mecanico</a>
+      <a href="/mecanico"><i class="bi bi-clipboard2-check-fill"></i> Mis ordenes</a>
+      <a href="/logout-login"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</a>
+      {% else %}
       <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
       <a href="/admin/citas"><i class="bi bi-calendar-check"></i> Citas</a>
       <a href="/admin/ordenes" class="active"><i class="bi bi-clipboard2-check-fill"></i> Ordenes</a>
       <a href="/admin/inventario"><i class="bi bi-box-seam-fill"></i> Inventario</a>
       <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
+      {% endif %}
     </nav>
   </header>
 
   <main class="ot-page">
     <section class="ot-hero">
       <div>
-        <p>Centro operativo del taller</p>
-        <h1>Ordenes de <span>Trabajo</span></h1>
-        <small>Controla el flujo completo: cita, diagnostico, cotizacion, reparacion, factura, pago y entrega.</small>
+        <p>{% if modo_mecanico %}Panel operativo del mecanico{% else %}Centro operativo del taller{% endif %}</p>
+        <h1>{% if modo_mecanico %}Mis <span>Ordenes</span>{% else %}Ordenes de <span>Trabajo</span>{% endif %}</h1>
+        <small>{% if modo_mecanico %}Consulta y actualiza diagnosticos, servicios, repuestos y avances de tus trabajos asignados.{% else %}Controla el flujo completo: cita, diagnostico, cotizacion, reparacion, factura, pago y entrega.{% endif %}</small>
       </div>
-      <a class="ot-main-btn" href="/admin/citas"><i class="bi bi-calendar-plus"></i> Crear desde cita</a>
+      {% if not modo_mecanico %}<a class="ot-main-btn" href="/admin/citas"><i class="bi bi-calendar-plus"></i> Crear desde cita</a>{% endif %}
     </section>
 
     {% if success_msg %}
@@ -262,7 +269,7 @@
           <h2><i class="bi bi-list-check"></i> Ordenes registradas</h2>
           <p>Informacion conectada a dmi.orden_trabajo y dmi.v_ordenes_resumen.</p>
         </div>
-        <a class="ot-outline-btn" href="/"><i class="bi bi-arrow-left"></i> Volver</a>
+        <a class="ot-outline-btn" href="{% if modo_mecanico %}/mecanico{% else %}/{% endif %}"><i class="bi bi-arrow-left"></i> Volver</a>
       </div>
 
       <div class="ot-table-wrap">
@@ -291,7 +298,7 @@
                   <td>{{ orden.fecha_apertura }}</td>
                   <td>${{ orden.total_orden or 0 }}</td>
                   <td>
-                    <a class="ot-icon-btn" href="/admin/ordenes/{{ orden.idorden }}"><i class="bi bi-eye"></i></a>
+                    <a class="ot-icon-btn" href="{% if modo_mecanico %}/mecanico/ordenes/{{ orden.idorden }}{% else %}/admin/ordenes/{{ orden.idorden }}{% endif %}"><i class="bi bi-eye"></i></a>
                   </td>
                 </tr>
               {% endfor %}
