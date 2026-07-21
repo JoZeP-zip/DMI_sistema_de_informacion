@@ -11,7 +11,7 @@
 //  BASE URL — cambia este valor si el codespace
 //  rota o si pasas a producción.
 // ─────────────────────────────────────────────
-const BASE_URL = "";
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 // ─────────────────────────────────────────────
 //  HELPER: construye headers con el token JWT

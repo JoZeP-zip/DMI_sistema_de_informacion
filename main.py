@@ -846,3 +846,29 @@ async def crear_ciudad(
         return RedirectResponse(url="/configuracion?success=Ciudad creada con éxito", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/configuracion?error={str(e)}", status_code=302)
+
+# ── Endpoint para React (devuelve JSON con JWT) ──────────────────
+from pydantic import BaseModel as PydanticBase
+
+class LoginReactRequest(PydanticBase):
+    email: str
+    password: str
+
+@app.post("/login-react")
+async def login_react(data: LoginReactRequest):
+    try:
+        res = supabase.auth.sign_in_with_password({"email": data.email, "password": data.password})
+        if not res.user:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        
+        role = res.user.user_metadata.get("role", "usuario")
+        nombre = res.user.user_metadata.get("nombre", "")
+        
+        return {
+            "token": res.session.access_token,
+            "role": role,
+            "email": res.user.email,
+            "nombre": nombre
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))

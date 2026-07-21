@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AuthService } from './services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import './styles/App.css';
@@ -17,30 +18,22 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister }) => {
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
 
-    try {
-      const response = await fetch('/login-react', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+  setError("");
 
-      const data = await response.json();
+  try {
+    const data = await AuthService.login(email, password);
 
-      if (data.error) {
-        setError(data.error);
-      } else {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role);
-        localStorage.setItem("email", data.email);
-        onLoginSuccess({ email: data.email, role: data.role });
-      }
-    } catch (err) {
-      setError('No se pudo conectar con el servidor.');
-    }
-  };
+    onLoginSuccess({
+      email: data.email,
+      role: data.role
+    });
+
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
   return (
     <div className="mx-auto" style={{ maxWidth: '400px' }}>
@@ -296,7 +289,7 @@ function App() {
       return;
     }
 
-    if (view === 'admin-dashboard' && user.role !== 'es_admin') {
+    if (view === 'admin-dashboard' && user.role !== 'admin') {
       setView('login');
     }
     
