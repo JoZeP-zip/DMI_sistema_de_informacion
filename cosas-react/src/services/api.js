@@ -7,27 +7,26 @@
  *   import { AuthService, VehiculosService, CitasService } from '../services/api';
  */
 
-<<<<<<< HEAD
+
 // ─────────────────────────────────────────────
-//  BASE URL — cambia este valor si el codespace
-//  rota o si pasas a producción.
+// BASE URL
 // ─────────────────────────────────────────────
-const BASE_URL = process.env.REACT_APP_API_URL;
-=======
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  BASE URL â€” cambia este valor si el codespace
-//  rota o si pasas a producciÃ³n.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
   const { protocol, hostname } = window.location;
->>>>>>> ff73952eb317d5a23a72c7eefa847811bbd639b8
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return "http://localhost:8000";
   }
 
   if (hostname.includes("app.github.dev")) {
-    return `${protocol}//${hostname.replace(/-3000\.app\.github\.dev$/, "-8000.app.github.dev")}`;
+    return `${protocol}//${hostname.replace(
+      /-3000\.app\.github\.dev$/,
+      "-8000.app.github.dev"
+    )}`;
   }
 
   return "";
@@ -35,18 +34,14 @@ const getApiBaseUrl = () => {
 
 const BASE_URL = getApiBaseUrl();
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  HELPER: construye headers con el token JWT
-//  que React guarda en localStorage tras el login.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const authHeaders = () => {
   const token = localStorage.getItem("token");
+
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };
-
 /**
  * Wrapper genÃ©rico de fetch.
  * Lanza un Error si el servidor responde con { error: "..." }

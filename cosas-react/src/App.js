@@ -171,53 +171,20 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister }) => {
   const handleSubmit = async (e) => {
   e.preventDefault();
 
-<<<<<<< HEAD
-  setError("");
-=======
-    try {
-      const response = await fetch(getApiBaseUrl() + '/login-react', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
->>>>>>> ff73952eb317d5a23a72c7eefa847811bbd639b8
+setError("");
 
-  try {
-    const data = await AuthService.login(email, password);
+try {
+  const data = await AuthService.login(email, password);
 
-<<<<<<< HEAD
-    onLoginSuccess({
-      email: data.email,
-      role: data.role
-    });
+  onLoginSuccess({
+    email: data.email,
+    role: data.role
+  });
 
-  } catch (err) {
-    setError(err.message);
-  }
+} catch (err) {
+  setError(err.message);
+}
 };
-=======
-      if (!response.ok) {
-        setError(data.detail || data.message || data.error || 'Credenciales invalidas.');
-      } else {
-        const token = data.access_token || data.token;
-        const role = data.role || data.rol || "usuario";
-        const userEmail = data.email || email;
-        const nombre = data.nombre || data.name || data.usuarionombre || "";
-
-        localStorage.setItem("token", token);
-        localStorage.setItem("role", role);
-        localStorage.setItem("email", userEmail);
-        localStorage.setItem("nombre", nombre);
-        localStorage.setItem("dmiSessionStartedAt", new Date().toISOString());
-        window.history.replaceState(null, '', '/');
-        onLoginSuccess({ email: userEmail, role, nombre });
-      }
-    } catch (err) {
-      setError('No se pudo conectar con el servidor.');
-    }
-  };
->>>>>>> ff73952eb317d5a23a72c7eefa847811bbd639b8
 
   return (
     <div className="mx-auto" style={{ maxWidth: '400px' }}>
@@ -439,7 +406,7 @@ const DashboardUsuarioViejo = ({ user, showNotice, openConfirm }) => {
                         onClick={() => handleCancelarCita(cita.id)}
                         disabled={cita.estado === 'Completado'}
                       >
-                        Ã°Å¸â€”â€˜Ã¯Â¸Â CANCELAR
+                         CANCELAR
                       </button>
                     </div>
                   </td>
