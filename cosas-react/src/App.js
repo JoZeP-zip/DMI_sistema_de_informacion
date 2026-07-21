@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AuthService } from './services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import './styles/App.css';
@@ -168,9 +169,11 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister }) => {
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
 
+<<<<<<< HEAD
+  setError("");
+=======
     try {
       const response = await fetch(getApiBaseUrl() + '/login-react', {
         method: 'POST',
@@ -178,9 +181,22 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister }) => {
         credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
+>>>>>>> ff73952eb317d5a23a72c7eefa847811bbd639b8
 
-      const data = await response.json();
+  try {
+    const data = await AuthService.login(email, password);
 
+<<<<<<< HEAD
+    onLoginSuccess({
+      email: data.email,
+      role: data.role
+    });
+
+  } catch (err) {
+    setError(err.message);
+  }
+};
+=======
       if (!response.ok) {
         setError(data.detail || data.message || data.error || 'Credenciales invalidas.');
       } else {
@@ -201,6 +217,7 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister }) => {
       setError('No se pudo conectar con el servidor.');
     }
   };
+>>>>>>> ff73952eb317d5a23a72c7eefa847811bbd639b8
 
   return (
     <div className="mx-auto" style={{ maxWidth: '400px' }}>

@@ -335,8 +335,7 @@ body{
 }
 
 .cfg-panel .btn-primary:hover{
-    background:dc2626
-dc2626;
+    background: #dc2626;
 }
 
 /* Tablas */
@@ -537,3 +536,4 @@ body{
     background:#0f172a;
     min-height:100vh;
 }
+

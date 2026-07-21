@@ -7,12 +7,20 @@
  *   import { AuthService, VehiculosService, CitasService } from '../services/api';
  */
 
+<<<<<<< HEAD
+// ─────────────────────────────────────────────
+//  BASE URL — cambia este valor si el codespace
+//  rota o si pasas a producción.
+// ─────────────────────────────────────────────
+const BASE_URL = process.env.REACT_APP_API_URL;
+=======
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  BASE URL â€” cambia este valor si el codespace
 //  rota o si pasas a producciÃ³n.
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const getApiBaseUrl = () => {
   const { protocol, hostname } = window.location;
+>>>>>>> ff73952eb317d5a23a72c7eefa847811bbd639b8
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return "http://localhost:8000";
