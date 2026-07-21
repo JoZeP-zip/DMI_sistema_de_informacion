@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registros del Sistema | DMI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/static/ordenes.css">
+</head>
+<body>
+  <header class="ot-topbar">
+    <a class="ot-logo" href="/"><span>DMI</span><strong>Registros</strong></a>
+    <nav class="ot-nav">
+      <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
+      <a href="/admin/usuarios"><i class="bi bi-people-fill"></i> Usuarios</a>
+      <a href="/admin/vehiculos"><i class="bi bi-truck-front-fill"></i> Vehiculos</a>
+      <a href="/admin/citas"><i class="bi bi-calendar-check"></i> Citas</a>
+      <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
+    </nav>
+  </header>
+
+  <main class="ot-page">
+    <section class="ot-hero">
+      <div>
+        <p>Centro de consulta</p>
+        <h1>Registros del <span>Sistema</span></h1>
+        <small>Accesos rapidos a las areas principales de administracion.</small>
+      </div>
+      <a class="ot-main-btn" href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
+    </section>
+
+    {% if success_msg %}<div class="ot-alert success"><i class="bi bi-check-circle-fill"></i>{{ success_msg }}</div>{% endif %}
+    {% if error %}<div class="ot-alert error"><i class="bi bi-exclamation-triangle-fill"></i>{{ error }}</div>{% endif %}
+
+    <section class="ot-stats">
+      <article><i class="bi bi-people-fill"></i><span>Usuarios</span><strong><a href="/admin/usuarios">Ver</a></strong></article>
+      <article><i class="bi bi-truck-front-fill"></i><span>Vehiculos</span><strong><a href="/admin/vehiculos">Ver</a></strong></article>
+      <article><i class="bi bi-calendar-check-fill"></i><span>Citas</span><strong><a href="/admin/citas">Ver</a></strong></article>
+      <article><i class="bi bi-clipboard2-check-fill"></i><span>Ordenes</span><strong><a href="/admin/ordenes">Ver</a></strong></article>
+    </section>
+
+    <section class="ot-card">
+      <div class="ot-card-head">
+        <div>
+          <h2><i class="bi bi-database-fill"></i> Modulos disponibles</h2>
+          <p>El panel principal queda limpio y cada modulo abre su vista completa.</p>
+        </div>
+        <a class="ot-outline-btn" href="/"><i class="bi bi-arrow-left"></i> Volver</a>
+      </div>
+      <div class="ot-empty">
+        <i class="bi bi-diagram-3-fill"></i>
+        <strong>Selecciona una categoria en la parte superior</strong>
+        <span>Asi cada tabla se ve completa, organizada y sin recortes.</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

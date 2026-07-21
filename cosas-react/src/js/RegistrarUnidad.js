@@ -7,7 +7,21 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/RegistrarUnidad.css';
 
-const BASE_URL = "";
+const getApiBaseUrl = () => {
+  const { protocol, hostname } = window.location;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8000";
+  }
+
+  if (hostname.includes("app.github.dev")) {
+    return `${protocol}//${hostname.replace(/-3000\.app\.github\.dev$/, "-8000.app.github.dev")}`;
+  }
+
+  return "";
+};
+
+const BASE_URL = getApiBaseUrl();
 const STEPS          = ['Cliente', 'Vehículo'];
 const tiposDocumento = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI'];
 
@@ -19,13 +33,16 @@ const initialCliente = {
 
 const initialVehiculo = {
   codigo: '', placa: '', marca: '', tipoVehiculo: '',
-  descripcion: '', motor: '', asientos: '', capacidad: '', modelos: '',
+  tipoVehiculoNuevo: '', descripcion: '', motor: '', asientos: '', capacidad: '', modelos: '',
 };
 
 const cx = (...classes) => classes.filter(Boolean).join(' ');
 
-export default function RegistrarUnidad() {
-  const [step, setStep]             = useState(0);
+export default function RegistrarUnidad({ onComplete } = {}) {
+  const existingToken = localStorage.getItem('token');
+  const existingName = localStorage.getItem('nombre') || localStorage.getItem('email') || '';
+  const isExistingUser = Boolean(existingToken);
+  const [step, setStep]             = useState(isExistingUser ? 1 : 0);
   const [cliente, setCliente]       = useState(initialCliente);
   const [vehiculo, setVehiculo]     = useState(initialVehiculo);
   const [showPw, setShowPw]         = useState(false);
@@ -36,50 +53,29 @@ export default function RegistrarUnidad() {
 
   // ── Cargar tipos de vehículo desde la BD ───────────────────────
   useEffect(() => {
-    fetch(`${BASE_URL}/api/vehiculos`)
-      .catch(() => {});
-
-    fetch(`${BASE_URL}/api/vehiculos`)
-      .catch(() => {});
-
-    // Llamada real al endpoint de tipos (definido en main.py como SELECT * FROM dmi.tipovehiculos)
     fetch(`${BASE_URL}/api/tipovehiculos`)
-      .then(res => res.ok ? res.json() : [])
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setTiposVehiculo(data);
-        } else {
-          // Fallback estático si el endpoint aún no está expuesto
-          setTiposVehiculo([
-            { idtipovehiculos: 1, vehiculo: 'Sedán' },
-            { idtipovehiculos: 2, vehiculo: 'SUV' },
-            { idtipovehiculos: 3, vehiculo: 'Camioneta' },
-            { idtipovehiculos: 4, vehiculo: 'Hatchback' },
-            { idtipovehiculos: 5, vehiculo: 'Deportivo' },
-            { idtipovehiculos: 6, vehiculo: 'Van' },
-            { idtipovehiculos: 7, vehiculo: 'Bus' },
-            { idtipovehiculos: 8, vehiculo: 'Camión' },
-            { idtipovehiculos: 9, vehiculo: 'Moto' },
-          ]);
-        }
+      .then(res => {
+        if (!res.ok) throw new Error('No se pudieron cargar los tipos de vehiculo.');
+        return res.json();
       })
-      .catch(() => {
-        setTiposVehiculo([
-          { idtipovehiculos: 1, vehiculo: 'Sedán' },
-          { idtipovehiculos: 2, vehiculo: 'SUV' },
-          { idtipovehiculos: 3, vehiculo: 'Camioneta' },
-          { idtipovehiculos: 4, vehiculo: 'Hatchback' },
-          { idtipovehiculos: 5, vehiculo: 'Deportivo' },
-          { idtipovehiculos: 6, vehiculo: 'Van' },
-          { idtipovehiculos: 7, vehiculo: 'Bus' },
-          { idtipovehiculos: 8, vehiculo: 'Camión' },
-          { idtipovehiculos: 9, vehiculo: 'Moto' },
-        ]);
+      .then(data => {
+        setTiposVehiculo(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        setTiposVehiculo([]);
+        setError(err.message || 'No se pudieron cargar los tipos de vehiculo desde Supabase.');
       });
   }, []);
 
   const onCliente  = e => setCliente(p  => ({ ...p, [e.target.name]: e.target.value }));
-  const onVehiculo = e => setVehiculo(p => ({ ...p, [e.target.name]: e.target.value }));
+  const onVehiculo = e => {
+    const { name, value } = e.target;
+    setVehiculo(p => ({
+      ...p,
+      [name]: value,
+      ...(name === 'tipoVehiculo' && value !== 'nuevo' ? { tipoVehiculoNuevo: '' } : {}),
+    }));
+  };
 
   const handleNext = (e) => {
     e.preventDefault();
@@ -94,10 +90,19 @@ export default function RegistrarUnidad() {
     setError('');
 
     try {
+      let loginData = {
+        token: existingToken,
+        role: localStorage.getItem('role') || 'usuario',
+        email: localStorage.getItem('email') || '',
+        nombre: localStorage.getItem('nombre') || '',
+      };
+
       // PASO 1: Registrar usuario vía /registro-react (devuelve JSON)
+      if (!isExistingUser) {
       const regRes = await fetch(`${BASE_URL}/registro-react`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           email:            cliente.email,
           password:         cliente.contrasena,
@@ -112,33 +117,50 @@ export default function RegistrarUnidad() {
       });
 
       const regData = await regRes.json();
-      if (regData.error) throw new Error(regData.error);
+      if (!regRes.ok || regData.error) throw new Error(regData.error || regData.message || 'No se pudo registrar el usuario.');
 
       // PASO 2: Login automático para obtener cookie de sesión
       const loginRes = await fetch(`${BASE_URL}/login-react`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: cliente.email, password: cliente.contrasena }),
       });
 
-      const loginData = await loginRes.json();
-      if (loginData.error) throw new Error(loginData.error);
+      loginData = await loginRes.json();
+      if (!loginRes.ok || loginData.error) throw new Error(loginData.error || loginData.message || 'No se pudo iniciar sesion.');
 
       // Guardar token en localStorage para uso posterior
       localStorage.setItem('token',  loginData.token);
       localStorage.setItem('role',   loginData.role);
       localStorage.setItem('email',  loginData.email);
       localStorage.setItem('nombre', loginData.nombre);
+      }
 
       // PASO 3: Registrar vehículo vía /vehiculo/nuevo (usa cookie de sesión)
       // Como FastAPI lee la cookie httponly, necesitamos hacer login tradicional
       // para que la cookie quede seteada correctamente.
       // Usamos el token JWT como header Authorization en su lugar:
+      let tipoVehiculoId = vehiculo.tipoVehiculo;
+      if (vehiculo.tipoVehiculo === 'nuevo') {
+        const tipoRes = await fetch(`${BASE_URL}/api/tipovehiculos/nuevo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ vehiculo: vehiculo.tipoVehiculoNuevo }),
+        });
+        const tipoData = await tipoRes.json().catch(() => ({}));
+        if (!tipoRes.ok || tipoData.error) {
+          throw new Error(tipoData.error || 'No se pudo crear el tipo de vehiculo.');
+        }
+        tipoVehiculoId = tipoData.idtipovehiculos || tipoData.id;
+      }
+
       const vehForm = new URLSearchParams({
         codigovehiculo:               vehiculo.codigo,
         placa:                        vehiculo.placa,
         marca:                        vehiculo.marca,
-        tipovehiculos_idtipovehiculos: vehiculo.tipoVehiculo,
+        tipovehiculos_idtipovehiculos: tipoVehiculoId,
         descripcionvehiculo:          vehiculo.descripcion || '',
         motor:                        vehiculo.motor || '',
         cantidad_asientos:            vehiculo.asientos || '',
@@ -149,24 +171,40 @@ export default function RegistrarUnidad() {
       // Nota: /vehiculo/nuevo lee la cookie access_token.
       // Como el registro es nuevo, la cookie no está seteada aún en el browser.
       // Solución: llamar al endpoint /login estándar para que FastAPI setee la cookie.
-      const loginCookieRes = await fetch(`${BASE_URL}/login`, {
+      if (!isExistingUser) {
+      await fetch(`${BASE_URL}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(loginData.token ? { Authorization: `Bearer ${loginData.token}` } : {}),
+        },
         credentials: 'include',
         body: new URLSearchParams({ email: cliente.email, password: cliente.contrasena }).toString(),
       });
       // (ignoramos el redirect, lo que nos importa es que la cookie quede seteada)
+      }
 
       const vehRes = await fetch(`${BASE_URL}/vehiculo/nuevo`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(loginData.token ? { Authorization: `Bearer ${loginData.token}` } : {}),
+        },
         credentials: 'include',
         body: vehForm.toString(),
       });
 
-      if (vehRes.ok || vehRes.redirected || vehRes.status === 302) {
+      const vehData = await vehRes.json().catch(() => ({}));
+
+      if (vehRes.ok && !vehData.error) {
         setSubmitted(true);
+        if (onComplete) window.setTimeout(onComplete, 900);
       } else {
+        if (vehData.error) throw new Error(vehData.error);
         throw new Error(`Error al registrar vehículo (${vehRes.status})`);
       }
 
@@ -179,7 +217,7 @@ export default function RegistrarUnidad() {
 
   const reset = () => {
     setSubmitted(false);
-    setStep(0);
+    setStep(isExistingUser ? 1 : 0);
     setError('');
     setCliente(initialCliente);
     setVehiculo(initialVehiculo);
@@ -195,7 +233,7 @@ export default function RegistrarUnidad() {
             <p className="ru-success-title">¡Registro Completado!</p>
             <p className="ru-success-text">
               El cliente{' '}
-              <strong className="ru-highlight">{cliente.nombre} {cliente.apellido}</strong>{' '}
+              <strong className="ru-highlight">{isExistingUser ? existingName : `${cliente.nombre} ${cliente.apellido}`}</strong>{' '}
               y el vehículo con placa{' '}
               <strong className="ru-highlight">{vehiculo.placa}</strong>{' '}
               han sido registrados exitosamente en Disol Motors.
@@ -219,8 +257,12 @@ export default function RegistrarUnidad() {
             <div className="ru-icon-box"><FontAwesomeIcon icon={faKey} /></div>
             <div className="ru-icon-box"><FontAwesomeIcon icon={faCar} /></div>
           </div>
-          <h1 className="ru-title">Registro de Unidad y Propietario</h1>
-          <p className="ru-subtitle">Completa los datos del cliente y del vehículo</p>
+          <h1 className="ru-title">{isExistingUser ? 'Registrar Vehiculo' : 'Asistente de Cuenta y Vehiculo'}</h1>
+          <p className="ru-subtitle">
+            {isExistingUser
+              ? 'Agrega un vehiculo a tu cuenta para continuar con tus citas.'
+              : 'Paso 1: crea tu cuenta. Paso 2: registra tu vehiculo.'}
+          </p>
         </div>
 
         {/* ── Stepper ── */}
@@ -250,7 +292,7 @@ export default function RegistrarUnidad() {
         )}
 
         {/* ══════ PASO 1 – CLIENTE ══════ */}
-        {step === 0 && (
+        {!isExistingUser && step === 0 && (
           <form onSubmit={handleNext}>
             <div className="ru-card">
               <div className="ru-card-head cliente">
@@ -389,11 +431,23 @@ export default function RegistrarUnidad() {
                       value={vehiculo.tipoVehiculo} onChange={onVehiculo} required>
                       <option value="">Seleccionar</option>
                       {tiposVehiculo.map(t => (
-                        <option key={t.idtipovehiculos} value={t.idtipovehiculos}>
-                          {t.vehiculo}
+                        <option key={t.idtipovehiculos || t.id} value={t.idtipovehiculos || t.id}>
+                          {t.vehiculo || t.nombre || t.codigotipovehiculos}
                         </option>
                       ))}
+                      <option value="nuevo">Agregar otro tipo</option>
                     </select>
+                    {vehiculo.tipoVehiculo === 'nuevo' && (
+                      <input
+                        className="ru-input"
+                        type="text"
+                        name="tipoVehiculoNuevo"
+                        value={vehiculo.tipoVehiculoNuevo}
+                        onChange={onVehiculo}
+                        placeholder="Escribe el nuevo tipo de vehiculo"
+                        required
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -438,14 +492,16 @@ export default function RegistrarUnidad() {
             </div>
 
             <div className="ru-btn-row">
-              <button
-                type="button"
-                className="ru-btn-secondary"
-                onClick={() => setStep(0)}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faChevronLeft} /> Volver
-              </button>
+              {!isExistingUser && (
+                <button
+                  type="button"
+                  className="ru-btn-secondary"
+                  onClick={() => setStep(0)}
+                  disabled={loading}
+                >
+                  <FontAwesomeIcon icon={faChevronLeft} /> Volver
+                </button>
+              )}
               <button
                 type="submit"
                 className="ru-btn-primary"

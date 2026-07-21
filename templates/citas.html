@@ -1,692 +1,370 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Citas — DMI</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css">
-    <style>
-/* ── BASE ── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background: #000;
-            color: #e2e8f0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            font-size: 0.9rem;
-            min-height: 100vh;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendar Cita | Disol Motors Injection</title>
+  <link rel="stylesheet" href="/static/citas.css">
 
-        /* ── TOPBAR ── */
-        .topbar {
-            background: #000;
-            border-bottom: 1px solid #262626;
-            padding: 0.6rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .topbar-brand {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #e5505c;
-            letter-spacing: .4px;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: .4rem;
-        }
-        .topbar-links {
-            display: flex;
-            gap: .2rem;
-            flex: 1;
-        }
-        .topbar-links a {
-            color: #94a3b8;
-            text-decoration: none;
-            padding: .32rem .75rem;
-            border-radius: 6px;
-            font-size: .84rem;
-            font-weight: 500;
-            transition: background .18s, color .18s;
-        }
-        .topbar-links a:hover { background: #1a1a1a; color: #fff; }
-        .topbar-links a.active { background: #1a1a1a; color: #e5505c; }
-        .topbar-user {
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-            margin-left: auto;
-        }
-        .user-chip {
-            background: #1a1a1a;
-            color: #e5505c;
-            border-radius: 20px;
-            padding: .22rem .85rem;
-            font-size: .8rem;
-            font-weight: 600;
-        }
-        .btn-salir {
-            background: transparent;
-            border: 1px solid #333;
-            color: #94a3b8;
-            border-radius: 6px;
-            padding: .25rem .7rem;
-            font-size: .8rem;
-            cursor: pointer;
-            transition: all .18s;
-        }
-        .btn-salir:hover { border-color: #e5505c; color: #e5505c; }
-
-        /* ── APP SHELL ── */
-        .app-shell {
-            display: flex;
-            min-height: calc(100vh - 45px);
-        }
-
-        /* ── SIDEBAR ── */
-        .sidebar {
-            width: 200px;
-            min-width: 200px;
-            background: #0a0a0a;
-            border-right: 1px solid #1e1e1e;
-            padding: 1rem 0 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-        .sidebar-section-label {
-            color: #475569;
-            font-size: 0.67rem;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.08rem;
-            padding: .9rem 1rem .3rem;
-        }
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            gap: .45rem;
-            padding: .38rem 1rem;
-            color: #64748b;
-            text-decoration: none;
-            font-size: .82rem;
-            font-weight: 500;
-            border-left: 2px solid transparent;
-            transition: color .15s, background .15s, border-color .15s;
-        }
-        .sidebar-link:hover { color: #cbd5e1; background: #111; border-left-color: #333; }
-        .sidebar-link.active { color: #e5505c; background: #160a0b; border-left-color: #e5505c; }
-
-        /* ── MAIN ── */
-        .main-content {
-            flex: 1;
-            padding: 1.5rem;
-            background: #050505;
-            overflow-y: auto;
-        }
-
-        /* ── PANEL ── */
-        .cfg-panel { display: none; }
-        .cfg-panel.active { display: block; }
-
-        .panel-title {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: .5rem;
-            margin-bottom: 1.25rem;
-            padding-bottom: .65rem;
-            border-bottom: 1px solid #1e1e1e;
-        }
-        .panel-title span.accent { color: #e5505c; }
-
-        /* ── PANEL GRID ── */
-        .panel-grid {
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 1.25rem;
-            align-items: start;
-        }
-        @media (max-width: 1024px) { .panel-grid { grid-template-columns: 1fr; } }
-
-        /* ── CARDS ── */
-        .dmi-card {
-            background: #121212;
-            border: 1px solid #262626;
-            border-radius: 10px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .dmi-card-header {
-            padding: .6rem 1rem;
-            font-weight: 600;
-            font-size: .82rem;
-            letter-spacing: .3px;
-            display: flex;
-            align-items: center;
-            gap: .45rem;
-            border-bottom: 1px solid #1e1e1e;
-            background: #0f0f0f;
-            color: #e5505c;
-        }
-        .dmi-card-header.amber { color: #fcd34d; }
-        .dmi-card-header.green { color: #6ee7b7; }
-        .dmi-card-header.white { color: #e2e8f0; }
-        .dmi-card-body { padding: 1rem; }
-
-        /* ── FORMS ── */
-        .form-row { margin-bottom: .75rem; }
-        .form-label {
-            display: block;
-            font-size: .71rem;
-            font-weight: 600;
-            color: #475569;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            margin-bottom: .25rem;
-        }
-        .form-control, .form-select {
-            background: #000;
-            border: 1px solid #2a2a2a;
-            color: #e2e8f0;
-            border-radius: 7px;
-            font-size: .85rem;
-            padding: .42rem .7rem;
-            width: 100%;
-            transition: border-color .18s, box-shadow .18s;
-            outline: none;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: #e5505c;
-            box-shadow: 0 0 0 3px rgba(229,80,92,.15);
-        }
-        .form-control::placeholder { color: #334155; }
-        .form-select option { background: #121212; color: #e2e8f0; }
-        textarea.form-control { resize: vertical; min-height: 64px; }
-        .input-prefix {
-            display: flex;
-        }
-        .input-prefix-text {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
-            border-right: none;
-            color: #475569;
-            padding: .42rem .65rem;
-            border-radius: 7px 0 0 7px;
-            font-size: .85rem;
-        }
-        .input-prefix .form-control { border-radius: 0 7px 7px 0; }
-
-        /* ── BUTTONS ── */
-        .btn-dmi {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: .4rem;
-            padding: .48rem 1rem;
-            border-radius: 7px;
-            font-size: .86rem;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: opacity .18s;
-            width: 100%;
-        }
-        .btn-primary-dmi { background: #e5505c; color: #fff; }
-        .btn-primary-dmi:hover { background: #d4404c; }
-        .btn-outline-dmi { background: transparent; border: 1px solid #2a2a2a; color: #64748b; }
-        .btn-outline-dmi:hover { border-color: #e5505c; color: #e5505c; }
-
-        /* ── TABLE ── */
-        .table-responsive { width: 100%; overflow-x: auto; }
-        .dmi-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #121212;
-            color: #e2e8f0;
-        }
-        .dmi-table th {
-            background: #0a0a0a;
-            color: #475569;
-            font-size: .71rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            padding: .55rem .85rem;
-            border-bottom: 1px solid #1e1e1e;
-            white-space: nowrap;
-        }
-        .dmi-table td {
-            padding: .55rem .85rem;
-            border-bottom: 1px solid #1a1a1a;
-            font-size: .84rem;
-            color: #cbd5e1;
-        }
-        .dmi-table tr:last-child td { border-bottom: none; }
-        .dmi-table tr:hover td { background: #161616; }
-
-        .empty-row td {
-            text-align: center;
-            color: #334155;
-            padding: 2rem;
-            font-size: .82rem;
-        }
-
-        /* ── ACTION BUTTONS ── */
-        .tbl-actions { display: flex; gap: .4rem; }
-        .tbl-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            border: 1px solid #2a2a2a;
-            background: #0f0f0f;
-            cursor: pointer;
-            transition: all .18s;
-            font-size: .75rem;
-        }
-        .tbl-btn-edit { color: #fcd34d; }
-        .tbl-btn-edit:hover { background: #fcd34d; color: #000; border-color: #fcd34d; }
-        .tbl-btn-delete { color: #e5505c; }
-        .tbl-btn-delete:hover { background: #e5505c; color: #fff; border-color: #e5505c; }
-
-        /* ── BADGE ── */
-        .badge-dmi {
-            display: inline-block;
-            padding: .18rem .55rem;
-            border-radius: 20px;
-            font-size: .72rem;
-            font-weight: 600;
-        }
-        .badge-green { background: #052e16; color: #6ee7b7; }
-        .badge-red   { background: #2d0a0e; color: #fca5a5; }
-        .badge-amber { background: #1c1404; color: #fcd34d; }
-        .badge-slate { background: #1e293b; color: #94a3b8; }
-    </style>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Condensed:wght@300;400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- ===== NAVBAR ===== -->
-    <nav class="navbar">
-        <span class="navbar-brand"> DMI Vehículos</span>
-        <div class="navbar-links">
-            <a href="/">Vehículos</a>
-            <a href="/citas" class="active">📅 Citas</a>
-            <a href="/configuracion">Panel de Administrador</a>
-        </div>
-        <div class="navbar-user">
-            {% if usuario %}
-                <span class="usuario-nombre"> {{ usuario.nombre }}</span>
-                <form action="/logout" method="post" style="display:inline;">
-                    <button type="submit" class="btn-logout">Cerrar sesión</button>
-                </form>
-            {% else %}
-                <span class="text-muted">No has iniciado sesión</span>
-            {% endif %}
-        </div>
-    </nav>
+  <main class="appointment-page">
+    <div class="appointment-backdrop"></div>
 
-    <!-- ===== MODAL DE NOTIFICACIÓN ===== -->
-    <div class="modal fade" id="notifModal" tabindex="-1" aria-labelledby="notifModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" id="notifModalContent">
-                <div class="modal-header border-0 pb-0" id="notifModalHeader">
-                    <h5 class="modal-title fw-bold" id="notifModalLabel"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+    <section class="appointment-panel">
+      <a href="/" class="close-button" id="closeAppointment" aria-label="Cerrar formulario">X</a>
+
+      <p class="form-step">Reserva personalizada</p>
+      <h1>Agendar cita</h1>
+
+      <form class="appointment-form" id="appointmentForm">
+        <div class="appointment-layout">
+
+          <div class="form-column">
+            <div class="form-section">
+              <h2>Datos del cliente</h2>
+
+              <div class="form-grid">
+                <div class="field-group">
+                  <label for="nombre">Nombre completo</label>
+                  <input type="text" id="nombre" name="nombre" placeholder="Nombre completo" required>
                 </div>
-                <div class="modal-body pt-2" id="notifModalBody"></div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn" id="notifModalBtn" data-bs-dismiss="modal">Aceptar</button>
+
+                <div class="field-group">
+                  <label for="telefono">Telefono</label>
+                  <input type="tel" id="telefono" name="telefono" placeholder="Telefono" required>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="container-fluid px-4 mt-3">
-
-        <!-- ===== FILA PRINCIPAL ===== -->
-        <div class="row g-4">
-
-            <!-- ===== COLUMNA IZQUIERDA (4/12): FORMULARIO ===== -->
-            <div class="col-12 col-lg-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">📌 Agendar Cita</h5>
-                        <form action="/citas/nueva" method="post">
-                            <div class="mb-2">
-                                <label class="form-label">Vehículo</label>
-                                <select name="vehiculos_idvehiculo" class="form-select" required>
-                                    <option value="" disabled selected>Seleccione un vehículo</option>
-                                    {% for v in vehiculos %}
-                                        <option value="{{ v.idvehiculo }}">{{ v.marca }} — {{ v.placa }} ({{ v.codigovehiculo }})</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="row g-2 mb-2">
-                                <div class="col-6">
-                                    <label class="form-label">Fecha</label>
-                                    <input type="date" name="fecha_cita" class="form-control" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label">Hora</label>
-                                    <input type="time" name="hora_cita" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Motivo</label>
-                                <select name="motivo" class="form-select" required>
-                                    <option value="" disabled selected>Seleccione motivo</option>
-                                    <option value="Mantenimiento preventivo">Mantenimiento preventivo</option>
-                                    <option value="Revisión técnica">Revisión técnica</option>
-                                    <option value="Reparación">Reparación</option>
-                                    <option value="Cambio de llantas">Cambio de llantas</option>
-                                    <option value="Cambio de aceite">Cambio de aceite</option>
-                                    <option value="Diagnóstico">Diagnóstico</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Observaciones</label>
-                                <textarea name="observaciones" class="form-control" rows="3" placeholder="Observaciones adicionales..."></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">📌 Agendar</button>
-                        </form>
-                    </div>
+                <div class="field-group full">
+                  <label for="correo">Correo electronico</label>
+                  <input type="email" id="correo" name="correo" placeholder="Correo electronico" required>
                 </div>
+              </div>
             </div>
 
-            <!-- ===== COLUMNA DERECHA (8/12): CALENDARIO + CITAS ===== -->
-            <div class="col-12 col-lg-8">
+            <div class="form-section">
+              <h2>Servicio</h2>
 
-                <!-- CALENDARIO -->
-                <div class="card mb-4">
-                    <div class="card-body">
-
-                        <!-- Navegación con dropdowns -->
-                        <div class="d-flex justify-content-center align-items-center gap-2 mb-3 cal-nav-selects">
-                            <select id="sel-mes" onchange="navegarMes()">
-                                {% for i, nombre in [
-                                    (1,'Enero'),(2,'Febrero'),(3,'Marzo'),(4,'Abril'),
-                                    (5,'Mayo'),(6,'Junio'),(7,'Julio'),(8,'Agosto'),
-                                    (9,'Septiembre'),(10,'Octubre'),(11,'Noviembre'),(12,'Diciembre')
-                                ] %}
-                                    <option value="{{ i }}" {% if i == mes %}selected{% endif %}>{{ nombre }}</option>
-                                {% endfor %}
-                            </select>
-                            <select id="sel-anio" onchange="navegarMes()">
-                                {% for y in range(anio - 2, anio + 4) %}
-                                    <option value="{{ y }}" {% if y == anio %}selected{% endif %}>{{ y }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Días de la semana -->
-                        <div class="cal-weekdays">
-                            <span>Lun</span><span>Mar</span><span>Mié</span>
-                            <span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-                        </div>
-
-                        <div class="cal-grid" id="cal-grid"></div>
-
-                        <script>
-                            const MES  = {{ mes }};
-                            const ANIO = {{ anio }};
-                            const CITAS_DATA = {{ citas | tojson }};
-
-                            function navegarMes() {
-                                const m = document.getElementById('sel-mes').value;
-                                const a = document.getElementById('sel-anio').value;
-                                window.location.href = `/citas?mes=${m}&anio=${a}`;
-                            }
-                        </script>
-                    </div>
+              <div class="form-grid">
+                <div class="field-group full">
+                  <label for="servicio">Servicio</label>
+                  <select id="servicio" name="servicio" required>
+                    <option value="">Selecciona un servicio</option>
+                    <option value="diagnostico">Diagnostico automotriz</option>
+                    <option value="inyeccion">Revision de inyeccion</option>
+                    <option value="mantenimiento">Mantenimiento general</option>
+                    <option value="compra">Asesoria de compra</option>
+                  </select>
                 </div>
-
-                <!-- LISTA DE CITAS DEL MES -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">🗒️ Citas del mes</h5>
-                        {% if citas %}
-                            <div class="citas-list">
-                                {% for c in citas %}
-                                <div class="cita-card estado-{{ c.estado }}">
-                                    <div class="cita-card-top">
-                                        <span class="cita-fecha">📆 {{ c.fecha }} {{ c.hora }}</span>
-                                        <span class="cita-badge estado-badge-{{ c.estado }}">{{ c.estado }}</span>
-                                    </div>
-                                    <div class="cita-vehiculo">🚗 {{ c.marca }} — <strong>{{ c.placa }}</strong> ({{ c.codigovehiculo }})</div>
-                                    <div class="cita-motivo">🔧 {{ c.motivo }}</div>
-                                    {% if c.notas %}
-                                        <div class="cita-obs">📝 {{ c.notas }}</div>
-                                    {% endif %}
-                                    <div class="cita-actions">
-                                        <form action="/citas/estado/{{ c.idcita }}" method="post" style="display:inline;">
-                                            <select name="estado" onchange="this.form.submit()" class="select-estado">
-                                                <option value="pendiente"  {% if c.estado=='pendiente'  %}selected{% endif %}>⏳ Pendiente</option>
-                                                <option value="completada" {% if c.estado=='completada' %}selected{% endif %}>🏁 Completada</option>
-                                                <option value="cancelada"  {% if c.estado=='cancelada'  %}selected{% endif %}>❌ Cancelada</option>
-                                            </select>
-                                        </form>
-                                        <form action="/citas/eliminar/{{ c.idcita }}" method="post" style="display:inline;">
-                                            <button type="submit"
-                                                onclick="return confirm('¿Eliminar esta cita?')"
-                                                class="btn btn-sm btn-danger">🗑️</button>
-                                        </form>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-muted">No hay citas para este mes.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- TODAS LAS CITAS -->
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">🔍 Todas las citas</h5>
-
-                        <!-- Filtros -->
-                        <div class="row g-2 mb-3">
-                            <div class="col-12 col-md-5">
-                                <input type="text" id="buscar" class="form-control" placeholder="🔎 Buscar por placa, marca, motivo..." oninput="filtrar()">
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <select id="filtro-estado" class="form-select" onchange="filtrar()">
-                                    <option value="">Todos los estados</option>
-                                    <option value="pendiente">⏳ Pendiente</option>
-                                    <option value="completada">🏁 Completada</option>
-                                    <option value="cancelada">❌ Cancelada</option>
-                                </select>
-                            </div>
-                            <div class="col-6 col-md-4">
-                                <select id="filtro-vehiculo" class="form-select" onchange="filtrar()">
-                                    <option value="">Todos los vehículos</option>
-                                    {% for v in vehiculos %}
-                                        <option value="{{ v.placa }}">{{ v.marca }} — {{ v.placa }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Tabla -->
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-hover table-bordered align-middle">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Hora</th>
-                                        <th>Vehículo</th>
-                                        <th>Placa</th>
-                                        <th>Motivo</th>
-                                        <th>Estado</th>
-                                        <th>Notas</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-todas">
-                                    {% for c in todas_citas %}
-                                    <tr data-buscar="{{ c.marca }} {{ c.placa }} {{ c.codigovehiculo }} {{ c.motivo }} {{ c.notas or '' }}"
-                                        data-estado="{{ c.estado }}"
-                                        data-placa="{{ c.placa }}">
-                                        <td>{{ c.fecha }}</td>
-                                        <td>{{ c.hora }}</td>
-                                        <td>{{ c.marca }} ({{ c.codigovehiculo }})</td>
-                                        <td>{{ c.placa }}</td>
-                                        <td>{{ c.motivo }}</td>
-                                        <td>
-                                            <span class="badge rounded-pill badge-{{ c.estado }}">{{ c.estado }}</span>
-                                        </td>
-                                        <td>{{ c.notas or '—' }}</td>
-                                        <td>
-                                            <form action="/citas/estado/{{ c.idcita }}" method="post" style="display:inline;">
-                                                <select name="estado" onchange="this.form.submit()" class="form-select form-select-sm" style="width:auto;display:inline;">
-                                                    <option value="pendiente"  {% if c.estado=='pendiente'  %}selected{% endif %}>⏳</option>
-                                                    <option value="completada" {% if c.estado=='completada' %}selected{% endif %}>🏁</option>
-                                                    <option value="cancelada"  {% if c.estado=='cancelada'  %}selected{% endif %}>❌</option>
-                                                </select>
-                                            </form>
-                                            <form action="/citas/eliminar/{{ c.idcita }}" method="post" style="display:inline;">
-                                                <button type="submit"
-                                                    onclick="return confirm('¿Eliminar esta cita?')"
-                                                    class="btn btn-sm btn-danger">🗑️</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    {% else %}
-                                    <tr><td colspan="8" class="text-center text-muted fst-italic">No hay citas registradas.</td></tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                            <p class="text-center text-muted fst-italic" id="sin-resultados" style="display:none;">No se encontraron citas con esos filtros.</p>
-                        </div>
-                    </div>
-                </div>
-
+              </div>
             </div>
+
+            <div class="form-section">
+              <h2>Vehiculo de interes</h2>
+
+              <div class="service-options">
+                <label class="option-card">
+                  <input type="radio" name="vehiculo" value="Deportivo" checked>
+                  <span class="option-icon">GT</span>
+                  <span>Deportivo</span>
+                </label>
+
+                <label class="option-card">
+                  <input type="radio" name="vehiculo" value="SUV premium">
+                  <span class="option-icon">SUV</span>
+                  <span>SUV premium</span>
+                </label>
+
+                <label class="option-card">
+                  <input type="radio" name="vehiculo" value="Electrico">
+                  <span class="option-icon">EV</span>
+                  <span>Electrico</span>
+                </label>
+
+                <label class="option-card">
+                  <input type="radio" name="vehiculo" value="Lujo">
+                  <span class="option-icon">LX</span>
+                  <span>Lujo</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="mensaje">Mensaje adicional</label>
+              <textarea id="mensaje" name="mensaje" placeholder="Cuentanos que necesitas revisar o conocer"></textarea>
+            </div>
+
+            <div class="summary-box">
+              <span>Estado de reserva</span>
+              <strong id="estadoReserva">Pendiente</strong>
+            </div>
+
+            <button type="submit" class="submit-button">Confirmar cita</button>
+          </div>
+
+          <div class="calendar-column">
+            <div class="calendar-module">
+              <div class="calendar-header">
+                <button type="button" class="calendar-nav" id="prevMonth">‹</button>
+                <h2 id="calendarTitle">Mes 2026</h2>
+                <button type="button" class="calendar-nav" id="nextMonth">›</button>
+              </div>
+
+              <div class="calendar-weekdays">
+                <span>D</span>
+                <span>L</span>
+                <span>M</span>
+                <span>X</span>
+                <span>J</span>
+                <span>V</span>
+                <span>S</span>
+              </div>
+
+              <div class="calendar-days" id="calendarDays"></div>
+
+              <input type="hidden" id="fecha" name="fecha" required>
+
+              <div class="selected-date-box">
+                <span>Fecha seleccionada</span>
+                <strong id="selectedDateText">Selecciona un dia</strong>
+              </div>
+
+              <div class="hour-section">
+                <h2>Hora disponible</h2>
+
+                <div class="time-options">
+                  <label>
+                    <input type="radio" name="hora" value="08:00" required>
+                    <span>08:00</span>
+                  </label>
+
+                  <label>
+                    <input type="radio" name="hora" value="09:00">
+                    <span>09:00</span>
+                  </label>
+
+                  <label>
+                    <input type="radio" name="hora" value="10:00">
+                    <span>10:00</span>
+                  </label>
+
+                  <label>
+                    <input type="radio" name="hora" value="11:00">
+                    <span>11:00</span>
+                  </label>
+
+                  <label>
+                    <input type="radio" name="hora" value="14:00">
+                    <span>14:00</span>
+                  </label>
+
+                  <label>
+                    <input type="radio" name="hora" value="15:00">
+                    <span>15:00</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <details class="appointments-list">
+              <summary>Citas guardadas</summary>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Fecha</th>
+                      <th>Hora</th>
+                      <th>Servicio</th>
+                    </tr>
+                  </thead>
+                  <tbody id="appointmentsTable">
+                    <tr>
+                      <td colspan="4">Todavia no hay citas guardadas</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+
         </div>
-    </div>
+      </form>
+    </section>
+  </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const form = document.getElementById("appointmentForm");
+    const estadoReserva = document.getElementById("estadoReserva");
+    const calendarTitle = document.getElementById("calendarTitle");
+    const calendarDays = document.getElementById("calendarDays");
+    const selectedDateText = document.getElementById("selectedDateText");
+    const fechaInput = document.getElementById("fecha");
+    const appointmentsTable = document.getElementById("appointmentsTable");
 
-    <script>
-    // ===== MODAL DE NOTIFICACIÓN AUTOMÁTICO =====
-    (function () {
-        const successMsg = {{ success_msg | tojson }};
-        const errorMsg   = {{ error | tojson }};
+    const monthNames = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
 
-        if (!successMsg && !errorMsg) return;
+    let currentDate = new Date();
+    let selectedDate = null;
 
-        const isSuccess  = !!successMsg;
-        const mensaje    = successMsg || errorMsg;
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
 
-        const content = document.getElementById('notifModalContent');
-        const header  = document.getElementById('notifModalHeader');
-        const label   = document.getElementById('notifModalLabel');
-        const body    = document.getElementById('notifModalBody');
-        const btn     = document.getElementById('notifModalBtn');
-
-        if (isSuccess) {
-            content.style.borderTop = '4px solid #198754';
-            header.style.color      = '#198754';
-            label.textContent       = '✅ Éxito';
-            btn.className           = 'btn btn-success';
-        } else {
-            content.style.borderTop = '4px solid #dc3545';
-            header.style.color      = '#dc3545';
-            label.textContent       = '❌ Error';
-            btn.className           = 'btn btn-danger';
-        }
-
-        body.textContent = mensaje;
-
-        const modal = new bootstrap.Modal(document.getElementById('notifModal'));
-        modal.show();
-    })();
-
-    // ===== CALENDARIO =====
-    (function () {
-        const grid = document.getElementById('cal-grid');
-        if (!grid) return;
-
-        const citasPorDia = {};
-        CITAS_DATA.forEach(c => {
-            const dia = parseInt(c.fecha.split('-')[2]);
-            if (!citasPorDia[dia]) citasPorDia[dia] = [];
-            citasPorDia[dia].push(c);
-        });
-
-        const primerDia = new Date(ANIO, MES - 1, 1).getDay();
-        const offset = (primerDia === 0) ? 6 : primerDia - 1;
-        const diasEnMes = new Date(ANIO, MES, 0).getDate();
-
-        for (let i = 0; i < offset; i++) {
-            const empty = document.createElement('div');
-            empty.className = 'cal-day cal-day-empty';
-            grid.appendChild(empty);
-        }
-
-        const hoy = new Date();
-        for (let d = 1; d <= diasEnMes; d++) {
-            const cell = document.createElement('div');
-            const esHoy = (d === hoy.getDate() && MES === hoy.getMonth() + 1 && ANIO === hoy.getFullYear());
-            cell.className = 'cal-day' + (esHoy ? ' cal-day-today' : '');
-
-            const numEl = document.createElement('span');
-            numEl.className = 'cal-day-num';
-            numEl.textContent = d;
-            cell.appendChild(numEl);
-
-            const lista = citasPorDia[d];
-            if (lista) {
-                lista.forEach(c => {
-                    const chip = document.createElement('div');
-                    chip.className = `cal-chip cal-chip-${c.estado}`;
-                    chip.title = `${c.hora} | ${c.marca} ${c.placa}\n${c.motivo}`;
-                    chip.textContent = `${c.hora.substring(0,5)} ${c.marca}`;
-                    cell.appendChild(chip);
-                });
-            }
-            grid.appendChild(cell);
-        }
-    })();
-
-    // ===== FILTRAR TABLA =====
-    function filtrar() {
-        const texto    = document.getElementById('buscar').value.toLowerCase();
-        const estado   = document.getElementById('filtro-estado').value;
-        const vehiculo = document.getElementById('filtro-vehiculo').value;
-        const filas    = document.querySelectorAll('#tbody-todas tr');
-        let visibles   = 0;
-
-        filas.forEach(fila => {
-            if (!fila.dataset.buscar) return;
-            const okTexto    = !texto    || fila.dataset.buscar.toLowerCase().includes(texto);
-            const okEstado   = !estado   || fila.dataset.estado === estado;
-            const okVehiculo = !vehiculo || fila.dataset.placa  === vehiculo;
-
-            if (okTexto && okEstado && okVehiculo) {
-                fila.style.display = '';
-                visibles++;
-            } else {
-                fila.style.display = 'none';
-            }
-        });
-
-        document.getElementById('sin-resultados').style.display = visibles === 0 ? 'block' : 'none';
+      return `${year}-${month}-${day}`;
     }
-    </script>
+
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      calendarTitle.textContent = `${monthNames[month]} de ${year}`;
+      calendarDays.innerHTML = "";
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDate = new Date(year, month + 1, 0).getDate();
+      const prevLastDate = new Date(year, month, 0).getDate();
+
+      for (let i = firstDay; i > 0; i--) {
+        const day = document.createElement("button");
+        day.type = "button";
+        day.className = "calendar-day muted";
+        day.textContent = prevLastDate - i + 1;
+        calendarDays.appendChild(day);
+      }
+
+      for (let dayNumber = 1; dayNumber <= lastDate; dayNumber++) {
+        const day = document.createElement("button");
+        const dayDate = new Date(year, month, dayNumber);
+        const dateValue = formatDate(dayDate);
+
+        day.type = "button";
+        day.className = "calendar-day";
+        day.textContent = dayNumber;
+
+        if (dateValue === formatDate(new Date())) {
+          day.classList.add("today");
+        }
+
+        if (selectedDate === dateValue) {
+          day.classList.add("selected");
+        }
+
+        day.addEventListener("click", function () {
+          selectedDate = dateValue;
+          fechaInput.value = dateValue;
+          selectedDateText.textContent = dateValue;
+          renderCalendar();
+        });
+
+        calendarDays.appendChild(day);
+      }
+
+      const totalCells = calendarDays.children.length;
+      const nextDays = 42 - totalCells;
+
+      for (let i = 1; i <= nextDays; i++) {
+        const day = document.createElement("button");
+        day.type = "button";
+        day.className = "calendar-day muted";
+        day.textContent = i;
+        calendarDays.appendChild(day);
+      }
+    }
+
+    function getAppointments() {
+      return JSON.parse(localStorage.getItem("citasGuardadas")) || [];
+    }
+
+    function saveAppointments(appointments) {
+      localStorage.setItem("citasGuardadas", JSON.stringify(appointments));
+    }
+
+    function renderAppointmentsTable() {
+      const appointments = getAppointments();
+
+      if (appointments.length === 0) {
+        appointmentsTable.innerHTML = `
+          <tr>
+            <td colspan="4">Todavia no hay citas guardadas</td>
+          </tr>
+        `;
+        return;
+      }
+
+      appointmentsTable.innerHTML = appointments.map(function (appointment) {
+        return `
+          <tr>
+            <td>${appointment.nombre}</td>
+            <td>${appointment.fecha}</td>
+            <td>${appointment.hora}</td>
+            <td>${appointment.servicio}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    document.getElementById("prevMonth").addEventListener("click", function () {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
+    });
+
+    document.getElementById("nextMonth").addEventListener("click", function () {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
+    });
+
+    document.getElementById("closeAppointment").addEventListener("click", function (event) {
+      event.preventDefault();
+
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "/";
+      }
+    });
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      if (!fechaInput.value) {
+        alert("Selecciona una fecha en el calendario");
+        return;
+      }
+
+      const datos = Object.fromEntries(new FormData(form).entries());
+      const appointments = getAppointments();
+
+      appointments.push(datos);
+      saveAppointments(appointments);
+
+      estadoReserva.textContent = "Confirmada";
+      renderAppointmentsTable();
+
+      alert("Cita guardada correctamente");
+      form.reset();
+
+      selectedDate = null;
+      fechaInput.value = "";
+      selectedDateText.textContent = "Selecciona un dia";
+      renderCalendar();
+
+      setTimeout(function () {
+        estadoReserva.textContent = "Pendiente";
+      }, 1800);
+    });
+
+    renderCalendar();
+    renderAppointmentsTable();
+  </script>
 
 </body>
 </html>

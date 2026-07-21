@@ -1,6 +1,9 @@
 import { useState } from "react";
 import "../styles/Checkout.css";
 import { supabase } from "./supabase";
+import { buildProductInvoice, openInvoiceDocument, saveInvoiceLocally } from "./invoice";
+
+const LOGO_DMI = "/assets/images/logoempresaXD.png";
 
 const PAYMENT_METHODS = [
   {
@@ -68,7 +71,7 @@ const PAYMENT_METHODS = [
   },
 ];
 
-function Checkout({ total = 0, onClose }) {
+function Checkout({ total = 0, items = [], onClose, onPaid }) {
   const [formData, setFormData] = useState({
     nombre: "",
     telefono: "",
@@ -103,17 +106,22 @@ function Checkout({ total = 0, onClose }) {
 
     setLoading(true);
 
-    const { error } = await supabase.from("pedidos").insert([
-      {
-        nombre: formData.nombre,
-        telefono: formData.telefono,
-        email: formData.email,
-        direccion: formData.direccion,
-        ciudad: formData.ciudad,
-        metodo_pago: formData.metodoPago,
-        total,
-      },
-    ]);
+    const pedidoBase = {
+      nombre: formData.nombre,
+      telefono: formData.telefono,
+      email: formData.email,
+      direccion: formData.direccion,
+      ciudad: formData.ciudad,
+      metodo_pago: formData.metodoPago,
+      total,
+    };
+
+    let { error } = await supabase.from("pedidos").insert([{ ...pedidoBase, productos: items }]);
+
+    if (error && String(error.message || "").toLowerCase().includes("productos")) {
+      const retry = await supabase.from("pedidos").insert([pedidoBase]);
+      error = retry.error;
+    }
 
     setLoading(false);
 
@@ -123,7 +131,24 @@ function Checkout({ total = 0, onClose }) {
       return;
     }
 
-    alert("Pedido registrado correctamente");
+    const invoice = buildProductInvoice({
+      customer: {
+        nombre: formData.nombre,
+        telefono: formData.telefono,
+        email: formData.email,
+        direccion: formData.direccion,
+        ciudad: formData.ciudad,
+      },
+      items,
+      total,
+      paymentMethod: formData.metodoPago,
+      logoUrl: LOGO_DMI,
+    });
+
+    saveInvoiceLocally(invoice, formData.email);
+    openInvoiceDocument(invoice);
+
+    alert("Pedido registrado correctamente. Tu factura se abrio en una nueva ventana para descargarla en PDF.");
 
     setFormData({
       nombre: "",
@@ -133,6 +158,10 @@ function Checkout({ total = 0, onClose }) {
       ciudad: "",
       metodoPago: "Nequi",
     });
+
+    if (onPaid) {
+      onPaid(invoice);
+    }
 
     if (onClose) {
       onClose();
@@ -222,6 +251,7 @@ function Checkout({ total = 0, onClose }) {
           </div>
 
           <div className="checkout-total">
+            <span>{items.length} producto{items.length === 1 ? "" : "s"} facturado{items.length === 1 ? "" : "s"}</span>
             <span className="checkout-total-value">${Number(total).toLocaleString("es-CO")}</span>
           </div>
 
