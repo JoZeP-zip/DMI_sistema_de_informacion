@@ -123,7 +123,7 @@ def obtener_usuario(access_token: Optional[str], request: Request = None) -> Opt
     if not access_token:
         return None
     try:
-        # Se mantiene el decodificador sin verificación automática
+        # Se mantiene el decodificador sin verificaciÃ³n automÃ¡tica
         payload = jwt.decode(access_token, options={"verify_signature": False})
         user_id = payload.get("sub")
         if not user_id:
@@ -407,7 +407,7 @@ def generar_codigo_orden(conn) -> str:
         {"base": f"{base}%"},
     ).scalar() or 0
     return f"{base}-{int(total_dia) + 1:04d}"
-# ==================== PÁGINA PRINCIPAL ====================
+# ==================== PÃGINA PRINCIPAL ====================
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, access_token: str = Cookie(None)):
     data = []
@@ -1082,7 +1082,7 @@ async def guardar_diagnostico_orden(
             conn.commit()
 
         return RedirectResponse(
-            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"Diagnóstico guardado correctamente",
+            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"DiagnÃ³stico guardado correctamente",
             status_code=302,
         )
 
@@ -1259,7 +1259,7 @@ async def generar_cotizacion_orden(
             conn.commit()
 
         return RedirectResponse(
-            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"Cotización generada correctamente",
+            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"CotizaciÃ³n generada correctamente",
             status_code=302,
         )
 
@@ -1878,7 +1878,7 @@ async def login_react(request: Request):
         password = body.get("password")
 
         if not email or not password:
-            return JSONResponse({"message": "Correo y contraseña son obligatorios"}, status_code=400)
+            return JSONResponse({"message": "Correo y contraseÃ±a son obligatorios"}, status_code=400)
 
         res = supabase.auth.sign_in_with_password({
             "email": email,
@@ -1929,7 +1929,7 @@ async def login_react(request: Request):
     except Exception as e:
         print("ERROR login-react:", e)
         return JSONResponse(
-            {"message": "Error al iniciar sesión", "detail": str(e)},
+            {"message": "Error al iniciar sesiÃ³n", "detail": str(e)},
             status_code=500
         )
 
@@ -1942,7 +1942,7 @@ async def logout():
         pass
 
     response = RedirectResponse(
-        url="/?success=Sesión cerrada correctamente",
+        url="/?success=SesiÃ³n cerrada correctamente",
         status_code=302
     )
 
@@ -1993,7 +1993,7 @@ async def promover_admin(
         )
 
 
-# ==================== CREAR VEHÍCULO ====================
+# ==================== CREAR VEHÃCULO ====================
 @app.post("/vehiculo/nuevo")
 async def crear_vehiculo(
     request: Request,
@@ -2018,42 +2018,59 @@ async def crear_vehiculo(
     if not usuario:
         if quiere_json(request):
             return JSONResponse(
-                {"error": "Debes iniciar sesión"},
+                {"error": "Debes iniciar sesion"},
                 status_code=401
             )
 
         return RedirectResponse(
-            url="/?error=Debes iniciar sesión",
+            url="/?error=Debes iniciar sesion",
             status_code=302
         )
     try:
         with engine.connect() as conn:
+            vehiculo_cols = table_columns(conn, "dmi", "vehiculos")
+            usuario_id = usuario.get("idusuarios")
+
+            if "cliente_id" in vehiculo_cols and usuario_id:
+                total_vehiculos = conn.execute(
+                    text("SELECT COUNT(*) FROM dmi.vehiculos WHERE cliente_id = :cliente_id"),
+                    {"cliente_id": usuario_id},
+                ).scalar() or 0
+                if total_vehiculos >= 10:
+                    mensaje = "Solo puedes registrar hasta 10 vehiculos en tu cuenta."
+                    if quiere_json(request):
+                        return JSONResponse({"error": mensaje}, status_code=400)
+                    return RedirectResponse(url=f"/?error={mensaje}", status_code=302)
+
+            payload = {
+                "codigovehiculo": codigovehiculo,
+                "descripcionvehiculo": descripcionvehiculo,
+                "motor": motor,
+                "cantidad_asientos": cantidad_asientos,
+                "placa": placa,
+                "capacidad": capacidad,
+                "marca": marca,
+                "tipovehiculos_idtipovehiculos": tipovehiculos_idtipovehiculos,
+                "modelo": modelo,
+            }
+            if "cliente_id" in vehiculo_cols and usuario_id:
+                payload["cliente_id"] = usuario_id
+
+            campos = [campo for campo in payload.keys() if campo in vehiculo_cols]
+            columnas = ", ".join(campos)
+            valores = ", ".join(f":{campo}" for campo in campos)
             result = conn.execute(
-                text("""
-                    INSERT INTO dmi.vehiculos
-                        (codigovehiculo, descripcionvehiculo, motor, cantidad_asientos,
-                         placa, capacidad, marca, tipovehiculos_idtipovehiculos, modelo)
-                    VALUES
-                        (:codigovehiculo, :descripcionvehiculo, :motor, :cantidad_asientos,
-                         :placa, :capacidad, :marca, :tipovehiculos_idtipovehiculos, :modelo)
-                    RETURNING idvehiculo
-                """),
-                {
-                    "codigovehiculo": codigovehiculo,
-                    "descripcionvehiculo": descripcionvehiculo,
-                    "motor": motor,
-                    "cantidad_asientos": cantidad_asientos,
-                    "placa": placa,
-                    "capacidad": capacidad,
-                    "marca": marca,
-                    "tipovehiculos_idtipovehiculos": tipovehiculos_idtipovehiculos,
-                    "modelo": modelo,
-                },
+                text(f"INSERT INTO dmi.vehiculos ({columnas}) VALUES ({valores}) RETURNING idvehiculo"),
+                {campo: payload[campo] for campo in campos},
             )
-            nuevo_id = result.fetchone()[0]   
+            nuevo_id = result.fetchone()[0]
 
             conn.execute(
-                text("UPDATE dmi.usuarios SET vehiculos_idvehiculo = :vid WHERE id = :uid"),
+                text("""
+                    UPDATE dmi.usuarios
+                    SET vehiculos_idvehiculo = COALESCE(vehiculos_idvehiculo, :vid)
+                    WHERE id = :uid
+                """),
                 {"vid": nuevo_id, "uid": usuario["id"]},
             )
             conn.commit()
@@ -2061,7 +2078,7 @@ async def crear_vehiculo(
         if quiere_json(request):
             return JSONResponse({"success": True, "message": "Vehiculo creado correctamente", "idvehiculo": nuevo_id})
 
-        return RedirectResponse(url="/?success=Vehículo creado y asignado correctamente", status_code=302)
+        return RedirectResponse(url="/?success=Vehiculo creado y asignado correctamente", status_code=302)
     except Exception as e:
         print("ERROR VEHICULO:", str(e))
         if quiere_json(request):
@@ -2069,7 +2086,7 @@ async def crear_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== FORMULARIO EDITAR VEHÍCULO ====================
+# ==================== FORMULARIO EDITAR VEHÃCULO ====================
 @app.get("/vehiculo/editar/{vehiculo_id}", response_class=HTMLResponse)
 async def editar_vehiculo_form(
     request: Request, vehiculo_id: int, access_token: str = Cookie(None)
@@ -2108,7 +2125,7 @@ async def editar_vehiculo_form(
     )
 
 
-# ==================== ACTUALIZAR VEHÍCULO ====================
+# ==================== ACTUALIZAR VEHÃCULO ====================
 @app.post("/vehiculo/editar/{vehiculo_id}")
 async def actualizar_vehiculo(
     vehiculo_id: int,
@@ -2160,7 +2177,7 @@ async def actualizar_vehiculo(
             conn.commit()
 
         return RedirectResponse(
-            url="/?success=Vehículo actualizado correctamente",
+            url="/?success=VehÃ­culo actualizado correctamente",
             status_code=302
         )
 
@@ -2168,7 +2185,7 @@ async def actualizar_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== ELIMINAR VEHÍCULO ====================
+# ==================== ELIMINAR VEHÃCULO ====================
 @app.post("/vehiculo/eliminar/{vehiculo_id}")
 async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -2185,7 +2202,7 @@ async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
             conn.commit()
 
         return RedirectResponse(
-            url="/?success=Vehículo eliminado correctamente",
+            url="/?success=VehÃ­culo eliminado correctamente",
             status_code=302
         )
 
@@ -2193,8 +2210,8 @@ async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== PÁGINA DE CITAS ====================
-# ==================== PÁGINA DE CITAS ====================
+# ==================== PÃGINA DE CITAS ====================
+# ==================== PÃGINA DE CITAS ====================
 @app.get("/citas", response_class=HTMLResponse)
 async def ver_citas(request: Request, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token, request)
@@ -2308,7 +2325,7 @@ async def crear_cita(
 
         if descripcion_vehiculo:
             notas = (
-                f"Vehículo descrito por el cliente: "
+                f"VehÃ­culo descrito por el cliente: "
                 f"{descripcion_vehiculo}\n{notas}"
             ).strip()
 
@@ -2326,7 +2343,7 @@ async def crear_cita(
 
                 if not tipo_row:
                     return JSONResponse(
-                        {"error": "No hay tipos de vehículo configurados"},
+                        {"error": "No hay tipos de vehÃ­culo configurados"},
                         status_code=400
                     )
 
@@ -2362,7 +2379,7 @@ async def crear_cita(
                     """),
                     {
                         "codigo": auto_code,
-                        "descripcion": descripcion_vehiculo or "Vehículo descrito por el cliente",
+                        "descripcion": descripcion_vehiculo or "VehÃ­culo descrito por el cliente",
                         "motor": "POR DEFINIR",
                         "asientos": 0,
                         "placa": auto_code[-10:],
@@ -2449,7 +2466,7 @@ async def crear_cita(
 async def eliminar_cita(cita_id: int, access_token: str = Cookie(None)):
     if not access_token:
         return RedirectResponse(
-            url="/citas?error=Debes iniciar sesión",
+            url="/citas?error=Debes iniciar sesion",
             status_code=302
         )
 
@@ -2487,7 +2504,7 @@ async def cambiar_estado_cita(
 ):
     if not access_token:
         return RedirectResponse(
-            url="/citas?error=Debes iniciar sesión",
+            url="/citas?error=Debes iniciar sesion",
             status_code=302
         )
 
@@ -2549,12 +2566,12 @@ async def guardar_factura_servicio(
 
         concepto = (
             body.get("concepto") or
-            "Servicio técnico automotriz"
+            "Servicio tÃ©cnico automotriz"
         ).strip()
 
         if costo <= 0:
             return JSONResponse(
-                {"error": "Ingresa un costo válido para la factura"},
+                {"error": "Ingresa un costo vÃ¡lido para la factura"},
                 status_code=400
             )
 
@@ -2597,7 +2614,7 @@ async def guardar_factura_servicio(
 
             if not row:
                 return JSONResponse(
-                    {"error": "No se encontró la cita"},
+                    {"error": "No se encontrÃ³ la cita"},
                     status_code=404
                 )
 
@@ -2662,7 +2679,7 @@ async def cambiar_rol_usuario(
 
     if rol not in ("admin", "usuario", "mecanico"):
         return RedirectResponse(
-            url="/?error=Rol inválido",
+            url="/?error=Rol invÃ¡lido",
             status_code=302
         )
 
@@ -4413,3 +4430,4 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

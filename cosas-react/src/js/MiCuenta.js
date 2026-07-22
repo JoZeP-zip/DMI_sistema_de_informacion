@@ -18,6 +18,27 @@ const clean = (value, fallback = 'Por definir') => {
 
 const estadoClase = (estado = '') => String(estado).toLowerCase().replace(/[^a-z0-9_]/g, '-');
 
+const estadoOrdenPasos = [
+  { key: 'abierta', label: 'Orden' },
+  { key: 'diagnostico', label: 'Diagnostico' },
+  { key: 'cotizada', label: 'Cotizacion' },
+  { key: 'en_reparacion', label: 'Reparacion' },
+  { key: 'facturada', label: 'Factura' },
+  { key: 'entregada', label: 'Entrega' },
+];
+
+const pasoIndexPorEstado = {
+  abierta: 0,
+  diagnostico: 1,
+  cotizada: 2,
+  aprobada: 2,
+  en_reparacion: 3,
+  finalizada: 3,
+  facturada: 4,
+  pagada: 4,
+  entregada: 5,
+};
+
 const EmptyState = ({ icon = 'bi-info-circle', text }) => (
   <div className="user-empty-state">
     <i className={`bi ${icon}`} />
@@ -49,11 +70,24 @@ const DetailModal = ({ title, children, onClose }) => {
   );
 };
 
+const OrderSteps = ({ estado }) => {
+  const current = pasoIndexPorEstado[String(estado || 'abierta').toLowerCase()] ?? 0;
+  return (
+    <div className="user-order-steps">
+      {estadoOrdenPasos.map((paso, index) => (
+        <span key={paso.key} className={index <= current ? 'done' : ''}>{paso.label}</span>
+      ))}
+    </div>
+  );
+};
+
 export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [historialActivo, setHistorialActivo] = useState(null);
+  const [ordenActiva, setOrdenActiva] = useState(null);
+  const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -80,19 +114,55 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const resumen = data?.resumen || {};
   const usuario = data?.usuario || {};
   const nombre = usuario.nombre || localStorage.getItem('nombre') || 'cliente';
+  const vehiculosCuenta = data?.vehiculos || [];
+
+  useEffect(() => {
+    if (!vehiculoSeleccionadoId && vehiculosCuenta.length) {
+      setVehiculoSeleccionadoId(String(vehiculosCuenta[0].idvehiculo));
+    }
+  }, [vehiculoSeleccionadoId, vehiculosCuenta]);
+
+  const vehiculoSeleccionado = useMemo(() => {
+    if (!vehiculosCuenta.length) return null;
+    return vehiculosCuenta.find((vehiculo) => String(vehiculo.idvehiculo) === String(vehiculoSeleccionadoId)) || vehiculosCuenta[0];
+  }, [vehiculosCuenta, vehiculoSeleccionadoId]);
+
+  const vehiculoIdActual = vehiculoSeleccionado?.idvehiculo;
+  const ordenesVehiculo = useMemo(() => {
+    if (!vehiculoIdActual) return data?.ordenes || [];
+    return (data?.ordenes || []).filter((orden) => String(orden.vehiculo_id) === String(vehiculoIdActual));
+  }, [data, vehiculoIdActual]);
+
+  const ordenIdsVehiculo = useMemo(() => new Set(ordenesVehiculo.map((orden) => orden.idorden)), [ordenesVehiculo]);
+  const citasVehiculo = useMemo(() => {
+    if (!vehiculoIdActual) return data?.citas || [];
+    return (data?.citas || []).filter((cita) => String(cita.idvehiculo || cita.vehiculos_idvehiculo) === String(vehiculoIdActual));
+  }, [data, vehiculoIdActual]);
+  const serviciosVehiculo = useMemo(() => (data?.servicios_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
+  const repuestosVehiculo = useMemo(() => (data?.repuestos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
+  const facturasVehiculo = useMemo(() => (data?.facturas || []).filter((factura) => ordenIdsVehiculo.has(factura.orden_id)), [data, ordenIdsVehiculo]);
+  const historialVehiculo = useMemo(() => {
+    if (!vehiculoIdActual) return data?.historial || [];
+    return (data?.historial || []).filter((evento) => String(evento.vehiculo_id) === String(vehiculoIdActual));
+  }, [data, vehiculoIdActual]);
 
   const ordenesActivas = useMemo(() => {
-    return (data?.ordenes || []).filter((orden) => {
+    return ordenesVehiculo.filter((orden) => {
       const estado = String(orden.estado || '').toLowerCase();
       return !['entregada', 'cancelada'].includes(estado);
     });
-  }, [data]);
+  }, [ordenesVehiculo]);
+
+  const serviciosPorOrden = (ordenId) => serviciosVehiculo.filter((item) => item.orden_id === ordenId);
+  const repuestosPorOrden = (ordenId) => repuestosVehiculo.filter((item) => item.orden_id === ordenId);
+  const facturaPorOrden = (ordenId) => facturasVehiculo.find((item) => item.orden_id === ordenId);
+  const pagosPorFactura = (facturaId) => (data?.pagos_facturas || []).filter((item) => item.factura_id === facturaId);
 
   const abrirFactura = (factura) => {
-    const servicios = (data?.servicios_orden || []).filter((item) => item.orden_id === factura.orden_id);
-    const repuestos = (data?.repuestos_orden || []).filter((item) => item.orden_id === factura.orden_id);
-    const orden = (data?.ordenes || []).find((item) => item.idorden === factura.orden_id);
-    const pagos = (data?.pagos_facturas || []).filter((item) => item.factura_id === factura.idfactura);
+    const servicios = serviciosPorOrden(factura.orden_id);
+    const repuestos = repuestosPorOrden(factura.orden_id);
+    const orden = ordenesVehiculo.find((item) => item.idorden === factura.orden_id);
+    const pagos = pagosPorFactura(factura.idfactura);
 
     const items = [
       ...servicios.map((item) => ({
@@ -133,11 +203,20 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     });
   };
 
+  const abrirOrden = (orden) => {
+    setOrdenActiva({
+      orden,
+      servicios: serviciosPorOrden(orden.idorden),
+      repuestos: repuestosPorOrden(orden.idorden),
+      factura: facturaPorOrden(orden.idorden),
+    });
+  };
+
   const verHistorial = (evento) => {
-    const orden = (data?.ordenes || []).find((item) => item.idorden === evento.orden_id);
-    const servicios = (data?.servicios_orden || []).filter((item) => item.orden_id === evento.orden_id);
-    const repuestos = (data?.repuestos_orden || []).filter((item) => item.orden_id === evento.orden_id);
-    const factura = (data?.facturas || []).find((item) => item.idfactura === evento.factura_id || item.orden_id === evento.orden_id);
+    const orden = ordenesVehiculo.find((item) => item.idorden === evento.orden_id);
+    const servicios = serviciosPorOrden(evento.orden_id);
+    const repuestos = repuestosPorOrden(evento.orden_id);
+    const factura = facturasVehiculo.find((item) => item.idfactura === evento.factura_id || item.orden_id === evento.orden_id);
     setHistorialActivo({ evento, orden, servicios, repuestos, factura });
   };
 
@@ -181,25 +260,61 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
         <article><span>Facturas pendientes</span><strong>{resumen.facturas_pendientes || 0}</strong></article>
       </section>
 
+      {ordenesActivas.length > 0 && (
+        <section className="user-account-card wide user-current-work">
+          <div className="user-account-card-head">
+            <h3><i className="bi bi-activity" /> Estado actual del taller</h3>
+          </div>
+          <div className="user-current-work-grid">
+            {ordenesActivas.slice(0, 3).map((orden) => (
+              <article key={orden.idorden}>
+                <strong>{orden.codigo_orden}</strong>
+                <span>{clean(orden.marca, '')} {clean(orden.modelo, '')} - {clean(orden.placa, 'Sin placa')}</span>
+                <div className="user-progress" aria-label={`Progreso ${orden.progreso || 0}%`}>
+                  <span style={{ width: `${orden.progreso || 0}%` }} />
+                </div>
+                <small>{orden.progreso || 0}% completado | {clean(orden.estado_label, orden.estado)}</small>
+                <OrderSteps estado={orden.estado} />
+                <button type="button" onClick={() => abrirOrden(orden)}>Ver detalle</button>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="user-account-grid">
         <Section title="Vehiculos" icon="bi-car-front-fill">
-          {(data?.vehiculos || []).length ? (
-            <div className="user-account-list">
-              {data.vehiculos.map((vehiculo) => (
-                <div className="user-account-item" key={vehiculo.idvehiculo}>
-                  <strong>{clean(vehiculo.marca)} {clean(vehiculo.modelo, '')}</strong>
-                  <span>Placa {clean(vehiculo.placa)} | Tipo {clean(vehiculo.tipo_vehiculo)}</span>
-                  <small>Motor {clean(vehiculo.motor)} | Capacidad {clean(vehiculo.capacidad, 0)} | Km {clean(vehiculo.kilometraje_actual, 0)}</small>
+          {vehiculosCuenta.length ? (
+            <div className="user-vehicle-panel">
+              <label>Elegir vehiculo</label>
+              <select
+                value={vehiculoSeleccionadoId}
+                onChange={(event) => setVehiculoSeleccionadoId(event.target.value)}
+              >
+                {vehiculosCuenta.map((vehiculo) => (
+                  <option key={vehiculo.idvehiculo} value={vehiculo.idvehiculo}>
+                    {clean(vehiculo.placa, 'Sin placa')} - {clean(vehiculo.marca, '')} {clean(vehiculo.modelo, '')}
+                  </option>
+                ))}
+              </select>
+
+              {vehiculoSeleccionado && (
+                <div className="user-account-item selected">
+                  <strong>{clean(vehiculoSeleccionado.marca)} {clean(vehiculoSeleccionado.modelo, '')}</strong>
+                  <span>Placa {clean(vehiculoSeleccionado.placa)} | Tipo {clean(vehiculoSeleccionado.tipo_vehiculo)}</span>
+                  <small>Motor {clean(vehiculoSeleccionado.motor)} | Capacidad {clean(vehiculoSeleccionado.capacidad, 0)} | Km {clean(vehiculoSeleccionado.kilometraje_actual, 0)}</small>
                 </div>
-              ))}
+              )}
+
+              <small className="user-vehicle-count">{vehiculosCuenta.length} de 10 vehiculos registrados</small>
             </div>
           ) : <EmptyState icon="bi-car-front" text="Aun no tienes vehiculos registrados." />}
         </Section>
 
         <Section title="Citas" icon="bi-calendar-check-fill">
-          {(data?.citas || []).length ? (
+          {citasVehiculo.length ? (
             <div className="user-account-list">
-              {data.citas.map((cita) => (
+              {citasVehiculo.slice(0, 6).map((cita) => (
                 <div className="user-account-item" key={cita.idcita}>
                   <strong>{clean(cita.motivo, 'Servicio agendado')}</strong>
                   <span>{clean(cita.fecha, '')} {clean(cita.hora, '')} | {clean(cita.vehiculo, 'Vehiculo')}</span>
@@ -209,33 +324,10 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
             </div>
           ) : <EmptyState icon="bi-calendar-x" text="No tienes citas registradas." />}
         </Section>
-
-        <Section title="Estado del vehiculo" icon="bi-clipboard2-check-fill" className="wide">
-          {ordenesActivas.length ? (
-            <div className="user-order-list">
-              {ordenesActivas.map((orden) => (
-                <div className="user-order-card" key={orden.idorden}>
-                  <div className="user-order-top">
-                    <div>
-                      <strong>{orden.codigo_orden}</strong>
-                      <span>{clean(orden.marca, '')} {clean(orden.modelo, '')} - {clean(orden.placa, 'Sin placa')}</span>
-                    </div>
-                    <b>{clean(orden.estado_label, orden.estado)}</b>
-                  </div>
-                  <div className="user-progress" aria-label={`Progreso ${orden.progreso || 0}%`}>
-                    <span style={{ width: `${orden.progreso || 0}%` }} />
-                  </div>
-                  <small>{orden.progreso || 0}% completado | {clean(orden.motivo_ingreso, 'Sin motivo registrado')}</small>
-                </div>
-              ))}
-            </div>
-          ) : <EmptyState icon="bi-clipboard-x" text="No tienes ordenes de trabajo activas." />}
-        </Section>
-
         <Section title="Repuestos usados" icon="bi-box-seam-fill">
-          {(data?.repuestos_orden || []).length ? (
+          {repuestosVehiculo.length ? (
             <div className="user-account-list">
-              {data.repuestos_orden.map((item) => (
+              {repuestosVehiculo.slice(0, 8).map((item) => (
                 <div className="user-account-item" key={item.iddetalle_repuesto}>
                   <strong>{clean(item.descripcion)}</strong>
                   <span>Cantidad {clean(item.cantidad, 1)} | {money(item.subtotal)}</span>
@@ -247,9 +339,9 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
         </Section>
 
         <Section title="Facturas" icon="bi-receipt-cutoff">
-          {(data?.facturas || []).length ? (
+          {facturasVehiculo.length ? (
             <div className="user-account-list">
-              {data.facturas.map((factura) => (
+              {facturasVehiculo.map((factura) => (
                 <div className="user-account-item user-action-item" key={factura.idfactura}>
                   <strong>{factura.codigo_factura}</strong>
                   <span>{money(factura.total)} | Saldo {money(factura.saldo)}</span>
@@ -262,9 +354,9 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
         </Section>
 
         <Section title="Historial" icon="bi-clock-history" className="wide">
-          {(data?.historial || []).length ? (
+          {historialVehiculo.length ? (
             <div className="user-history-list">
-              {data.historial.map((evento) => (
+              {historialVehiculo.map((evento) => (
                 <div className="user-history-item user-action-item" key={evento.idhistorial}>
                   <strong>{clean(evento.tipo_evento)}</strong>
                   <span>{clean(evento.fecha_evento, '')} | {clean(evento.placa, '')}</span>
@@ -276,6 +368,43 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
           ) : <EmptyState icon="bi-clock" text="Aun no hay historial para tus vehiculos." />}
         </Section>
       </section>
+
+      <DetailModal title={ordenActiva ? 'Detalle de orden' : ''} onClose={() => setOrdenActiva(null)}>
+        {ordenActiva && (
+          <div className="user-detail-content">
+            <div className="user-detail-grid">
+              <article><span>Orden</span><strong>{clean(ordenActiva.orden.codigo_orden)}</strong></article>
+              <article><span>Estado</span><strong>{clean(ordenActiva.orden.estado_label, ordenActiva.orden.estado)}</strong></article>
+              <article><span>Progreso</span><strong>{ordenActiva.orden.progreso || 0}%</strong></article>
+              <article><span>Vehiculo</span><strong>{clean(ordenActiva.orden.marca, '')} {clean(ordenActiva.orden.modelo, '')}</strong></article>
+              <article><span>Placa</span><strong>{clean(ordenActiva.orden.placa)}</strong></article>
+              <article><span>Total</span><strong>{money(ordenActiva.orden.total_orden)}</strong></article>
+            </div>
+            <OrderSteps estado={ordenActiva.orden.estado} />
+            <p className="user-detail-description">{clean(ordenActiva.orden.motivo_ingreso || ordenActiva.orden.observaciones_cliente, 'Sin descripcion registrada.')}</p>
+
+            <h3>Servicios realizados</h3>
+            {ordenActiva.servicios.length ? ordenActiva.servicios.map((item) => (
+              <div className="user-detail-line" key={item.iddetalle_servicio}>
+                <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
+              </div>
+            )) : <p className="user-muted">No hay servicios registrados para esta orden.</p>}
+
+            <h3>Repuestos utilizados</h3>
+            {ordenActiva.repuestos.length ? ordenActiva.repuestos.map((item) => (
+              <div className="user-detail-line" key={item.iddetalle_repuesto}>
+                <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
+              </div>
+            )) : <p className="user-muted">No hay repuestos registrados para esta orden.</p>}
+
+            {ordenActiva.factura && (
+              <div className="user-detail-footer">
+                <button type="button" onClick={() => abrirFactura(ordenActiva.factura)}>Ver factura</button>
+              </div>
+            )}
+          </div>
+        )}
+      </DetailModal>
 
       <DetailModal title={historialActivo ? 'Historial detallado' : ''} onClose={() => setHistorialActivo(null)}>
         {historialActivo && (
@@ -303,9 +432,16 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
                 <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay repuestos registrados para esta orden.</p>}
+
+            {historialActivo.factura && (
+              <div className="user-detail-footer">
+                <button type="button" onClick={() => abrirFactura(historialActivo.factura)}>Ver factura</button>
+              </div>
+            )}
           </div>
         )}
       </DetailModal>
     </main>
   );
 }
+

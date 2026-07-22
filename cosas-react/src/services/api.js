@@ -1,16 +1,11 @@
 /**
- * api.js — Capa de servicios para DMI Motors
- * Centraliza todas las llamadas al backend FastAPI.
- * Ubicación sugerida: src/services/api.js
- *
- * USO EN CUALQUIER COMPONENTE:
- *   import { AuthService, VehiculosService, CitasService } from '../services/api';
+ * api.js - Capa de servicios para DMI Motors.
+ * Centraliza las llamadas al backend FastAPI.
  */
 
-
-// ─────────────────────────────────────────────
+// ------------------------------------------------
 // BASE URL
-// ─────────────────────────────────────────────
+// ------------------------------------------------
 const getApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
@@ -111,7 +106,7 @@ export const AuthService = {
     });
   },
 
-  /** Limpia localStorage y cierra sesión local. */
+  /** Limpia localStorage y cierra sesion local. */
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
