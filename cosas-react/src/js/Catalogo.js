@@ -70,6 +70,7 @@ function Catalogo({ onNeedLogin } = {}) {
   const [showCart, setShowCart] = useState(false);
   const [showMisCompras, setShowMisCompras] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkoutItems, setCheckoutItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Todos");
@@ -182,7 +183,8 @@ function Catalogo({ onNeedLogin } = {}) {
       setSelectedProduct(null);
       setShowCart(false);
       setShowMisCompras(false);
-      if (onNeedLogin) onNeedLogin();
+      setShowConfirmModal(false);
+      setShowLoginRequiredModal(true);
       return;
     }
 
@@ -198,7 +200,7 @@ function Catalogo({ onNeedLogin } = {}) {
       setShowConfirmModal(false);
       setShowMisCompras(false);
       setShowCart(false);
-      if (onNeedLogin) onNeedLogin();
+      setShowLoginRequiredModal(true);
       return;
     }
 
@@ -207,6 +209,11 @@ function Catalogo({ onNeedLogin } = {}) {
     setShowCart(false);
     setCheckoutItems(cart);
     setShowCheckout(true);
+  };
+
+  const confirmarIrAlLogin = () => {
+    setShowLoginRequiredModal(false);
+    if (onNeedLogin) onNeedLogin();
   };
 
   const totalProducts = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -325,7 +332,7 @@ function Catalogo({ onNeedLogin } = {}) {
       {/* HEADER FIJO */}
       <header className="top-bar">
         <div className="logo">
-          <span className="dim">DIM</span>{" "}DISOL MOTORS INJECTION'S
+          <span className="dim">DMI</span>{" "}
         </div>
         <div className="header-right">
           {/* BOTON CATEGORIAS */}
@@ -385,12 +392,23 @@ function Catalogo({ onNeedLogin } = {}) {
           </button>
           <button
             className="cart-btn"
+            aria-label="Carrito"
             onClick={() => {
               setShowCart(!showCart);
               setShowMisCompras(false);
             }}
           >
-            Carrito {totalProducts}
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="9.5" cy="20.5" r="1.5" />
+              <circle cx="17.5" cy="20.5" r="1.5" />
+            </svg>
+            <span className="cart-count">{totalProducts}</span>
           </button>
         </div>
       </header>
@@ -400,7 +418,16 @@ function Catalogo({ onNeedLogin } = {}) {
       {showCart &&
         createPortal(
         <div className="cart-panel">
-          <h2>Carrito</h2>
+          <div className="cart-panel-header">
+            <h2>Carrito</h2>
+            <button
+              className="cart-close-btn"
+              aria-label="Cerrar carrito"
+              onClick={() => setShowCart(false)}
+            >
+              ✕
+            </button>
+          </div>
           {cart.length === 0 ? (
             <p>El carrito esta vacio</p>
           ) : (
@@ -562,6 +589,91 @@ function Catalogo({ onNeedLogin } = {}) {
                 <button
                   className="mc-modal-cancel"
                   onClick={() => setShowConfirmModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* MODAL ACCESO REQUERIDO - se muestra antes de mandar al login */}
+      {showLoginRequiredModal &&
+        createPortal(
+          <div
+            className="mc-modal-overlay"
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.75)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+            }}
+          >
+            <div
+              style={{
+                width: "min(480px, 92vw)",
+                background: "#0a0a0c",
+                border: "1px solid rgba(255,64,87,0.55)",
+                boxShadow: "0 0 40px rgba(255,64,87,0.12)",
+                borderRadius: 4,
+                padding: "28px 30px",
+                color: "#fff",
+                fontFamily: "inherit",
+              }}
+            >
+              <p
+                style={{
+                  color: "#ff4057",
+                  letterSpacing: "2px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  margin: "0 0 10px",
+                }}
+              >
+                Acceso requerido
+              </p>
+              <h2 style={{ margin: "0 0 14px", fontSize: 26 }}>
+                Inicia sesion para comprar
+              </h2>
+              <p style={{ color: "#c9c9cf", margin: "0 0 24px", lineHeight: 1.5 }}>
+                Para proteger tus datos y registrar tu pedido correctamente,
+                primero debes iniciar sesion.
+              </p>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={confirmarIrAlLogin}
+                  style={{
+                    flex: "1 1 160px",
+                    background: "#e23345",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    padding: "14px 18px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Ir al login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLoginRequiredModal(false)}
+                  style={{
+                    flex: "1 1 160px",
+                    background: "transparent",
+                    color: "#fff",
+                    border: "1px solid rgba(255,255,255,0.4)",
+                    borderRadius: 4,
+                    padding: "14px 18px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
                 >
                   Cancelar
                 </button>
@@ -845,4 +957,3 @@ function Catalogo({ onNeedLogin } = {}) {
 }
 
 export default Catalogo;
-

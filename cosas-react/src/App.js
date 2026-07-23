@@ -163,36 +163,104 @@ const DmiToast = ({ toast, onClose }) => {
 
 
 // Componente para Iniciar Sesion
-const LoginView = ({ onLoginSuccess, onSwitchToRegister }) => {
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+
+  const showLoginIssue = ({ title, message }) => {
+    openConfirm({
+      kicker: "Acceso requerido",
+      title,
+      message,
+      confirmText: "Entendido"
+    });
+  };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-setError("");
+    const trimmedEmail = email.trim();
 
-try {
-  const data = await AuthService.login(email, password);
+    if (!trimmedEmail || !password) {
+      showLoginIssue({
+        title: "Completa tus datos",
+        message: "Completa tu correo y contrasena."
+      });
+      return;
+    }
 
-  onLoginSuccess({
-    email: data.email,
-    role: data.role
-  });
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      showLoginIssue({
+        title: "Correo invalido",
+        message: "Ingresa un correo electronico valido, por ejemplo nombre@dominio.com."
+      });
+      return;
+    }
 
-} catch (err) {
-  setError(err.message);
-}
-};
+    try {
+      const data = await AuthService.login(trimmedEmail, password);
+
+      onLoginSuccess({
+        email: data.email,
+        role: data.role
+      });
+
+    } catch (err) {
+      const rawMessage = String(err?.message || "").toLowerCase();
+
+      const looksLikeConnectionError =
+        /failed to fetch|networkerror|network error|conexion|conexión|timeout/.test(rawMessage);
+
+      const looksLikeWrongPassword =
+        /contrasena|contraseña|password|clave incorrecta/.test(rawMessage);
+
+      const looksLikeUnknownEmail =
+        /usuario no existe|correo no registrado|no encontr|not found|no existe|no registrad/.test(rawMessage);
+
+      // El backend en /login-react puede responder con un mensaje generico
+      // (p.ej. "Credenciales invalidas" o "Error 401") que no distingue si
+      // fallo el correo o la contrasena. En ese caso mostramos un mensaje
+      // combinado en vez de adivinar cual de los dos esta mal.
+      const looksLikeGenericInvalidCredentials =
+        /error 401|credenciales|invalid|no autorizado|unauthorized/.test(rawMessage);
+
+      if (looksLikeConnectionError) {
+        showLoginIssue({
+          title: "No se pudo conectar",
+          message: "Hubo un problema de conexion con el servidor. Intenta nuevamente en unos segundos."
+        });
+      } else if (looksLikeUnknownEmail) {
+        showLoginIssue({
+          title: "Correo no registrado",
+          message: "No encontramos una cuenta asociada a ese correo electronico."
+        });
+      } else if (looksLikeWrongPassword) {
+        showLoginIssue({
+          title: "Contrasena incorrecta",
+          message: "La contrasena ingresada no es correcta. Intentalo de nuevo."
+        });
+      } else if (looksLikeGenericInvalidCredentials) {
+        showLoginIssue({
+          title: "Correo o contrasena incorrectos",
+          message: "Verifica que tu correo y tu contrasena esten bien escritos e intenta de nuevo."
+        });
+      } else {
+        showLoginIssue({
+          title: "No se pudo iniciar sesion",
+          message: err?.message || "Verifica tu correo y contrasena e intenta de nuevo."
+        });
+      }
+    }
+  };
 
   return (
     <div className="mx-auto" style={{ maxWidth: '400px' }}>
       <h3 className="text-center text-uppercase fw-black mb-4">
         Control de <span className="text-danger">Acceso</span>
       </h3>
-      {error && <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger">{error}</div>}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <div className="mb-3">
           <label className="form-label text-white small fw-bold">CORREO ELECTRONICO</label>
           <input 
@@ -225,7 +293,7 @@ try {
 };
 
 // NUEVO COMPONENTE: Vista para Registrar Usuarios Nuevos
-const RegistroUsuarioView = ({ onRegisterSuccess }) => {
+const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombre, setNombre] = useState('');
@@ -241,6 +309,29 @@ const RegistroUsuarioView = ({ onRegisterSuccess }) => {
     e.preventDefault();
     setError('');
     setSuccess(false);
+
+    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, email, password };
+    const missingField = Object.values(requiredFields).some((value) => !String(value).trim());
+
+    if (missingField) {
+      openConfirm({
+        kicker: "Acceso requerido",
+        title: "Completa tus datos",
+        message: "Completa todos los campos del formulario para registrarte.",
+        confirmText: "Entendido"
+      });
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(email.trim())) {
+      openConfirm({
+        kicker: "Acceso requerido",
+        title: "Correo invalido",
+        message: "Ingresa un correo electronico valido, por ejemplo nombre@dominio.com.",
+        confirmText: "Entendido"
+      });
+      return;
+    }
 
     try {
       const response = await fetch(getApiBaseUrl() + '/registro-react', {
@@ -282,7 +373,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess }) => {
       </h3>
       {error && <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger">{error}</div>}
       {success && <div className="alert alert-success small py-2 rounded-0 border-success bg-black text-success">Registro exitoso! Redirigiendo al login...</div>}
-      <form onSubmit={handleRegister}>
+      <form onSubmit={handleRegister} noValidate>
         <div className="mb-3">
           <label className="form-label text-white small fw-bold">NOMBRE COMPLETO</label>
           <input 
@@ -1194,10 +1285,11 @@ function App() {
                     <LoginView 
                       onLoginSuccess={handleLoginSuccess} 
                       onSwitchToRegister={() => setView('registro-usuario')} 
+                      openConfirm={openConfirm}
                     />
                   )}
                   {view === 'registro-usuario' && (
-                    <RegistroUsuarioView onRegisterSuccess={() => setView('login')} />
+                    <RegistroUsuarioView onRegisterSuccess={() => setView('login')} openConfirm={openConfirm} />
                   )}
 
                   {view === 'user-dashboard' && (

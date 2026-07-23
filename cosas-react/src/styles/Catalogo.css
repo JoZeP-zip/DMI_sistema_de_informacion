@@ -3951,3 +3951,483 @@ main {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* =========================================================
+   RESPONSIVE FLUIDO — CUALQUIER COMPUTADOR
+   Se agrega al final para que gane sobre los ajustes previos.
+   Cubre desde laptops pequeños (1024px) hasta monitores
+   grandes / ultrawide (2560px+), usando clamp() para que el
+   tamaño cambie de forma suave en vez de saltos bruscos.
+========================================================= */
+
+html{
+  overflow-x:hidden;
+  width:100%;
+}
+
+body{
+  width:100%;
+  min-width:0;
+}
+
+.main-container{
+  width:100%;
+  max-width:1500px;
+  overflow-x:hidden;
+}
+
+img{
+  max-width:100%;
+}
+
+/* Tipografia y bloques grandes: escalan segun el ancho de pantalla */
+.section-title{
+  font-size:clamp(30px, 4.2vw, 70px) !important;
+  padding:0 12px;
+}
+
+.hero-carousel{
+  height:clamp(220px, 32vw, 520px) !important;
+}
+
+.product-card img{
+  height:clamp(170px, 16vw, 240px) !important;
+}
+
+.product-detail-image{
+  min-height:clamp(260px, 30vw, 520px) !important;
+}
+
+/* Grid de productos: mas columnas en monitores grandes, menos en portatiles */
+.grid{
+  grid-template-columns:repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+
+/* =========================
+   MONITORES GRANDES / ULTRAWIDE (>=1921px)
+========================= */
+@media (min-width:1921px){
+  .main-container{
+    max-width:1800px;
+  }
+  .grid{
+    grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+/* =========================
+   LAPTOPS ESTANDAR (1024px - 1366px)
+   Resoluciones muy comunes: 1366x768, 1280x800, 1024x768
+========================= */
+@media (max-width:1366px) and (min-width:1181px){
+  .top-bar{
+    grid-template-columns:minmax(240px, 0.8fr) minmax(0, 1.6fr) !important;
+    column-gap:18px !important;
+    padding:16px 20px !important;
+  }
+
+  .top-bar .header-right{
+    gap:8px !important;
+  }
+
+  .top-bar .categories-toggle,
+  .top-bar .admin-add-product-btn,
+  .top-bar .header-search,
+  .top-bar .mis-compras-btn,
+  .top-bar .cart-btn{
+    font-size:clamp(10px, 0.8vw, 13px) !important;
+    padding-left:6px !important;
+    padding-right:6px !important;
+  }
+}
+
+@media (max-width:1024px){
+  .products,
+  .hero-section{
+    padding:30px 20px;
+  }
+
+  .categories-container{
+    left:10px;
+  }
+}
+
+/* Evita que el boton fijo de categorias quede encima del titulo
+   en ventanas de portatil de altura reducida */
+@media (max-width:1180px) and (min-height:700px){
+  .categories-container{
+    top:96px;
+  }
+}
+
+/* =========================================================
+   FIX DEFINITIVO — BOTON "CATEGORIAS" ENCIMA DEL BUSCADOR
+   Se cambia el header-right a flexbox (en vez de grid con
+   columnas fijas) para que cada elemento ocupe su propio
+   espacio real y nunca se superponga con el buscador,
+   sin importar cuántos botones haya (admin o no).
+========================================================= */
+
+.top-bar .header-right {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  grid-template-columns: none !important;
+}
+
+.top-bar .categories-container {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  order: 0 !important;
+  flex: 0 0 auto !important;
+  z-index: 10002 !important;
+}
+
+.top-bar .categories-toggle {
+  position: relative !important;
+  width: auto !important;
+  white-space: nowrap !important;
+}
+
+.top-bar .header-search {
+  order: 1 !important;
+  flex: 1 1 220px !important;
+  min-width: 150px !important;
+  width: auto !important;
+}
+
+.top-bar .admin-add-product-btn,
+.top-bar .mis-compras-btn,
+.top-bar .cart-btn {
+  order: 2 !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  white-space: nowrap !important;
+}
+
+.top-bar .categories-dropdown {
+  position: absolute !important;
+  top: calc(100% + 10px) !important;
+  left: 0 !important;
+  right: auto !important;
+}
+
+@media (max-width: 700px) {
+  .top-bar .header-right {
+    justify-content: stretch !important;
+  }
+
+  .top-bar .categories-container,
+  .top-bar .header-search,
+  .top-bar .admin-add-product-btn,
+  .top-bar .mis-compras-btn,
+  .top-bar .cart-btn {
+    flex: 1 1 100% !important;
+  }
+
+  .top-bar .categories-toggle {
+    width: 100% !important;
+  }
+}
+
+/* =========================================================
+   FIX: EL CARRITO SE SALIA DEL CONTENEDOR
+   El flex-wrap por si solo no evita que el contenido "empuje"
+   fuera de la caja si el navegador calcula un ancho minimo
+   mayor al disponible. Se fuerza min-width:0 en toda la cadena
+   para que los elementos puedan encogerse/enviarse a otra
+   fila en vez de desbordar el .top-bar.
+========================================================= */
+
+.top-bar {
+  max-width: 100% !important;
+  overflow: visible;
+}
+
+.top-bar .header-right {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex-shrink: 1 !important;
+}
+
+.top-bar .categories-container,
+.top-bar .header-search,
+.top-bar .admin-add-product-btn,
+.top-bar .mis-compras-btn,
+.top-bar .cart-btn {
+  min-width: 0 !important;
+}
+
+/* =========================================================
+   CARRITO COMO ICONO (acorde al diseño rojo/negro del sitio)
+   Reemplaza el boton de texto "Carrito N" por un boton
+   circular con el icono de carrito y un badge con la
+   cantidad de productos.
+========================================================= */
+
+.top-bar .cart-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 50px !important;
+  height: 50px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: rgb(255, 0, 0) !important;
+  border: 2px solid rgba(255, 255, 255, 0.15) !important;
+  position: relative !important;
+  flex: 0 0 auto !important;
+  order: 2 !important;
+}
+
+.top-bar .cart-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke: white;
+  fill: none;
+  pointer-events: none;
+}
+
+.top-bar .cart-btn .cart-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: black;
+  border: 2px solid rgb(255, 0, 0);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Orbitron', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.top-bar .cart-btn:hover {
+  transform: scale(1.08) !important;
+  box-shadow: 0 0 14px rgba(255, 0, 0, 0.55);
+}
+
+@media (max-width: 700px) {
+  .top-bar .cart-btn {
+    width: 100% !important;
+    height: 46px !important;
+    border-radius: 8px !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+  }
+
+  .top-bar .cart-btn::before {
+    content: "Carrito";
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  .top-bar .cart-btn .cart-count {
+    position: static;
+    border: none;
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* =========================================================
+   FIX: "TUS COMPRAS" Y EL CARRITO SE SALIAN DEL BORDE
+   El buscador tenia un ancho fijo (430px) que dejaba muy
+   poco espacio a la derecha en pantallas medianas. Se hace
+   fluido y se corren los botones un poco a la izquierda con
+   mas espacio/padding de seguridad.
+========================================================= */
+
+.top-bar {
+  padding-right: 45px !important;
+}
+
+.top-bar .header-search {
+  width: clamp(160px, 22vw, 430px) !important;
+  flex: 0 1 clamp(160px, 22vw, 430px) !important;
+}
+
+.top-bar .header-right {
+  gap: 14px !important;
+  padding-right: 4px !important;
+}
+
+@media (max-width: 1500px) {
+  .top-bar .header-search {
+    width: clamp(150px, 18vw, 320px) !important;
+    flex: 0 1 clamp(150px, 18vw, 320px) !important;
+  }
+  .top-bar .header-right {
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .top-bar {
+    padding-right: 30px !important;
+  }
+  .top-bar .header-search {
+    width: clamp(130px, 16vw, 250px) !important;
+    flex: 0 1 clamp(130px, 16vw, 250px) !important;
+  }
+  .top-bar .mis-compras-btn {
+    white-space: nowrap !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+}
+/* ============================================================
+   OVERRIDE DEFINITIVO DEL HEADER (gana sobre TODOS los parches
+   anteriores). Antes habia un bloque viejo mas abajo en el
+   archivo ("CORRECCION FINAL BARRA CATALOGO") que volvia a
+   poner el header en modo grid con columnas de ancho fijo
+   pensadas para botones que ya no existen igual (el carrito
+   ahora es un icono circular). Ese grid competia con el flex
+   de los ajustes anteriores y causaba los huecos y el
+   desborde. De aqui en adelante el header SIEMPRE es flex.
+============================================================ */
+
+.top-bar {
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-wrap: nowrap !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 20px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.top-bar .logo {
+  display: block !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+.top-bar .header-right {
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+.top-bar .categories-container {
+  flex: 0 0 auto !important;
+}
+
+.top-bar .categories-toggle,
+.top-bar .admin-add-product-btn,
+.top-bar .mis-compras-btn {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 14px 18px !important;
+  white-space: nowrap !important;
+}
+
+.top-bar .header-search {
+  flex: 1 1 180px !important;
+  min-width: 120px !important;
+  max-width: 320px !important;
+  width: auto !important;
+}
+
+.top-bar .cart-btn {
+  flex: 0 0 auto !important;
+}
+
+/* En pantallas grandes le damos mas aire al buscador */
+@media (min-width: 1400px) {
+  .top-bar .header-search {
+    max-width: 400px !important;
+  }
+}
+
+/* Apilado en pantallas chicas: reafirma el stacking porque esta
+   regla va despues de cualquier bloque viejo que pudiera pelear */
+@media (max-width: 900px) {
+  .top-bar {
+    flex-wrap: wrap !important;
+    row-gap: 14px !important;
+  }
+
+  .top-bar .header-right {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .top-bar .header-right {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .top-bar .categories-container,
+  .top-bar .header-search,
+  .top-bar .admin-add-product-btn,
+  .top-bar .mis-compras-btn,
+  .top-bar .cart-btn {
+    flex: 1 1 100% !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+}
+/* =========================
+   CARRITO: header con botón de cerrar (X)
+========================= */
+.cart-panel {
+  padding-top: 0 !important;
+}
+.cart-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 4px 15px;
+  margin: 0 -4px 15px;
+  background: rgba(0, 0, 0, 0.9);
+  border-bottom: 1px solid rgba(255, 0, 0, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.cart-panel-header h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+.cart-close-btn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgb(255, 0, 0);
+  background: black;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+.cart-close-btn:hover {
+  background: rgb(255, 0, 0);
+}
