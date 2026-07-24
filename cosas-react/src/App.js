@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AuthService } from './services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
@@ -300,17 +300,28 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   const [apellidos, setApellidos] = useState('');
   const [documento, setDocumento] = useState('');
   const [tipodedocumento, setTipodedocumento] = useState('CC');
+  const [fechadenacimiento, setFechadenacimiento] = useState('');
   const [telefono, setTelefono] = useState('');
   const [usuarionombre, setUsuarionombre] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const fechaNacimientoRef = useRef(null);
+
+  const openDatePicker = () => {
+    const el = fechaNacimientoRef.current;
+    if (!el) return;
+    if (typeof el.showPicker === 'function') {
+      el.showPicker();
+    } else {
+      el.focus();
+      el.click();
+    }
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess(false);
 
-    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, email, password };
+    const requiredFields = { nombre, apellidos, usuarionombre, documento, fechadenacimiento, telefono, email, password };
     const missingField = Object.values(requiredFields).some((value) => !String(value).trim());
 
     if (missingField) {
@@ -343,6 +354,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
           apellidos,
           documento: documento ? Number(documento) : undefined,
           tipodedocumento,
+          fechadenacimiento,
           telefono,
           usuarionombre,
           email,
@@ -356,10 +368,14 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
       if (!response.ok) {
         setError(data.error || data.message || data.detail || 'Error al registrar el usuario.');
       } else {
-        setSuccess(true);
-        setTimeout(() => {
-          onRegisterSuccess(); // Redirige al login tras 2 segundos
-        }, 2000);
+        openConfirm({
+          kicker: "Registro exitoso",
+          title: "Cuenta creada con exito",
+          message: "Tu cuenta se registro correctamente. Inicia sesion para continuar.",
+          confirmText: "Ir al login",
+          cancelText: "Cerrar",
+          onConfirm: onRegisterSuccess,
+        });
       }
     } catch (err) {
       setError(err.message || 'Error de conexion con el servidor backend.');
@@ -372,7 +388,6 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
         Crear <span className="text-danger">Cuenta</span>
       </h3>
       {error && <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger">{error}</div>}
-      {success && <div className="alert alert-success small py-2 rounded-0 border-success bg-black text-success">Registro exitoso! Redirigiendo al login...</div>}
       <form onSubmit={handleRegister} noValidate>
         <div className="mb-3">
           <label className="form-label text-white small fw-bold">NOMBRE COMPLETO</label>
@@ -430,6 +445,53 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
             onChange={(e) => setDocumento(e.target.value.replace(/\D/g, ''))}
             required 
           />
+        </div>
+        <div className="mb-3">
+          <label className="form-label text-white small fw-bold">FECHA DE NACIMIENTO</label>
+          <div className="dmi-date-field">
+            <input 
+              type="date" 
+              ref={fechaNacimientoRef}
+              className="form-control bg-black text-white border-secondary rounded-0 focus-red dmi-date-input"
+              value={fechadenacimiento}
+              onChange={(e) => setFechadenacimiento(e.target.value)}
+              required 
+            />
+            <button
+              type="button"
+              className="dmi-date-trigger"
+              onClick={openDatePicker}
+              aria-label="Abrir calendario"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M16 3v4M8 3v4M3 10h18" />
+              </svg>
+            </button>
+          </div>
+          <style>{`
+            .dmi-date-field { position: relative; }
+            .dmi-date-input { padding-right: 46px; color-scheme: dark; }
+            .dmi-date-input::-webkit-calendar-picker-indicator { opacity: 0; pointer-events: none; }
+            .dmi-date-trigger {
+              position: absolute;
+              top: 6px;
+              right: 6px;
+              bottom: 6px;
+              width: 34px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #1a1a1a;
+              border: 1px solid #ff2f55;
+              border-radius: 2px;
+              color: #ff2f55;
+              cursor: pointer;
+              padding: 0;
+              transition: background .15s ease, color .15s ease;
+            }
+            .dmi-date-trigger:hover { background: #ff2f55; color: #000; }
+          `}</style>
         </div>
         <div className="mb-3">
           <label className="form-label text-white small fw-bold">TELEFONO</label>

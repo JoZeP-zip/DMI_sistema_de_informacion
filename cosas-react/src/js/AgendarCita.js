@@ -83,8 +83,18 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
         credentials: 'include',
       });
       const garageData = await garageRes.json();
-      setVehiculos(Array.isArray(garageData.vehiculos) ? garageData.vehiculos : []);
+      const listaVehiculos = Array.isArray(garageData.vehiculos) ? garageData.vehiculos : [];
+      setVehiculos(listaVehiculos);
       setCitasRegistradas(Array.isArray(garageData.citas) ? garageData.citas : []);
+
+      if (listaVehiculos.length && !formData.vehiculos_idvehiculo) {
+        const primero = listaVehiculos[0];
+        setFormData(prev => ({
+          ...prev,
+          vehiculos_idvehiculo: String(primero.idvehiculo),
+          descripcion_vehiculo: [primero.marca, primero.modelo, primero.placa].filter(Boolean).join(' '),
+        }));
+      }
     } catch (err) {
       setVehiculos([]);
       setCitasRegistradas([]);
@@ -207,9 +217,10 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
   const handleNuevaCita = () => {
     setConfirmado(false);
     setError('');
+    const primero = vehiculos[0];
     setFormData({
-      vehiculos_idvehiculo: '',
-      descripcion_vehiculo: '',
+      vehiculos_idvehiculo: primero?.idvehiculo ? String(primero.idvehiculo) : '',
+      descripcion_vehiculo: primero ? [primero.marca, primero.modelo, primero.placa].filter(Boolean).join(' ') : '',
       fecha_cita: '',
       hora_cita: '',
       motivo: '',
@@ -410,3 +421,4 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
 };
 
 export default AgendarCita;
+
