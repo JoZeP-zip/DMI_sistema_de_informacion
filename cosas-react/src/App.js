@@ -1366,27 +1366,62 @@ function App() {
                         descripcion: 'Optimizacion de software y diagnostico computarizado para flotas empresariales, se hizo mantenimiento preventivo y cambio de color.' 
                       },
                       { 
-                        imagenes: ['/assets/images/porche.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
-                        titulo: 'Porsche 911 GT3', 
+                        imagenes: ['/assets/images/audi2.jpg', '/assets/images/audi1.jpg', '/assets/images/audi3.jpg'], 
+                        titulo: 'Porsche 911 GT3',
                         descripcion: 'Calibracion avanzada del sistema de inyeccion electronica y pruebas de presion en tiempo real.' 
                       },
                       { 
-                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/porche.jpg', '/assets/images/lamborghini.jpg'], 
+                        imagenes: ['/assets/images/bmw1.jpg', '/assets/images/bmw2.jpg', '/assets/images/bmw3.jpg'], 
                         titulo: 'Lamborghini Aventador', 
                         descripcion: 'Mantenimiento de alta precision en el sistema de admision y mapeo de ECU para rendimiento extremo.' 
                       },
                       { 
-                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
+                        imagenes: ['/assets/images/rap1.jpg', '/assets/images/rap2.jpg', '/assets/images/rap3.jpg'], 
                         titulo: 'Diagnostico General', 
                         descripcion: 'Escaneo completo de modulos electronicos mediante tecnologia OBD-II de ultima generacion.' 
                       },
                       { 
-                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
+                        imagenes: ['/assets/images/maz1.jpg', '/assets/images/maz2.jpg', '/assets/images/maz3.jpg'], 
                         titulo: 'Proyecto Mel', 
                         descripcion: 'Ajustes personalizados de alto rendimiento y restauracion de componentes criticos del motor.' 
                       },
                       { 
-                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
+                        imagenes: ['/assets/images/yam1.jpg', '/assets/images/yam2.jpg', '/assets/images/yam3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      { 
+                        imagenes: ['/assets/images/mus1.jpg', '/assets/images/mus2.jpg', '/assets/images/mus3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      {
+                        imagenes: ['/assets/images/nap1.jpg', '/assets/images/nap2.jpg', '/assets/images/nap3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      {
+                        imagenes: ['/assets/images/por1.jpg', '/assets/images/por2.jpg', '/assets/images/por3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      {
+                        imagenes: ['/assets/images/duc1.jpg', '/assets/images/duc2.jpg', '/assets/images/duc3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      {
+                        imagenes: ['/assets/images/r61.jpg', '/assets/images/r62.jpg', '/assets/images/r63.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      {
+                        imagenes: ['/assets/images/her1.jpg', '/assets/images/her2.jpg', '/assets/images/her3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      {
+                        imagenes: ['/assets/images/sai1.jpg', '/assets/images/sai2.jpg', '/assets/images/sai3.jpg'], 
                         titulo: 'Unidad de Potencia', 
                         descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
                       }
