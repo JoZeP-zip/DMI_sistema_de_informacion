@@ -85,7 +85,7 @@ body {
 }
 
 .ot-page {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1920px, calc(100% - 8px));
   margin: 0 auto;
   padding: 36px 0 60px;
 }
@@ -273,7 +273,7 @@ body {
 .ot-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 1220px;
 }
 
 .ot-table th,
@@ -373,7 +373,7 @@ body {
 
 @media (max-width: 560px) {
   .ot-page {
-    width: min(100% - 18px, 1180px);
+    width: min(100% - 6px, 1920px);
   }
 
   .ot-stats,
@@ -618,4 +618,138 @@ body {
   .ot-process-buttons {
     grid-template-columns: 1fr;
   }
+}
+
+/* Tablas admin amplias */
+.ot-card:has(.ot-table-wrap) {
+  width: 100%;
+}
+
+.ot-table-wrap {
+  max-width: 100%;
+  padding-bottom: 6px;
+  scrollbar-color: var(--ot-red) rgba(255, 255, 255, 0.12);
+  scrollbar-width: thin;
+}
+
+.ot-table-wrap::-webkit-scrollbar {
+  height: 12px;
+}
+
+.ot-table-wrap::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ot-table-wrap::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, var(--ot-red), #ff6e82);
+  border: 2px solid #070707;
+}
+
+.ot-table th:last-child,
+.ot-table td:last-child {
+  min-width: 128px;
+}
+
+.ot-table .ot-actions {
+  min-width: max-content;
+}
+
+/* Boton para ampliar tablas del panel admin */
+.ot-expand-table-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--ot-red);
+  background: rgba(255, 47, 85, 0.12);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ot-expand-table-btn:hover {
+  background: var(--ot-red);
+  box-shadow: 0 0 22px rgba(255, 47, 85, 0.34);
+}
+
+body.ot-table-expanded {
+  overflow: hidden;
+}
+
+.ot-card.is-table-expanded {
+  position: fixed;
+  inset: 4px;
+  z-index: 9000;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 22px;
+  background: linear-gradient(145deg, rgba(10, 10, 12, 0.99), rgba(3, 3, 4, 0.99));
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.82), 0 0 34px rgba(255, 47, 85, 0.26);
+  overflow: hidden;
+}
+
+.ot-card.is-table-expanded .ot-card-head {
+  margin-bottom: 14px;
+}
+
+.ot-card.is-table-expanded .ot-table-wrap {
+  max-height: calc(100vh - 118px);
+  overflow: auto;
+}
+
+.ot-card.is-table-expanded .ot-table {
+  min-width: max(100%, 1500px);
+}
+
+.ot-card.is-table-expanded .ot-table th,
+.ot-card.is-table-expanded .ot-table td {
+  padding: 13px 16px;
+}
+
+.ot-card.is-table-expanded .ot-table th:last-child,
+.ot-card.is-table-expanded .ot-table td:last-child {
+  min-width: 150px;
+}
+
+@media (max-width: 720px) {
+  .ot-card.is-table-expanded {
+    inset: 6px;
+    padding: 14px;
+  }
+
+  .ot-card.is-table-expanded .ot-table-wrap {
+    max-height: calc(100vh - 135px);
+  }
+}
+
+/* Refuerzo visual para el modo pantalla completa de tablas */
+.ot-card-head .ot-expand-table-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 170px;
+  min-height: 46px;
+  border: 1px solid var(--ot-red) !important;
+  background: #e83249 !important;
+  color: #fff !important;
+  font-family: inherit !important;
+  font-size: .78rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+.ot-card.is-table-expanded {
+  left: 4px !important;
+  right: 4px !important;
+  top: 4px !important;
+  bottom: 4px !important;
+  border-color: var(--ot-red) !important;
+}
+
+.ot-card.is-table-expanded .ot-table-wrap {
+  width: 100% !important;
+  max-width: none !important;
 }

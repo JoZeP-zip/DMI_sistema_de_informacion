@@ -259,7 +259,7 @@ a {
 
 .admin-content {
   min-width: 0;
-  width: min(100%, 1180px);
+  width: min(100%, 1540px);
   padding: 46px 42px 64px;
 }
 
@@ -672,7 +672,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .dmi-table {
   width: 100%;
-  min-width: 900px;
+  min-width: 1180px;
   border-collapse: collapse;
   color: var(--gris-texto);
 }
@@ -1352,3 +1352,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     width: 100%;
   }
 }
+
+/* Tablas del panel principal mas amplias */
+.table-wrap{scrollbar-color:var(--rojo) rgba(255,255,255,.12);scrollbar-width:thin}
+.table-wrap::-webkit-scrollbar{height:12px;width:12px}
+.table-wrap::-webkit-scrollbar-track{background:rgba(255,255,255,.12)}
+.table-wrap::-webkit-scrollbar-thumb{background:linear-gradient(90deg,var(--rojo),#ff6e82);border:2px solid #070707}
+.dmi-table th:last-child,.dmi-table td:last-child{min-width:130px}

@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -75,9 +76,9 @@
     </section>
 
     <section class="inv-layout">
-      <aside class="inv-card inv-form-card">
-        <h2 class="inv-form-title"><i class="bi bi-plus-square-fill"></i> Nuevo producto</h2>
-        <form action="/admin/inventario/nuevo" method="post">
+      <aside class="inv-card inv-form-card" id="inventoryFormCard">
+        <h2 class="inv-form-title" id="inventoryFormTitle"><i class="bi bi-plus-square-fill"></i> Nuevo producto</h2>
+        <form action="/admin/inventario/nuevo" method="post" id="inventoryProductForm" data-default-action="/admin/inventario/nuevo">
           <label>Nombre</label>
           <input type="text" name="nombre" required>
 
@@ -100,7 +101,13 @@
           <label>Imagen URL</label>
           <input type="url" name="imagen_url">
 
-          <button type="submit"><i class="bi bi-floppy-fill"></i> Guardar producto</button>
+          <label class="inv-check-row">
+            <input type="checkbox" name="activo" id="inventoryActivo" checked>
+            Producto activo
+          </label>
+
+          <button type="submit" id="inventorySubmitButton"><i class="bi bi-floppy-fill"></i> Guardar producto</button>
+          <button class="inv-reset-edit" type="button" id="inventoryResetButton" hidden><i class="bi bi-x-lg"></i> Cancelar edicion</button>
         </form>
       </aside>
 
@@ -129,7 +136,7 @@
                   <th>Categoria</th>
                   <th>Departamento</th>
                   <th>Activo</th>
-                  <th>Guardar</th>
+                  <th>Editar</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,19 +149,32 @@
                         <span class="inv-no-img"><i class="bi bi-image"></i></span>
                       {% endif %}
                     </td>
-                    <td><input form="inv-form-{{ item.id }}" name="nombre" value="{{ item.nombre }}" required></td>
-                    <td><input form="inv-form-{{ item.id }}" name="codigo" value="{{ item.codigo or '' }}"></td>
-                    <td><input form="inv-form-{{ item.id }}" type="number" step="0.01" name="precio_costo" value="{{ item.precio_costo }}"></td>
-                    <td><input form="inv-form-{{ item.id }}" type="number" step="0.01" name="precio_venta" value="{{ item.precio_venta }}"></td>
-                    <td><input form="inv-form-{{ item.id }}" type="number" name="cantidad" value="{{ item.cantidad }}"></td>
-                    <td><input form="inv-form-{{ item.id }}" name="categoria" value="{{ item.categoria or '' }}"></td>
-                    <td><input form="inv-form-{{ item.id }}" name="departamento" value="{{ item.departamento or '' }}"></td>
-                    <td class="inv-center"><input form="inv-form-{{ item.id }}" type="checkbox" name="activo" {% if item.activo %}checked{% endif %}></td>
+                    <td><input readonly value="{{ item.nombre }}"></td>
+                    <td><input readonly value="{{ item.codigo or '' }}"></td>
+                    <td><input readonly type="number" step="0.01" value="{{ item.precio_costo }}"></td>
+                    <td><input readonly type="number" step="0.01" value="{{ item.precio_venta }}"></td>
+                    <td><input readonly type="number" value="{{ item.cantidad }}"></td>
+                    <td><input readonly value="{{ item.categoria or '' }}"></td>
+                    <td><input readonly value="{{ item.departamento or '' }}"></td>
+                    <td class="inv-center"><input type="checkbox" disabled {% if item.activo %}checked{% endif %}></td>
                     <td>
-                      <form id="inv-form-{{ item.id }}" action="/admin/inventario/{{ item.id }}/actualizar" method="post">
-                        <input type="hidden" name="imagen_url" value="{{ item.imagen_url or '' }}">
-                        <button class="inv-save" type="submit"><i class="bi bi-floppy"></i></button>
-                      </form>
+                      <button
+                        class="inv-save inv-edit-product"
+                        type="button"
+                        title="Editar producto"
+                        data-id="{{ item.id }}"
+                        data-nombre="{{ item.nombre|e }}"
+                        data-codigo="{{ (item.codigo or '')|e }}"
+                        data-precio-costo="{{ item.precio_costo or 0 }}"
+                        data-precio-venta="{{ item.precio_venta or 0 }}"
+                        data-cantidad="{{ item.cantidad or 0 }}"
+                        data-categoria="{{ (item.categoria or '')|e }}"
+                        data-departamento="{{ (item.departamento or '')|e }}"
+                        data-imagen-url="{{ (item.imagen_url or '')|e }}"
+                        data-activo="{{ '1' if item.activo else '0' }}"
+                      >
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
                     </td>
                   </tr>
                 {% endfor %}
@@ -203,6 +223,54 @@
           : '<i class="bi bi-eye-slash"></i> Ocultar tabla';
       });
     })();
+
+    (function () {
+      const formCard = document.getElementById("inventoryFormCard");
+      const form = document.getElementById("inventoryProductForm");
+      const title = document.getElementById("inventoryFormTitle");
+      const submitButton = document.getElementById("inventorySubmitButton");
+      const resetButton = document.getElementById("inventoryResetButton");
+      const activeInput = document.getElementById("inventoryActivo");
+      if (!form || !title || !submitButton || !resetButton) return;
+
+      function setField(name, value) {
+        if (form.elements[name]) form.elements[name].value = value || "";
+      }
+
+      function resetForm() {
+        form.action = form.dataset.defaultAction;
+        form.reset();
+        if (activeInput) activeInput.checked = true;
+        title.innerHTML = '<i class="bi bi-plus-square-fill"></i> Nuevo producto';
+        submitButton.innerHTML = '<i class="bi bi-floppy-fill"></i> Guardar producto';
+        resetButton.hidden = true;
+        formCard.classList.remove("is-editing");
+        form.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      document.querySelectorAll(".inv-edit-product").forEach(function (editButton) {
+        editButton.addEventListener("click", function () {
+          form.action = "/admin/inventario/" + editButton.dataset.id + "/actualizar";
+          title.innerHTML = '<i class="bi bi-pencil-square"></i> Editar producto';
+          submitButton.innerHTML = '<i class="bi bi-floppy-fill"></i> Guardar cambios';
+          setField("nombre", editButton.dataset.nombre);
+          setField("codigo", editButton.dataset.codigo);
+          setField("precio_costo", editButton.dataset.precioCosto || "0");
+          setField("precio_venta", editButton.dataset.precioVenta || "0");
+          setField("cantidad", editButton.dataset.cantidad || "0");
+          setField("categoria", editButton.dataset.categoria);
+          setField("departamento", editButton.dataset.departamento);
+          setField("imagen_url", editButton.dataset.imagenUrl);
+          if (activeInput) activeInput.checked = editButton.dataset.activo === "1";
+          resetButton.hidden = false;
+          formCard.classList.add("is-editing");
+          formCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      });
+
+      resetButton.addEventListener("click", resetForm);
+    })();
   </script>
 </body>
 </html>
+

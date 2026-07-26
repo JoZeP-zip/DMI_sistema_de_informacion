@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthService } from './services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
@@ -211,10 +211,10 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
       const rawMessage = String(err?.message || "").toLowerCase();
 
       const looksLikeConnectionError =
-        /failed to fetch|networkerror|network error|conexion|conexión|timeout/.test(rawMessage);
+        /failed to fetch|networkerror|network error|conexion|conexion|timeout/.test(rawMessage);
 
       const looksLikeWrongPassword =
-        /contrasena|contraseña|password|clave incorrecta/.test(rawMessage);
+        /contrasena|contrasena|password|clave incorrecta/.test(rawMessage);
 
       const looksLikeUnknownEmail =
         /usuario no existe|correo no registrado|no encontr|not found|no existe|no registrad/.test(rawMessage);
@@ -300,28 +300,17 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   const [apellidos, setApellidos] = useState('');
   const [documento, setDocumento] = useState('');
   const [tipodedocumento, setTipodedocumento] = useState('CC');
-  const [fechadenacimiento, setFechadenacimiento] = useState('');
   const [telefono, setTelefono] = useState('');
   const [usuarionombre, setUsuarionombre] = useState('');
   const [error, setError] = useState('');
-  const fechaNacimientoRef = useRef(null);
-
-  const openDatePicker = () => {
-    const el = fechaNacimientoRef.current;
-    if (!el) return;
-    if (typeof el.showPicker === 'function') {
-      el.showPicker();
-    } else {
-      el.focus();
-      el.click();
-    }
-  };
+  const [success, setSuccess] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
 
-    const requiredFields = { nombre, apellidos, usuarionombre, documento, fechadenacimiento, telefono, email, password };
+    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, email, password };
     const missingField = Object.values(requiredFields).some((value) => !String(value).trim());
 
     if (missingField) {
@@ -354,7 +343,6 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
           apellidos,
           documento: documento ? Number(documento) : undefined,
           tipodedocumento,
-          fechadenacimiento,
           telefono,
           usuarionombre,
           email,
@@ -368,14 +356,10 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
       if (!response.ok) {
         setError(data.error || data.message || data.detail || 'Error al registrar el usuario.');
       } else {
-        openConfirm({
-          kicker: "Registro exitoso",
-          title: "Cuenta creada con exito",
-          message: "Tu cuenta se registro correctamente. Inicia sesion para continuar.",
-          confirmText: "Ir al login",
-          cancelText: "Cerrar",
-          onConfirm: onRegisterSuccess,
-        });
+        setSuccess(true);
+        setTimeout(() => {
+          onRegisterSuccess(); // Redirige al login tras 2 segundos
+        }, 2000);
       }
     } catch (err) {
       setError(err.message || 'Error de conexion con el servidor backend.');
@@ -388,6 +372,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
         Crear <span className="text-danger">Cuenta</span>
       </h3>
       {error && <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger">{error}</div>}
+      {success && <div className="alert alert-success small py-2 rounded-0 border-success bg-black text-success">Registro exitoso! Redirigiendo al login...</div>}
       <form onSubmit={handleRegister} noValidate>
         <div className="mb-3">
           <label className="form-label text-white small fw-bold">NOMBRE COMPLETO</label>
@@ -447,53 +432,6 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
           />
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">FECHA DE NACIMIENTO</label>
-          <div className="dmi-date-field">
-            <input 
-              type="date" 
-              ref={fechaNacimientoRef}
-              className="form-control bg-black text-white border-secondary rounded-0 focus-red dmi-date-input"
-              value={fechadenacimiento}
-              onChange={(e) => setFechadenacimiento(e.target.value)}
-              required 
-            />
-            <button
-              type="button"
-              className="dmi-date-trigger"
-              onClick={openDatePicker}
-              aria-label="Abrir calendario"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="5" width="18" height="16" rx="2" />
-                <path d="M16 3v4M8 3v4M3 10h18" />
-              </svg>
-            </button>
-          </div>
-          <style>{`
-            .dmi-date-field { position: relative; }
-            .dmi-date-input { padding-right: 46px; color-scheme: dark; }
-            .dmi-date-input::-webkit-calendar-picker-indicator { opacity: 0; pointer-events: none; }
-            .dmi-date-trigger {
-              position: absolute;
-              top: 6px;
-              right: 6px;
-              bottom: 6px;
-              width: 34px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: #1a1a1a;
-              border: 1px solid #ff2f55;
-              border-radius: 2px;
-              color: #ff2f55;
-              cursor: pointer;
-              padding: 0;
-              transition: background .15s ease, color .15s ease;
-            }
-            .dmi-date-trigger:hover { background: #ff2f55; color: #000; }
-          `}</style>
-        </div>
-        <div className="mb-3">
           <label className="form-label text-white small fw-bold">TELEFONO</label>
           <input 
             type="tel" 
@@ -534,411 +472,11 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   );
 };
 
-// Panel para el Usuario Comun
-const DashboardUsuarioViejo = ({ user, showNotice, openConfirm }) => {
-  const [citas, setCitas] = useState([
-    { id: 1, fecha: '2026-06-25', hora: '09:00 AM', vehiculo: 'Porsche 911 GT3', servicio: 'Calibracion de Inyeccion', estado: 'En Espera' },
-    { id: 2, fecha: '2026-06-12', hora: '02:30 PM', vehiculo: 'Porsche 911 GT3', servicio: 'Escaneo OBD-II', estado: 'Completado' }
-  ]);
-
-  const handleCancelarCita = (id) => {
-    const cita = citas.find((item) => item.id === id);
-
-    openConfirm({
-      kicker: "Accion requerida",
-      title: "Cancelar cita",
-      message: "Revisa la cita antes de continuar. Esta accion quitara la cita de tu agenda.",
-      confirmText: "Cancelar cita",
-      cancelText: "Volver",
-      details: [
-        { label: "Vehiculo", value: cita?.vehiculo || "No disponible" },
-        { label: "Servicio", value: cita?.servicio || "No disponible" },
-        { label: "Fecha", value: cita ? `${cita.fecha} - ${cita.hora}` : "No disponible" }
-      ],
-      onConfirm: () => {
-        setCitas(citas.filter(cita => cita.id !== id));
-        showNotice("Cita cancelada", "La cita fue retirada de tu agenda correctamente.");
-      }
-    });
-  };
-
-  const handleEditarCita = (id) => {
-    const cita = citas.find((item) => item.id === id);
-
-    openConfirm({
-      kicker: "Edicion de cita",
-      title: "Modificar cita",
-      message: "Aqui se abrira el formulario para ajustar fecha, hora o servicio de esta cita.",
-      confirmText: "Entendido",
-      details: [
-        { label: "Cita", value: `#${id}` },
-        { label: "Vehiculo", value: cita?.vehiculo || "No disponible" }
-      ],
-      onConfirm: () => showNotice("Formulario pendiente", "La siguiente mejora sera conectar aqui el formulario real de edicion.")
-    });
-  };
-
-  return (
-    <div>
-      <h3 className="text-uppercase fw-black border-bottom border-danger pb-2 mb-4">
-        Mi <span className="text-danger">Garaje y Citas</span>
-      </h3>
-      <p className="mb-4">Hola, <span className="text-danger fw-bold">{getDisplayName(user)}</span>. Desde aqui puedes gestionar los servicios programados para tu unidad.</p>
-      
-      <div className="table-responsive bg-black border border-secondary p-3">
-        <h6 className="fw-bold text-uppercase tracking-widest text-muted mb-3">Historial de Citas Agendadas</h6>
-        <table className="table table-dark table-hover align-middle mb-0">
-          <thead>
-            <tr className="text-muted small border-bottom border-danger">
-              <th scope="col" className="py-3">FECHA</th>
-              <th scope="col" className="py-3">HORA</th>
-              <th scope="col" className="py-3">VEHICULO</th>
-              <th scope="col" className="py-3">SERVICIO</th>
-              <th scope="col" className="py-3">ESTADO</th>
-              <th scope="col" className="py-3 text-center">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody>
-            {citas.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="text-center py-4 text-muted small">
-                  No tienes citas registradas actualmente.
-                </td>
-              </tr>
-            ) : (
-              citas.map((cita) => (
-                <tr key={cita.id} className="border-bottom border-secondary border-opacity-25">
-                  <td className="fw-bold">{cita.fecha}</td>
-                  <td>{cita.hora}</td>
-                  <td><span className="text-danger">🚗</span> {cita.vehiculo}</td>
-                  <td>{cita.servicio}</td>
-                  <td>
-                    <span className={`badge rounded-0 py-1 px-2 ${cita.estado === 'Completado' ? 'bg-secondary text-white' : 'bg-danger'}`}>
-                      {cita.estado.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="text-center">
-                    <div className="d-flex justify-content-center gap-2">
-                      <button 
-                        className="btn btn-sm btn-outline-light rounded-0 fw-bold px-2 py-1" 
-                        onClick={() => handleEditarCita(cita.id)}
-                        disabled={cita.estado === 'Completado'}
-                      >
-                        MODIFICAR
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-danger rounded-0 fw-bold px-2 py-1" 
-                        onClick={() => handleCancelarCita(cita.id)}
-                        disabled={cita.estado === 'Completado'}
-                      >
-                         CANCELAR
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
 const heroSlides = [
   './assets/images/like.jpg',
   './assets/images/akira.jpg',
   './assets/images/fotoautos.jpg',
 ];
-
-const DashboardUsuario = ({ user, openConfirm, goToView }) => {
-  const [garage, setGarage] = useState(null);
-  const [pendingCart, setPendingCart] = useState([]);
-  const [pendingCartSessions, setPendingCartSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let mounted = true;
-    const token = localStorage.getItem("token");
-    const emailKey = String(localStorage.getItem("email") || user?.email || "invitado").toLowerCase();
-    const cartKey = `dmiPendingCart_${emailKey}`;
-    const cartSessionsKey = `dmiPendingCartSessions_${emailKey}`;
-
-    const loadGarage = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const savedCart = localStorage.getItem(cartKey);
-        if (mounted) {
-          try {
-            setPendingCart(savedCart ? JSON.parse(savedCart) : []);
-            const savedSessions = JSON.parse(localStorage.getItem(cartSessionsKey) || "{}");
-            let sessions = Object.values(savedSessions)
-              .filter((session) => session && Array.isArray(session.items) && session.items.length)
-              .sort((a, b) => String(b.fecha || "").localeCompare(String(a.fecha || "")));
-            const currentCart = savedCart ? JSON.parse(savedCart) : [];
-            if (!sessions.length && currentCart.length) {
-              const sessionDate = (localStorage.getItem("dmiSessionStartedAt") || new Date().toISOString()).slice(0, 10);
-              sessions = [{
-                fecha: sessionDate,
-                items: currentCart,
-                updatedAt: new Date().toISOString()
-              }];
-            }
-            setPendingCartSessions(sessions);
-          } catch (cartError) {
-            setPendingCart([]);
-            setPendingCartSessions([]);
-          }
-        }
-
-        const response = await fetch(`${getApiBaseUrl()}/api/mi-garage`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          credentials: "include"
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "No se pudo cargar tu garaje.");
-        if (mounted) setGarage(data);
-      } catch (err) {
-        if (mounted) setError(err.message || "No se pudo cargar tu garaje.");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    loadGarage();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const usuario = garage?.usuario || {};
-  const vehiculos = garage?.vehiculos || [];
-  const citas = garage?.citas || [];
-  const productos = garage?.productos || [];
-  const pagos = garage?.pagos || [];
-  const activeVehicle = vehiculos[0];
-  const pendingCitas = citas.filter((cita) => String(cita.estado || "").toLowerCase() !== "completada");
-  const completedCitas = citas.filter((cita) => String(cita.estado || "").toLowerCase() === "completada");
-  const pendingSessionsCount = pendingCartSessions.reduce((acc, session) => acc + (session.items?.length || 0), 0);
-
-  const money = (value) => {
-    const number = Number(value || 0);
-    return number ? `$${number.toLocaleString("es-CO")}` : "Sin valor";
-  };
-  const displayDate = (value) => value ? String(value).slice(0, 10) : "Sin fecha";
-  const displayHour = (value) => value ? String(value).slice(0, 5) : "Sin hora";
-  const statusClass = (estado) => {
-    const normalized = String(estado || "").toLowerCase();
-    if (normalized.includes("complet")) return "done";
-    if (normalized.includes("cancel")) return "danger";
-    return "active";
-  };
-
-  const showCitaDetail = (cita) => {
-    openConfirm({
-      kicker: "Detalle de cita",
-      title: cita.motivo || "Cita registrada",
-      message: "Esta es la informacion guardada para tu servicio.",
-      confirmText: "Entendido",
-      details: [
-        { label: "Vehiculo", value: cita.vehiculo || cita.placa || "No disponible" },
-        { label: "Fecha", value: `${displayDate(cita.fecha)} - ${displayHour(cita.hora)}` },
-        { label: "Estado", value: cita.estado || "pendiente" },
-        { label: "Notas", value: cita.notas || "Sin notas" }
-      ],
-      onConfirm: () => {}
-    });
-  };
-
-  const sessionTotal = (session) =>
-    (session.items || []).reduce((acc, item) => acc + Number(item.precioVenta || 0) * Number(item.quantity || 1), 0);
-
-  const showPendingCart = (session) => {
-    const items = session?.items || pendingCart;
-    if (!items.length) return;
-
-    openConfirm({
-      kicker: "Productos pendientes",
-      title: `Sesion del ${displayDate(session?.fecha || new Date().toISOString())}`,
-      message: "Estos son los productos que agregaste al carrito ese dia.",
-      confirmText: "Ir al catalogo",
-      cancelText: "Cerrar",
-      productItems: items,
-      onConfirm: () => goToView("catalogo")
-    });
-  };
-
-  if (loading) {
-    return <section className="user-garage-shell"><div className="user-garage-loading">Cargando tu cuenta...</div></section>;
-  }
-
-  if (error) {
-    return (
-      <section className="user-garage-shell">
-        <div className="user-garage-empty">
-          <h3>No pudimos cargar tu cuenta</h3>
-          <p>{error}</p>
-          <button type="button" onClick={() => window.location.reload()}>Intentar de nuevo</button>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="user-garage-shell">
-      <div className="user-garage-hero">
-        <div>
-          <span>Centro del cliente</span>
-          <h3>Mi <strong>Cuenta</strong></h3>
-          <p>
-            Hola, <b>{usuario.nombre || getDisplayName(user)}</b>. Desde aqui administras tus vehiculos,
-            agregas nuevos, agendas citas y consultas tu historial en DMI.
-          </p>
-        </div>
-        <div className="user-garage-actions">
-          <button type="button" onClick={() => goToView("registro")}>Agregar vehiculo</button>
-          <button type="button" onClick={() => goToView("citas")}>Agendar cita</button>
-        </div>
-      </div>
-
-      <div className="user-garage-stats">
-        <article><span>Vehiculos</span><strong>{vehiculos.length}</strong></article>
-        <article><span>Citas activas</span><strong>{pendingCitas.length}</strong></article>
-        <article><span>Historial</span><strong>{completedCitas.length}</strong></article>
-        <article><span>Productos pendientes</span><strong>{pendingSessionsCount || pendingCart.length}</strong></article>
-      </div>
-
-      <div className="user-garage-grid">
-        <section className="user-garage-card user-garage-vehicle">
-          <div className="user-garage-card-head">
-            <span>Vehiculos de mi cuenta</span>
-            <button type="button" onClick={() => goToView("registro")}>Actualizar</button>
-          </div>
-          {activeVehicle ? (
-            <div className="vehicle-profile">
-              <div className="vehicle-plate">{activeVehicle.placa || "SIN PLACA"}</div>
-              <h4>{[activeVehicle.marca, activeVehicle.modelo].filter(Boolean).join(" ") || activeVehicle.descripcionvehiculo || "Vehiculo registrado"}</h4>
-              <div className="vehicle-meta">
-                <span>Tipo: <b>{activeVehicle.tipo_vehiculo || "No definido"}</b></span>
-                <span>Motor: <b>{activeVehicle.motor || "No definido"}</b></span>
-                <span>Capacidad: <b>{activeVehicle.capacidad || "No definida"}</b></span>
-              </div>
-            </div>
-          ) : (
-            <div className="user-garage-empty compact">
-              <h4>No tienes vehiculo registrado</h4>
-              <p>Registra tu unidad para agendar servicios mas rapido.</p>
-            </div>
-          )}
-        </section>
-
-        <section className="user-garage-card">
-          <div className="user-garage-card-head">
-            <span>Proximas citas</span>
-            <button type="button" onClick={() => goToView("citas")}>Nueva cita</button>
-          </div>
-          <div className="appointment-list">
-            {citas.length ? citas.slice(0, 4).map((cita) => (
-              <button type="button" className="appointment-item" key={cita.idcita} onClick={() => showCitaDetail(cita)}>
-                <div>
-                  <strong>{cita.motivo || "Servicio programado"}</strong>
-                  <span>{displayDate(cita.fecha)} - {displayHour(cita.hora)} - {cita.placa || cita.vehiculo || "Vehiculo"}</span>
-                </div>
-                <em className={statusClass(cita.estado)}>{cita.estado || "pendiente"}</em>
-              </button>
-            )) : (
-              <div className="user-garage-empty compact">
-                <h4>No hay citas registradas</h4>
-                <p>Agenda tu primer servicio desde Mi Cuenta.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <div className="user-garage-grid lower">
-        <section className="user-garage-card">
-          <div className="user-garage-card-head">
-            <span>Productos pendientes</span>
-            <button type="button" onClick={() => goToView("catalogo")}>Continuar compra</button>
-          </div>
-          <div className="purchase-list">
-            {pendingCartSessions.length ? (
-              <>
-                {pendingCartSessions.slice(0, 4).map((session) => (
-                  <button
-                    type="button"
-                    className="pending-cart-summary"
-                    key={session.fecha}
-                    onClick={() => showPendingCart(session)}
-                  >
-                    <div>
-                      <strong>Sesion del {displayDate(session.fecha)}</strong>
-                      <span>
-                        {session.items.length} producto{session.items.length === 1 ? "" : "s"} - Total {money(sessionTotal(session))}
-                      </span>
-                    </div>
-                    <em>Ver productos</em>
-                  </button>
-                ))}
-              </>
-            ) : (
-              <div className="user-garage-empty compact">
-                <h4>No tienes productos pendientes</h4>
-                <p>Los productos que agregues al carrito se guardaran por fecha aunque cierres sesion.</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="user-garage-card">
-          <div className="user-garage-card-head">
-            <span>Productos comprados</span>
-            <button type="button" onClick={() => goToView("catalogo")}>Ir al catalogo</button>
-          </div>
-          <div className="purchase-list">
-            {productos.length ? productos.slice(0, 5).map((producto, index) => (
-              <article key={`${producto.pedido_idpedido || "producto"}-${index}`} className="purchase-item">
-                <div>
-                  <strong>{producto.descripcionproductos || "Producto"}</strong>
-                  <span>{producto.codigoproductos || "Sin codigo"} - Cantidad {producto.cantidad || 1}</span>
-                </div>
-                <b>{money(producto.valor_precio)}</b>
-              </article>
-            )) : (
-              <div className="user-garage-empty compact">
-                <h4>Sin compras guardadas</h4>
-                <p>Cuando finalices compras en el catalogo apareceran aqui.</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="user-garage-card">
-          <div className="user-garage-card-head">
-            <span>Facturas y pagos</span>
-          </div>
-          <div className="payment-list">
-            {pagos.length ? pagos.slice(0, 4).map((pago, index) => (
-              <article key={`${pago.id || "pago"}-${index}`} className="payment-item">
-                <span>{displayDate(pago.fecha)}</span>
-                <strong>{money(pago.total)}</strong>
-                <em>{pago.metodo || "Metodo no registrado"}</em>
-              </article>
-            )) : (
-              <div className="user-garage-empty compact">
-                <h4>Sin pagos registrados</h4>
-                <p>Aun no hay pagos asociados a tu cuenta.</p>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-    </section>
-  );
-};
 
 const BackButton = ({ onClick, user }) => (
   <div className="text-center mt-5">
@@ -1534,3 +1072,4 @@ function App() {
 }
 
 export default App;
+

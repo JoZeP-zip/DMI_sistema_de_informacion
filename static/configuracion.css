@@ -736,3 +736,11 @@ textarea.form-control {
     width: 100%;
   }
 }
+
+/* Tablas de configuracion mas comodas */
+.table-responsive{overflow-x:auto;scrollbar-color:var(--dmi-red) rgba(255,255,255,.12);scrollbar-width:thin}
+.table-responsive::-webkit-scrollbar{height:12px;width:12px}
+.table-responsive::-webkit-scrollbar-track{background:rgba(255,255,255,.12)}
+.table-responsive::-webkit-scrollbar-thumb{background:linear-gradient(90deg,var(--dmi-red),#ff7a8c);border:2px solid #070707}
+.table-responsive .table{min-width:980px}
+.table-responsive .table th:last-child,.table-responsive .table td:last-child{min-width:160px}
