@@ -40,7 +40,7 @@
 }
 
 /* =============================================
-   2. BOTÓN RACING (Dynamic UI)
+   2. BOTON RACING (Dynamic UI)
    ============================================= */
 .btn-racing {
     padding: 12px 30px;
@@ -61,7 +61,7 @@
 }
 
 /* =============================================
-   3. GALERÍA RACING (Grid Cards)
+   3. GALERIA RACING (Grid Cards)
    ============================================= */
 .gallery-card {
     position: relative;
@@ -1502,4 +1502,24 @@ body {
 .user-vehicle-count {
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.78rem;
+}
+
+.user-service-item {
+    border-color: rgba(255, 47, 85, 0.45);
+}
+
+.user-detail-note {
+    display: grid;
+    gap: 6px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 47, 85, 0.18);
+}
+
+.user-detail-note strong {
+    color: #ffffff;
+}
+
+.user-detail-note span {
+    color: rgba(255, 255, 255, 0.66);
+    line-height: 1.5;
 }

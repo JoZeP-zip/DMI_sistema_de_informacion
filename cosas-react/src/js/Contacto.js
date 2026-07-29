@@ -1,18 +1,21 @@
 import React from 'react';
 import '../styles/Contacto.css';
+import { showDmiSuccess } from './DmiMessages';
 
 const Contacto = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("¡Mensaje enviado a Disol Motors! Nos pondremos en contacto pronto.");
-    e.target.reset(); // Limpia el formulario después de enviar
+    showDmiSuccess(
+      'Mensaje enviado',
+      'Recibimos tu mensaje correctamente. El equipo de Disol Motors se pondra en contacto contigo pronto.'
+    );
+    e.target.reset();
   };
 
-  const direccion = "Carrera 2a B, Soacha, Cundinamarca";
+  const direccion = 'Carrera 2a B, Soacha, Cundinamarca';
   const direccionEncoded = encodeURIComponent(direccion);
 
   return (
-    /* El ID es fundamental para que el botón de App.js sepa a dónde bajar */
     <section id="contacto" className="section contacto">
       <div className="section-title">
         <h2>Contacto</h2>
@@ -20,23 +23,22 @@ const Contacto = () => {
       </div>
 
       <div className="contact-container">
-        {/* Información de la Empresa */}
         <div className="contact-info">
-          <h3>¿Listo para potenciar tu vehiculo?</h3>
-          <p>Visítanos en nuestro taller o agenda una cita directamente.</p>
+          <h3>Listo para potenciar tu vehiculo?</h3>
+          <p>Visitanos en nuestro taller o agenda una cita directamente.</p>
 
           <div className="info-item">
-            <span className="icon">📍</span>
+            <span className="icon">DM</span>
             <div>
-              <h4>Ubicación</h4>
+              <h4>Ubicacion</h4>
               <p>{direccion}</p>
             </div>
           </div>
 
           <div className="info-item">
-            <span className="icon">📞</span>
+            <span className="icon">TEL</span>
             <div>
-              <h4>Teléfono</h4>
+              <h4>Telefono</h4>
               <p>
                 <a href="tel:+573133035855">313 303 5855</a><br />
                 <a href="tel:+573172423496">317 242 3496</a><br />
@@ -46,7 +48,7 @@ const Contacto = () => {
           </div>
 
           <div className="info-item">
-            <span className="icon">✉️</span>
+            <span className="icon">@</span>
             <div>
               <h4>Email</h4>
               <p>contacto@disolmotors.com</p>
@@ -60,45 +62,42 @@ const Contacto = () => {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Escríbenos por WhatsApp
+              Escribenos por WhatsApp
             </a>
           </div>
         </div>
 
-        {/* Formulario */}
         <form className="contact-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <input type="text" placeholder="Nombre Completo" required />
+            <input type="text" placeholder="Nombre completo" required />
           </div>
           <div className="form-group">
-            <input type="email" placeholder="Correo Electrónico" required />
+            <input type="email" placeholder="Correo electronico" required />
           </div>
           <div className="form-group">
-            {/* Usamos defaultValue para que React no lance warnings */}
             <select defaultValue="" required>
-              <option value="" disabled>Tipo de Servicio</option>
-              <option value="reprogramacion">Reprogramación (Tuning)</option>
-              <option value="inyeccion">Inyección Electrónica</option>
-              <option value="mantenimiento">Mantenimiento General</option>
-              <option value="diagnostico">Diagnóstico Scanner</option>
+              <option value="" disabled>Tipo de servicio</option>
+              <option value="reprogramacion">Reprogramacion</option>
+              <option value="inyeccion">Inyeccion electronica</option>
+              <option value="mantenimiento">Mantenimiento general</option>
+              <option value="diagnostico">Diagnostico scanner</option>
             </select>
           </div>
           <div className="form-group">
-            <textarea placeholder="Cuéntanos sobre tu vehículo o problema..." rows="5" required></textarea>
+            <textarea placeholder="Cuentanos sobre tu vehiculo o problema..." rows="5" required></textarea>
           </div>
-          <button type="submit" className="btn primary large">Enviar Mensaje</button>
+          <button type="submit" className="btn primary large">Enviar mensaje</button>
         </form>
       </div>
 
-      {/* Cómo llegar */}
       <div className="como-llegar">
         <div className="como-llegar-header">
-          <h3>Cómo llegar</h3>
+          <h3>Como llegar</h3>
         </div>
         <div className="como-llegar-body">
           <div className="mapa-wrapper">
             <iframe
-              title="Ubicación Disol Motors"
+              title="Ubicacion Disol Motors"
               className="mapa-embed"
               src={`https://www.google.com/maps?q=${direccionEncoded}&output=embed`}
               loading="lazy"
@@ -107,17 +106,17 @@ const Contacto = () => {
           </div>
           <div className="mapa-info">
             <div className="info-item">
-              <span className="icon">📍</span>
+              <span className="icon">DM</span>
               <div>
-                <h4>Dirección</h4>
+                <h4>Direccion</h4>
                 <p>{direccion}</p>
               </div>
             </div>
             <div className="info-item">
-              <span className="icon">🕒</span>
+              <span className="icon">8-6</span>
               <div>
                 <h4>Horario</h4>
-                <p>Lun - Sáb: 8:00 am - 6:00 pm</p>
+                <p>Lun - Sab: 8:00 am - 6:00 pm</p>
               </div>
             </div>
             <a

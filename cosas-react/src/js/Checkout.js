@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../styles/Checkout.css";
 import { supabase } from "./supabase";
 import { buildProductInvoice, openInvoiceDocument, saveInvoiceLocally } from "./invoice";
+import { showDmiError, showDmiSuccess } from "./DmiMessages";
 
 const LOGO_DMI = "/assets/images/logoempresaXD.png";
 
@@ -100,7 +101,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
       !formData.direccion ||
       !formData.ciudad
     ) {
-      alert("Completa todos los campos");
+      showDmiError("Informacion incompleta", "Completa todos los campos para poder registrar tu pedido.");
       return;
     }
 
@@ -127,7 +128,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
 
     if (error) {
       console.error(error);
-      alert("No se pudo registrar el pedido");
+      showDmiError("No se pudo registrar", "No se pudo guardar el pedido. Revisa la informacion e intenta nuevamente.");
       return;
     }
 
@@ -148,7 +149,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
     saveInvoiceLocally(invoice, formData.email);
     openInvoiceDocument(invoice);
 
-    alert("Pedido registrado correctamente. Tu factura se abrio en una nueva ventana para descargarla en PDF.");
+    showDmiSuccess("Pedido registrado", "Tu pedido fue guardado correctamente. La factura se abrio en una nueva ventana para descargarla en PDF.");
 
     setFormData({
       nombre: "",
@@ -265,3 +266,4 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
 }
 
 export default Checkout;
+

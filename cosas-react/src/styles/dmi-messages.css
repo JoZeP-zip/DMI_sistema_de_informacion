@@ -1,0 +1,58 @@
+.dmi-message-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.76);
+  backdrop-filter: blur(8px);
+}
+.dmi-message-card {
+  width: min(520px, 94vw);
+  border: 1px solid #ff2f55;
+  background: linear-gradient(145deg, rgba(28, 0, 7, 0.97), rgba(5, 5, 8, 0.98));
+  color: #fff;
+  box-shadow: 0 0 35px rgba(255, 47, 85, 0.22), 0 32px 80px rgba(0, 0, 0, 0.65);
+  padding: 36px;
+  font-family: inherit;
+}
+.dmi-message-kicker {
+  margin: 0 0 12px;
+  color: #ff2f55;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.dmi-message-title {
+  margin: 0 0 16px;
+  color: #ff2f55;
+  font-size: clamp(1.6rem, 4vw, 2.35rem);
+  line-height: 1.05;
+  font-weight: 900;
+}
+.dmi-message-text {
+  margin: 0 0 28px;
+  color: rgba(255, 255, 255, 0.76);
+  line-height: 1.65;
+  font-size: 1rem;
+}
+.dmi-message-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+.dmi-message-btn {
+  min-height: 58px;
+  border: 1px solid #ff2f55;
+  background: #e23345;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+.dmi-message-btn.ghost { background: transparent; }
+.dmi-message-btn:hover { filter: brightness(1.08); }
+.dmi-message-hide-source { display: none !important; }

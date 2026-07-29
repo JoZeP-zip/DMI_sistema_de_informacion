@@ -75,7 +75,7 @@ export const saveInvoiceLocally = (invoice, email = "invitado") => {
 export const openInvoiceDocument = (invoice) => {
   const invoiceWindow = window.open("", "_blank", "width=980,height=900");
   if (!invoiceWindow) {
-    alert("El navegador bloqueo la factura. Permite ventanas emergentes para descargarla.");
+    window.dispatchEvent(new CustomEvent("dmi:message", { detail: { kicker: "Factura", title: "Ventana bloqueada", message: "El navegador bloqueo la factura. Permite ventanas emergentes para descargarla.", confirmText: "Entendido" } }));
     return;
   }
 
@@ -201,3 +201,4 @@ export const openInvoiceDocument = (invoice) => {
   `);
   invoiceWindow.document.close();
 };
+

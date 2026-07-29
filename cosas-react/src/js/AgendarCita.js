@@ -48,6 +48,14 @@ const normalizarHora = (value) => {
   return String(value).slice(0, 5);
 };
 
+const CAMPOS_REQUERIDOS = [
+  { key: 'vehiculos_idvehiculo', titulo: 'Vehiculo', mensaje: 'Selecciona un vehiculo de Mi Garaje para continuar.' },
+  { key: 'descripcion_vehiculo', titulo: 'Descripcion del vehiculo', mensaje: 'Cuentanos brevemente el estado o la falla del vehiculo.' },
+  { key: 'fecha_cita', titulo: 'Fecha', mensaje: 'Selecciona la fecha en la que deseas tu cita.' },
+  { key: 'hora_cita', titulo: 'Hora disponible', mensaje: 'Selecciona una hora disponible para esa fecha.' },
+  { key: 'motivo', titulo: 'Servicio', mensaje: 'Selecciona el servicio que necesitas agendar.' },
+];
+
 const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
   const [confirmado, setConfirmado] = useState(false);
   const [vehiculos, setVehiculos] = useState([]);
@@ -57,6 +65,7 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
   const [loadingData, setLoadingData] = useState(true);
   const [vehiclePromptShown, setVehiclePromptShown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [modalAlerta, setModalAlerta] = useState(null);
   const [formData, setFormData] = useState({
     vehiculos_idvehiculo: '',
     descripcion_vehiculo: '',
@@ -67,6 +76,12 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
   });
 
   const token = localStorage.getItem('token');
+
+  const cerrarAlerta = () => setModalAlerta(null);
+
+  const mostrarAlerta = (etiqueta, titulo, mensaje) => {
+    setModalAlerta({ etiqueta, titulo, mensaje });
+  };
 
   const cargarDatosAgenda = async () => {
     if (!token) {
@@ -173,16 +188,29 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
   const handleCita = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    if (!horariosDisponibles.includes(formData.hora_cita)) {
-      setError('Selecciona una hora disponible para esta fecha.');
-      setLoading(false);
+    const camposFaltantes = CAMPOS_REQUERIDOS.filter(
+      (campo) => !String(formData[campo.key] || '').trim()
+    );
+
+    if (camposFaltantes.length > 1) {
+      mostrarAlerta(
+        'Campos requeridos',
+        'Informacion incompleta',
+        'Por favor completa todos los campos obligatorios para poder confirmar tu cita.'
+      );
       return;
     }
 
-    if (vehiculos.length > 0 && !formData.vehiculos_idvehiculo) {
-      setError('Selecciona un vehiculo de Mi Garaje para continuar.');
+    if (camposFaltantes.length === 1) {
+      mostrarAlerta('Campo requerido', camposFaltantes[0].titulo, camposFaltantes[0].mensaje);
+      return;
+    }
+
+    setLoading(true);
+
+    if (!horariosDisponibles.includes(formData.hora_cita)) {
+      mostrarAlerta('Hora disponible', 'Hora no disponible', 'Esa hora ya no esta disponible, selecciona otra.');
       setLoading(false);
       return;
     }
@@ -208,7 +236,9 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
       setConfirmado(true);
       cargarDatosAgenda();
     } catch (err) {
-      setError(err.message || 'No se pudo agendar la cita.');
+      const message = err.message || 'No se pudo agendar la cita.';
+      setError(message);
+      mostrarAlerta('No se pudo agendar', 'Revisa la cita', message);
     } finally {
       setLoading(false);
     }
@@ -231,6 +261,20 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
 
   return (
     <div className="agendar-cita-wrapper">
+      {modalAlerta && (
+        <div className="ac-modal-overlay" onClick={cerrarAlerta}>
+          <div className="ac-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="ac-modal-label">{modalAlerta.etiqueta}</p>
+            <h3 className="ac-modal-title">{modalAlerta.titulo}</h3>
+            <p className="ac-modal-text">{modalAlerta.mensaje}</p>
+            <div className="ac-modal-actions">
+              <button type="button" className="btn primary" onClick={cerrarAlerta}>
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <section className="section agendar-cita">
         <div className="section-title">
           <div className="ac-icon-row">
@@ -288,7 +332,7 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
                 </div>
               )}
 
-              <form className="cita-form" onSubmit={handleCita}>
+              <form className="cita-form" onSubmit={handleCita} noValidate>
                 <p className="ac-section">Vehiculo</p>
                 <div className="form-group">
                   <label>Selecciona un vehiculo de Mi Garaje <span className="ac-req">*</span></label>
@@ -421,4 +465,3 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
 };
 
 export default AgendarCita;
-

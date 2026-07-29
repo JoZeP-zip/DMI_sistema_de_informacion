@@ -302,13 +302,9 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   const [tipodedocumento, setTipodedocumento] = useState('CC');
   const [telefono, setTelefono] = useState('');
   const [usuarionombre, setUsuarionombre] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess(false);
 
     const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, email, password };
     const missingField = Object.values(requiredFields).some((value) => !String(value).trim());
@@ -354,15 +350,28 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(data.error || data.message || data.detail || 'Error al registrar el usuario.');
+        openConfirm({
+          kicker: "Registro de cuenta",
+          title: "No se pudo crear la cuenta",
+          message: data.error || data.message || data.detail || 'Error al registrar el usuario.',
+          confirmText: "Entendido"
+        });
       } else {
-        setSuccess(true);
-        setTimeout(() => {
-          onRegisterSuccess(); // Redirige al login tras 2 segundos
-        }, 2000);
+        openConfirm({
+          kicker: "Cuenta creada",
+          title: "Registro exitoso",
+          message: "Tu cuenta fue creada correctamente. Ahora puedes iniciar sesion.",
+          confirmText: "Ir al login",
+          onConfirm: onRegisterSuccess
+        });
       }
     } catch (err) {
-      setError(err.message || 'Error de conexion con el servidor backend.');
+      openConfirm({
+        kicker: "Registro de cuenta",
+        title: "No se pudo conectar",
+        message: err.message || 'Error de conexion con el servidor backend.',
+        confirmText: "Entendido"
+      });
     }
   };
 
@@ -371,8 +380,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
       <h3 className="text-center text-uppercase fw-black mb-4">
         Crear <span className="text-danger">Cuenta</span>
       </h3>
-      {error && <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger">{error}</div>}
-      {success && <div className="alert alert-success small py-2 rounded-0 border-success bg-black text-success">Registro exitoso! Redirigiendo al login...</div>}
+
       <form onSubmit={handleRegister} noValidate>
         <div className="mb-3">
           <label className="form-label text-white small fw-bold">NOMBRE COMPLETO</label>
@@ -531,6 +539,28 @@ function App() {
       }
     });
   };
+
+  useEffect(() => {
+    const handleDmiMessage = (event) => {
+      const detail = event.detail || {};
+      setDialog({
+        kicker: detail.kicker || "Mensaje del sistema",
+        title: detail.title || "Aviso",
+        message: detail.message || "",
+        confirmText: detail.confirmText || "Entendido",
+        cancelText: detail.cancelText || null,
+        details: detail.details || null,
+        productItems: detail.productItems || null,
+        onConfirm: () => {
+          setDialog(null);
+          if (typeof detail.onConfirm === "function") detail.onConfirm();
+        }
+      });
+    };
+
+    window.addEventListener("dmi:message", handleDmiMessage);
+    return () => window.removeEventListener("dmi:message", handleDmiMessage);
+  }, []);
 
   useEffect(() => {
     if (window.location.pathname === '/login') {
@@ -1072,4 +1102,5 @@ function App() {
 }
 
 export default App;
+
 

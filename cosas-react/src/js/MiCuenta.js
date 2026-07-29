@@ -114,7 +114,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const resumen = data?.resumen || {};
   const usuario = data?.usuario || {};
   const nombre = usuario.nombre || localStorage.getItem('nombre') || 'cliente';
-  const vehiculosCuenta = data?.vehiculos || [];
+  const vehiculosCuenta = useMemo(() => data?.vehiculos || [], [data]);
 
   useEffect(() => {
     if (!vehiculoSeleccionadoId && vehiculosCuenta.length) {
@@ -138,6 +138,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     if (!vehiculoIdActual) return data?.citas || [];
     return (data?.citas || []).filter((cita) => String(cita.idvehiculo || cita.vehiculos_idvehiculo) === String(vehiculoIdActual));
   }, [data, vehiculoIdActual]);
+  const diagnosticosVehiculo = useMemo(() => (data?.diagnosticos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
   const serviciosVehiculo = useMemo(() => (data?.servicios_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
   const repuestosVehiculo = useMemo(() => (data?.repuestos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
   const facturasVehiculo = useMemo(() => (data?.facturas || []).filter((factura) => ordenIdsVehiculo.has(factura.orden_id)), [data, ordenIdsVehiculo]);
@@ -153,6 +154,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     });
   }, [ordenesVehiculo]);
 
+  const diagnosticosPorOrden = (ordenId) => diagnosticosVehiculo.filter((item) => item.orden_id === ordenId);
   const serviciosPorOrden = (ordenId) => serviciosVehiculo.filter((item) => item.orden_id === ordenId);
   const repuestosPorOrden = (ordenId) => repuestosVehiculo.filter((item) => item.orden_id === ordenId);
   const facturaPorOrden = (ordenId) => facturasVehiculo.find((item) => item.orden_id === ordenId);
@@ -206,6 +208,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const abrirOrden = (orden) => {
     setOrdenActiva({
       orden,
+      diagnosticos: diagnosticosPorOrden(orden.idorden),
       servicios: serviciosPorOrden(orden.idorden),
       repuestos: repuestosPorOrden(orden.idorden),
       factura: facturaPorOrden(orden.idorden),
@@ -214,10 +217,11 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
 
   const verHistorial = (evento) => {
     const orden = ordenesVehiculo.find((item) => item.idorden === evento.orden_id);
+    const diagnosticos = diagnosticosPorOrden(evento.orden_id);
     const servicios = serviciosPorOrden(evento.orden_id);
     const repuestos = repuestosPorOrden(evento.orden_id);
     const factura = facturasVehiculo.find((item) => item.idfactura === evento.factura_id || item.orden_id === evento.orden_id);
-    setHistorialActivo({ evento, orden, servicios, repuestos, factura });
+    setHistorialActivo({ evento, orden, diagnosticos, servicios, repuestos, factura });
   };
 
   if (loading) {
@@ -324,6 +328,20 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
             </div>
           ) : <EmptyState icon="bi-calendar-x" text="No tienes citas registradas." />}
         </Section>
+
+        <Section title="Servicios realizados" icon="bi-tools">
+          {serviciosVehiculo.length ? (
+            <div className="user-account-list">
+              {serviciosVehiculo.slice(0, 8).map((item) => (
+                <div className="user-account-item user-service-item" key={item.iddetalle_servicio}>
+                  <strong>{clean(item.descripcion || item.descripcionservicio, 'Servicio tecnico')}</strong>
+                  <span>Cantidad {clean(item.cantidad, 1)} | {money(item.subtotal)}</span>
+                  <small>Orden #{item.orden_id}</small>
+                </div>
+              ))}
+            </div>
+          ) : <EmptyState icon="bi-tools" text="Todavia no hay servicios realizados en tus ordenes." />}
+        </Section>
         <Section title="Repuestos usados" icon="bi-box-seam-fill">
           {repuestosVehiculo.length ? (
             <div className="user-account-list">
@@ -382,6 +400,13 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
             </div>
             <OrderSteps estado={ordenActiva.orden.estado} />
             <p className="user-detail-description">{clean(ordenActiva.orden.motivo_ingreso || ordenActiva.orden.observaciones_cliente, 'Sin descripcion registrada.')}</p>
+            <h3>Diagnosticos registrados</h3>
+            {ordenActiva.diagnosticos.length ? ordenActiva.diagnosticos.map((item) => (
+              <div className="user-detail-note" key={item.iddiagnostico}>
+                <strong>{clean(item.diagnostico_tecnico, 'Diagnostico tecnico')}</strong>
+                <span>{clean(item.recomendacion, 'Sin recomendacion registrada.')}</span>
+              </div>
+            )) : <p className="user-muted">No hay diagnosticos registrados para esta orden.</p>}
 
             <h3>Servicios realizados</h3>
             {ordenActiva.servicios.length ? ordenActiva.servicios.map((item) => (
@@ -418,6 +443,13 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
               <article><span>Costo</span><strong>{money(historialActivo.evento.costo_total || historialActivo.factura?.total)}</strong></article>
             </div>
             <p className="user-detail-description">{clean(historialActivo.evento.descripcion, 'Sin descripcion registrada.')}</p>
+            <h3>Diagnosticos registrados</h3>
+            {historialActivo.diagnosticos.length ? historialActivo.diagnosticos.map((item) => (
+              <div className="user-detail-note" key={item.iddiagnostico}>
+                <strong>{clean(item.diagnostico_tecnico, 'Diagnostico tecnico')}</strong>
+                <span>{clean(item.recomendacion, 'Sin recomendacion registrada.')}</span>
+              </div>
+            )) : <p className="user-muted">No hay diagnosticos registrados para esta orden.</p>}
 
             <h3>Servicios realizados</h3>
             {historialActivo.servicios.length ? historialActivo.servicios.map((item) => (
@@ -444,4 +476,6 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     </main>
   );
 }
+
+
 

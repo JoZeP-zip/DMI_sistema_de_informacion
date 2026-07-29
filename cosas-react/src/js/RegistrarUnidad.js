@@ -6,6 +6,7 @@ import {
   faEye, faEyeSlash,
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/RegistrarUnidad.css';
+import { showDmiError, showDmiSuccess } from './DmiMessages';
 
 const getApiBaseUrl = () => {
   const { protocol, hostname } = window.location;
@@ -48,7 +49,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
   const [showPw, setShowPw]         = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState('');
+  const [, setError]                = useState('');
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
 
   // ── Cargar tipos de vehículo desde la BD ───────────────────────
@@ -63,7 +64,9 @@ export default function RegistrarUnidad({ onComplete } = {}) {
       })
       .catch((err) => {
         setTiposVehiculo([]);
-        setError(err.message || 'No se pudieron cargar los tipos de vehiculo desde Supabase.');
+        const message = err.message || 'No se pudieron cargar los tipos de vehiculo desde Supabase.';
+        setError(message);
+        showDmiError('No se pudieron cargar los tipos', message);
       });
   }, []);
 
@@ -202,14 +205,17 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
       if (vehRes.ok && !vehData.error) {
         setSubmitted(true);
+        showDmiSuccess('Vehiculo registrado', 'El vehiculo quedo guardado correctamente en tu cuenta.');
         if (onComplete) window.setTimeout(onComplete, 900);
       } else {
         if (vehData.error) throw new Error(vehData.error);
-        throw new Error(`Error al registrar vehículo (${vehRes.status})`);
+        throw new Error(`Error al registrar vehiculo (${vehRes.status})`);
       }
 
     } catch (err) {
-      setError(err.message || 'Error inesperado. Intenta de nuevo.');
+      const message = err.message || 'Error inesperado. Intenta de nuevo.';
+      setError(message);
+      showDmiError('No se pudo registrar', message);
     } finally {
       setLoading(false);
     }
@@ -284,12 +290,6 @@ export default function RegistrarUnidad({ onComplete } = {}) {
           ))}
         </div>
 
-        {/* Banner de error global */}
-        {error && (
-          <div className="alert alert-danger small py-2 rounded-0 border-danger bg-black text-danger mb-3">
-            ⚠️ {error}
-          </div>
-        )}
 
         {/* ══════ PASO 1 – CLIENTE ══════ */}
         {!isExistingUser && step === 0 && (

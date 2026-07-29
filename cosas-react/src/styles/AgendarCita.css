@@ -297,6 +297,84 @@
   font-weight: 500;
 }
  
+/* ── Modal de validacion (centrado) ───────── */
+.ac-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: ac-modal-fade 0.15s ease-out;
+}
+
+.ac-modal {
+  width: 100%;
+  max-width: 400px;
+  background: #150606;
+  border: 1px solid var(--dm-red);
+  border-radius: 10px;
+  padding: 28px 30px;
+  box-shadow: 0 0 0 1px rgba(230, 57, 70, 0.15), 0 20px 48px rgba(0, 0, 0, 0.6);
+  animation: ac-modal-in 0.2s ease-out;
+}
+
+.ac-modal-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dm-red);
+  margin: 0 0 10px;
+}
+
+.ac-modal-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dm-text);
+  margin: 0 0 12px;
+}
+
+.ac-modal-text {
+  font-size: 14px;
+  color: var(--dm-label);
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.ac-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@keyframes ac-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ac-modal-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 500px) {
+  .ac-modal {
+    padding: 24px 20px;
+  }
+  .ac-modal-actions {
+    justify-content: center;
+  }
+  .ac-modal-actions .btn.primary {
+    width: 100%;
+  }
+}
+
 /* ── Responsive ──────────────────────────── */
 @media (max-width: 500px) {
   .form-row { grid-template-columns: 1fr; }
