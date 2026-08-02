@@ -168,6 +168,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const showLoginIssue = ({ title, message }) => {
     openConfirm({
@@ -273,13 +274,23 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
         </div>
         <div className="mb-4">
           <label className="form-label text-white small fw-bold">CONTRASENA</label>
-          <input 
-            type="password" 
-            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required 
-          />
+          <div className="position-relative">
+            <input 
+              type={showPassword ? "text" : "password"} 
+              className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required 
+            />
+            <button
+              type="button"
+              className="btn btn-sm position-absolute top-50 end-0 translate-middle-y text-danger fw-bold bg-transparent border-0"
+              onClick={() => setShowPassword((value) => !value)}
+              aria-label={showPassword ? "Ocultar contrasena" : "Ver contrasena"}
+            >
+              {showPassword ? "Ocultar" : "Ver"}
+            </button>
+          </div>
         </div>
         <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3">
           INGRESAR
@@ -296,6 +307,9 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
 const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [nombre, setNombre] = useState('');
   const [apellidos, setApellidos] = useState('');
   const [documento, setDocumento] = useState('');
@@ -306,7 +320,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, email, password };
+    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, email, password, confirmPassword };
     const missingField = Object.values(requiredFields).some((value) => !String(value).trim());
 
     if (missingField) {
@@ -314,6 +328,16 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
         kicker: "Acceso requerido",
         title: "Completa tus datos",
         message: "Completa todos los campos del formulario para registrarte.",
+        confirmText: "Entendido"
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      openConfirm({
+        kicker: "Registro de cuenta",
+        title: "Las contrasenas no coinciden",
+        message: "La contrasena y la confirmacion deben ser iguales para crear tu cuenta.",
         confirmText: "Entendido"
       });
       return;
@@ -459,15 +483,45 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
             required 
           />
         </div>
-        <div className="mb-4">
+        <div className="mb-3">
           <label className="form-label text-white small fw-bold">CONTRASENA</label>
-          <input 
-            type="password" 
-            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required 
-          />
+          <div className="position-relative">
+            <input 
+              type={showPassword ? "text" : "password"} 
+              className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required 
+            />
+            <button
+              type="button"
+              className="btn btn-sm position-absolute top-50 end-0 translate-middle-y text-danger fw-bold bg-transparent border-0"
+              onClick={() => setShowPassword((value) => !value)}
+              aria-label={showPassword ? "Ocultar contrasena" : "Ver contrasena"}
+            >
+              {showPassword ? "Ocultar" : "Ver"}
+            </button>
+          </div>
+        </div>
+        <div className="mb-4">
+          <label className="form-label text-white small fw-bold">CONFIRMAR CONTRASENA</label>
+          <div className="position-relative">
+            <input 
+              type={showConfirmPassword ? "text" : "password"} 
+              className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required 
+            />
+            <button
+              type="button"
+              className="btn btn-sm position-absolute top-50 end-0 translate-middle-y text-danger fw-bold bg-transparent border-0"
+              onClick={() => setShowConfirmPassword((value) => !value)}
+              aria-label={showConfirmPassword ? "Ocultar confirmacion" : "Ver confirmacion"}
+            >
+              {showConfirmPassword ? "Ocultar" : "Ver"}
+            </button>
+          </div>
         </div>
         <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3">
           REGISTRARSE
@@ -1102,5 +1156,6 @@ function App() {
 }
 
 export default App;
+
 
 

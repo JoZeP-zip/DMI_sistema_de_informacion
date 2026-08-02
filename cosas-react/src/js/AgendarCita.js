@@ -150,7 +150,6 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
 
   useEffect(() => {
     cargarDatosAgenda();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

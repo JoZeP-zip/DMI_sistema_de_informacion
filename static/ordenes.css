@@ -753,3 +753,21 @@ body.ot-table-expanded {
   width: 100% !important;
   max-width: none !important;
 }
+
+/* Busqueda rapida de productos en orden */
+.ot-product-search {
+  border-color: rgba(255, 47, 85, 0.78) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+.ot-product-search::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ot-product-search-help {
+  display: block;
+  margin-top: -4px;
+  color: var(--ot-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}

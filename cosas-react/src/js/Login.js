@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState(null); // { title, message }
   const navigate = useNavigate();
@@ -145,17 +146,37 @@ function Login() {
             Contrasena:
           </label>
 
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="********"
-            style={{
-              width: '100%',
-              padding: '10px',
-              boxSizing: 'border-box'
-            }}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
+              style={{
+                width: '100%',
+                padding: '10px 76px 10px 10px',
+                boxSizing: 'border-box'
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              style={{
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                border: '1px solid #e63946',
+                background: 'transparent',
+                color: '#e63946',
+                padding: '5px 8px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              {showPassword ? 'Ocultar' : 'Ver'}
+            </button>
+          </div>
         </div>
 
         <button

@@ -12,22 +12,50 @@ const INVENTARIO = [{"id": 1, "codigo": "20W501L", "nombre": "Aceite Elf Litro",
 const cleanCatalogText = (value) =>
   typeof value === "string"
     ? value
-        .replaceAll("ÃƒÂ¡", "a")
-        .replaceAll("ÃƒÂ©", "e")
-        .replaceAll("ÃƒÂ­", "i")
-        .replaceAll("ÃƒÂ³", "o")
-        .replaceAll("ÃƒÂº", "u")
-        .replaceAll("ÃƒÂ±", "n")
-        .replaceAll("ÃƒÆ’Â¡", "a")
-        .replaceAll("ÃƒÆ’Â©", "e")
-        .replaceAll("ÃƒÆ’Â­", "i")
-        .replaceAll("ÃƒÆ’Â³", "o")
-        .replaceAll("ÃƒÆ’Âº", "u")
-        .replaceAll("ÃƒÆ’Â±", "n")
+        .replaceAll("ÃƒÆ’Ã‚Â¡", "a")
+        .replaceAll("ÃƒÆ’Ã‚Â©", "e")
+        .replaceAll("ÃƒÆ’Ã‚Â­", "i")
+        .replaceAll("ÃƒÆ’Ã‚Â³", "o")
+        .replaceAll("ÃƒÆ’Ã‚Âº", "u")
+        .replaceAll("ÃƒÆ’Ã‚Â±", "n")
+        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â¡", "a")
+        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â©", "e")
+        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â­", "i")
+        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â³", "o")
+        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Âº", "u")
+        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â±", "n")
         .replaceAll("", "")
     : value;
 
 const DEFAULT_PRODUCT_IMAGE = "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=600&auto=format&fit=crop";
+
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+
+  const { protocol, hostname } = window.location;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8000";
+  }
+
+  if (hostname.includes("app.github.dev")) {
+    return `${protocol}//${hostname.replace(/-3000\.app\.github\.dev$/, "-8000.app.github.dev")}`;
+  }
+
+  return "";
+};
+
+const mapCatalogProduct = (product) => cleanProductText({
+  id: product.id ?? product.id_original ?? product.idproductos ?? product.codigo,
+  codigo: product.codigo ?? product.codigoproductos ?? "",
+  nombre: product.nombre ?? product.descripcionproductos ?? "Producto sin nombre",
+  precioCosto: Number(product.precioCosto ?? product.precio_costo ?? product.costo ?? 0),
+  precioVenta: Number(product.precioVenta ?? product.precio_venta ?? product.precio ?? product.valor ?? 0),
+  inventario: Number(product.inventario ?? product.cantidad ?? product.stock ?? 0),
+  categoria: product.categoria ?? "General",
+  departamento: product.departamento ?? "",
+  image: String(product.image ?? product.imagen_url ?? product.imagen ?? "").trim() || DEFAULT_PRODUCT_IMAGE,
+});
 
 const emptyProductForm = () => ({
   codigo: "",
@@ -84,10 +112,10 @@ function Catalogo({ onNeedLogin } = {}) {
     try {
       const savedProducts = localStorage.getItem("catalogoProducts");
       const loadedProducts = savedProducts ? JSON.parse(savedProducts) : INVENTARIO;
-      return loadedProducts.map(cleanProductText);
+      return loadedProducts.map(mapCatalogProduct);
     } catch (error) {
       console.error("No se pudo cargar el catalogo guardado:", error);
-      return INVENTARIO.map(cleanProductText);
+      return INVENTARIO.map(mapCatalogProduct);
     }
   });
   const [editingId, setEditingId] = useState(null);
@@ -98,6 +126,34 @@ function Catalogo({ onNeedLogin } = {}) {
   const currentRole = String(localStorage.getItem("role") || "").toLowerCase();
   const isAdmin = currentRole === "admin";
   const isLoggedIn = Boolean(localStorage.getItem("token"));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCatalogFromDatabase = async () => {
+      try {
+        const response = await fetch(`${getApiBaseUrl()}/api/catalogo-productos`, {
+          credentials: "include",
+        });
+        const data = await response.json();
+
+        if (!response.ok || !Array.isArray(data)) return;
+
+        const mappedProducts = data.map(mapCatalogProduct);
+        if (!cancelled && mappedProducts.length) {
+          setProducts(mappedProducts);
+        }
+      } catch (error) {
+        console.error("No se pudo cargar el catalogo desde Supabase:", error);
+      }
+    };
+
+    loadCatalogFromDatabase();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("catalogoProducts", JSON.stringify(products));
@@ -425,7 +481,7 @@ function Catalogo({ onNeedLogin } = {}) {
               aria-label="Cerrar carrito"
               onClick={() => setShowCart(false)}
             >
-              ✕
+              âœ•
             </button>
           </div>
           {cart.length === 0 ? (
@@ -434,7 +490,7 @@ function Catalogo({ onNeedLogin } = {}) {
             <>
               {cart.map(item => (
                 <div className="cart-item" key={item.id}>
-                  <img src={item.image} alt={item.nombre} />
+                  <img src={item.image || DEFAULT_PRODUCT_IMAGE} alt={item.nombre} />
                   <div className="cart-info">
                     <h4>{item.nombre}</h4>
                     <p>${item.precioVenta.toLocaleString()}</p>
@@ -494,7 +550,7 @@ function Catalogo({ onNeedLogin } = {}) {
               <div className="mis-compras-list">
                 {cart.map(item => (
                   <div className="mc-item" key={item.id}>
-                    <img src={item.image} alt={item.nombre} />
+                    <img src={item.image || DEFAULT_PRODUCT_IMAGE} alt={item.nombre} />
                     <div className="mc-info">
                       <h4>{item.nombre}</h4>
                       <p className="mc-code">Cod: {item.codigo}</p>
@@ -710,7 +766,7 @@ function Catalogo({ onNeedLogin } = {}) {
                   {key === "image" && createForm.image && (
                     <img
                       className="edit-product-preview"
-                      src={createForm.image}
+                      src={createForm.image || DEFAULT_PRODUCT_IMAGE}
                       alt="Vista previa"
                     />
                   )}
@@ -753,7 +809,7 @@ function Catalogo({ onNeedLogin } = {}) {
                   {key === "image" && editForm.image && (
                     <img
                       className="edit-product-preview"
-                      src={editForm.image}
+                      src={editForm.image || DEFAULT_PRODUCT_IMAGE}
                       alt="Vista previa"
                     />
                   )}
@@ -814,7 +870,7 @@ function Catalogo({ onNeedLogin } = {}) {
               tabIndex="0"
               onKeyDown={(e) => { if (e.key === "Enter") setSelectedProduct(product); }}
             >
-              <img src={product.image} alt={product.nombre} />
+              <img src={product.image || DEFAULT_PRODUCT_IMAGE} alt={product.nombre} />
               <div className="info">
                 <h3>{product.nombre}</h3>
                 <p>Codigo: {product.codigo}</p>
@@ -894,7 +950,7 @@ function Catalogo({ onNeedLogin } = {}) {
                 X
               </button>
               <img
-                src={selectedProduct.image}
+                src={selectedProduct.image || DEFAULT_PRODUCT_IMAGE}
                 alt={selectedProduct.nombre}
                 className="product-detail-image"
               />
