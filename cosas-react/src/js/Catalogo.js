@@ -12,18 +12,18 @@ const INVENTARIO = [{"id": 1, "codigo": "20W501L", "nombre": "Aceite Elf Litro",
 const cleanCatalogText = (value) =>
   typeof value === "string"
     ? value
-        .replaceAll("ÃƒÆ’Ã‚Â¡", "a")
-        .replaceAll("ÃƒÆ’Ã‚Â©", "e")
-        .replaceAll("ÃƒÆ’Ã‚Â­", "i")
-        .replaceAll("ÃƒÆ’Ã‚Â³", "o")
-        .replaceAll("ÃƒÆ’Ã‚Âº", "u")
-        .replaceAll("ÃƒÆ’Ã‚Â±", "n")
-        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â¡", "a")
-        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â©", "e")
-        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â­", "i")
-        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â³", "o")
-        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Âº", "u")
-        .replaceAll("ÃƒÆ’Ã†â€™Ã‚Â±", "n")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡", "a")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©", "e")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­", "i")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³", "o")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âº", "u")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±", "n")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â¡", "a")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â©", "e")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â­", "i")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â³", "o")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Âº", "u")
+        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â±", "n")
         .replaceAll("", "")
     : value;
 
@@ -99,6 +99,7 @@ function Catalogo({ onNeedLogin } = {}) {
   const [showMisCompras, setShowMisCompras] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showLoginRequiredModal, setShowLoginRequiredModal] = useState(false);
+  const [catalogMessage, setCatalogMessage] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [checkoutItems, setCheckoutItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Todos");
@@ -283,26 +284,59 @@ function Catalogo({ onNeedLogin } = {}) {
     setEditForm({ ...product });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!isAdmin) return;
-    const updatedProduct = {
+
+    const updatedProduct = cleanProductText({
       ...editForm,
       image: String(editForm.image || "").trim(),
       precioVenta: Number(editForm.precioVenta),
       precioCosto: Number(editForm.precioCosto),
       inventario: Number(editForm.inventario)
-    };
+    });
 
-    setProducts(products.map(p =>
-      p.id === editingId ? updatedProduct : p
-    ));
-    setCart(cart.map(item =>
-      item.id === editingId ? { ...updatedProduct, quantity: item.quantity } : item
-    ));
-    setSelectedProduct(prev =>
-      prev?.id === editingId ? updatedProduct : prev
-    );
-    setEditingId(null);
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/api/catalogo-productos/${editingId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify(updatedProduct)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.detail || "No se pudo guardar el producto");
+      }
+
+      const savedProduct = mapCatalogProduct(data);
+
+      setProducts(products.map(product =>
+        product.id === editingId ? savedProduct : product
+      ));
+      setCart(cart.map(item =>
+        item.id === editingId ? { ...savedProduct, quantity: item.quantity } : item
+      ));
+      setSelectedProduct(prev =>
+        prev?.id === editingId ? savedProduct : prev
+      );
+      setEditingId(null);
+      setCatalogMessage({
+        type: "success",
+        eyebrow: "Producto actualizado",
+        title: "Producto guardado y actualizado correctamente",
+        text: "La informacion del producto y la imagen quedaron guardadas en Supabase."
+      });
+    } catch (error) {
+      setCatalogMessage({
+        type: "error",
+        eyebrow: "No se pudo guardar",
+        title: "No se pudo actualizar el producto",
+        text: error.message || "Revisa la informacion e intenta de nuevo."
+      });
+    }
   };
 
   const openCreateProduct = () => {
@@ -481,7 +515,7 @@ function Catalogo({ onNeedLogin } = {}) {
               aria-label="Cerrar carrito"
               onClick={() => setShowCart(false)}
             >
-              âœ•
+              Ã¢Å“â€¢
             </button>
           </div>
           {cart.length === 0 ? (
@@ -611,6 +645,28 @@ function Catalogo({ onNeedLogin } = {}) {
         document.body
       )}
 
+      {catalogMessage &&
+        createPortal(
+          <div className="mc-modal-overlay">
+            <div className="mc-modal">
+              <p className="mc-modal-sub" style={{ textTransform: "uppercase", letterSpacing: "2px", color: catalogMessage.type === "success" ? "#7fffd4" : "#ff4057" }}>
+                {catalogMessage.eyebrow}
+              </p>
+              <h2>{catalogMessage.title}</h2>
+              <p className="mc-modal-sub">{catalogMessage.text}</p>
+              <div className="mc-modal-btns">
+                <button
+                  type="button"
+                  className="mc-modal-confirm"
+                  onClick={() => setCatalogMessage(null)}
+                >
+                  Aceptar
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       {/* MODAL CONFIRMACION - fuera del panel, al mismo nivel */}
       {showConfirmModal &&
         createPortal(
@@ -1013,3 +1069,6 @@ function Catalogo({ onNeedLogin } = {}) {
 }
 
 export default Catalogo;
+
+
+

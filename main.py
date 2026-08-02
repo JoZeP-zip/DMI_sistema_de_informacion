@@ -123,7 +123,7 @@ def obtener_usuario(access_token: Optional[str], request: Request = None) -> Opt
     if not access_token:
         return None
     try:
-        # Se mantiene el decodificador sin verificaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tica
+        # Se mantiene el decodificador sin verificaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n automÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡tica
         payload = jwt.decode(access_token, options={"verify_signature": False})
         user_id = payload.get("sub")
         if not user_id:
@@ -407,7 +407,7 @@ def generar_codigo_orden(conn) -> str:
         {"base": f"{base}%"},
     ).scalar() or 0
     return f"{base}-{int(total_dia) + 1:04d}"
-# ==================== PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, access_token: str = Cookie(None)):
     data = []
@@ -1269,7 +1269,7 @@ async def generar_cotizacion_orden(
             conn.commit()
 
         return RedirectResponse(
-            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"CotizaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n generada correctamente",
+            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"CotizaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n generada correctamente",
             status_code=302,
         )
 
@@ -1983,7 +1983,7 @@ async def logout():
         pass
 
     response = RedirectResponse(
-        url="/?success=SesiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n cerrada correctamente",
+        url="/?success=SesiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n cerrada correctamente",
         status_code=302
     )
 
@@ -2034,7 +2034,7 @@ async def promover_admin(
         )
 
 
-# ==================== CREAR VEHÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂCULO ====================
+# ==================== CREAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/nuevo")
 async def crear_vehiculo(
     request: Request,
@@ -2127,7 +2127,7 @@ async def crear_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== FORMULARIO EDITAR VEHÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂCULO ====================
+# ==================== FORMULARIO EDITAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
 @app.get("/vehiculo/editar/{vehiculo_id}", response_class=HTMLResponse)
 async def editar_vehiculo_form(
     request: Request, vehiculo_id: int, access_token: str = Cookie(None)
@@ -2166,7 +2166,7 @@ async def editar_vehiculo_form(
     )
 
 
-# ==================== ACTUALIZAR VEHÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂCULO ====================
+# ==================== ACTUALIZAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/editar/{vehiculo_id}")
 async def actualizar_vehiculo(
     vehiculo_id: int,
@@ -2218,7 +2218,7 @@ async def actualizar_vehiculo(
             conn.commit()
 
         return RedirectResponse(
-            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­culo actualizado correctamente",
+            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­culo actualizado correctamente",
             status_code=302
         )
 
@@ -2226,7 +2226,7 @@ async def actualizar_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== ELIMINAR VEHÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂCULO ====================
+# ==================== ELIMINAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/eliminar/{vehiculo_id}")
 async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -2243,7 +2243,7 @@ async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
             conn.commit()
 
         return RedirectResponse(
-            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­culo eliminado correctamente",
+            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­culo eliminado correctamente",
             status_code=302
         )
 
@@ -2251,8 +2251,8 @@ async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
-# ==================== PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
 @app.get("/citas", response_class=HTMLResponse)
 async def ver_citas(request: Request, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token, request)
@@ -2656,12 +2656,12 @@ async def guardar_factura_servicio(
 
         concepto = (
             body.get("concepto") or
-            "Servicio tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cnico automotriz"
+            "Servicio tÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©cnico automotriz"
         ).strip()
 
         if costo <= 0:
             return JSONResponse(
-                {"error": "Ingresa un costo vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido para la factura"},
+                {"error": "Ingresa un costo vÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lido para la factura"},
                 status_code=400
             )
 
@@ -2704,7 +2704,7 @@ async def guardar_factura_servicio(
 
             if not row:
                 return JSONResponse(
-                    {"error": "No se encontrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³ la cita"},
+                    {"error": "No se encontrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ la cita"},
                     status_code=404
                 )
 
@@ -2769,7 +2769,7 @@ async def cambiar_rol_usuario(
 
     if rol not in ("admin", "usuario", "mecanico"):
         return RedirectResponse(
-            url="/?error=Rol invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido",
+            url="/?error=Rol invÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lido",
             status_code=302
         )
 
@@ -3145,6 +3145,78 @@ async def api_catalogo_productos():
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
+
+@app.put("/api/catalogo-productos/{producto_id}")
+async def api_actualizar_catalogo_producto(producto_id: int, payload: dict):
+    try:
+        with engine.begin() as conn:
+            if not table_exists(conn, "dmi", "inventario_catalogo"):
+                return JSONResponse({"error": "No existe la tabla inventario_catalogo"}, status_code=404)
+
+            conn.execute(text("""
+                UPDATE dmi.inventario_catalogo
+                SET
+                    codigo = :codigo,
+                    nombre = :nombre,
+                    precio_costo = :precio_costo,
+                    precio_venta = :precio_venta,
+                    cantidad = :cantidad,
+                    categoria = :categoria,
+                    departamento = :departamento,
+                    imagen_url = :imagen_url
+                WHERE id = :id
+                   OR id_original = :id
+            """), {
+                "id": producto_id,
+                "codigo": payload.get("codigo") or "",
+                "nombre": payload.get("nombre") or "Producto sin nombre",
+                "precio_costo": payload.get("precioCosto") or payload.get("precio_costo") or 0,
+                "precio_venta": payload.get("precioVenta") or payload.get("precio_venta") or 0,
+                "cantidad": payload.get("inventario") or payload.get("cantidad") or 0,
+                "categoria": payload.get("categoria") or "General",
+                "departamento": payload.get("departamento") or "",
+                "imagen_url": payload.get("image") or payload.get("imagen_url") or "",
+            })
+
+            row = conn.execute(text("""
+                SELECT
+                    id,
+                    id_original,
+                    codigo,
+                    nombre,
+                    precio_costo,
+                    precio_venta,
+                    cantidad,
+                    categoria,
+                    departamento,
+                    imagen_url,
+                    activo
+                FROM dmi.inventario_catalogo
+                WHERE id = :id
+                   OR id_original = :id
+                LIMIT 1
+            """), {"id": producto_id}).mappings().first()
+
+            if not row:
+                return JSONResponse({"error": "Producto no encontrado"}, status_code=404)
+
+            item = dict(row)
+            return JSONResponse({
+                "id": item.get("id") or item.get("id_original"),
+                "codigo": item.get("codigo") or "",
+                "nombre": item.get("nombre") or "Producto sin nombre",
+                "precioCosto": float(item.get("precio_costo") or 0),
+                "precioVenta": float(item.get("precio_venta") or 0),
+                "inventario": int(item.get("cantidad") or 0),
+                "categoria": item.get("categoria") or "General",
+                "departamento": item.get("departamento") or "",
+                "image": item.get("imagen_url") or "",
+                "imagen_url": item.get("imagen_url") or "",
+                "activo": bool(item.get("activo", True)),
+            })
+
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 #=========================== MOVIMIENTOS INVENTARIO =============================
 @app.get("/api/movimientos_inventario")
 async def api_movimientos():
@@ -4586,6 +4658,7 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 
 
