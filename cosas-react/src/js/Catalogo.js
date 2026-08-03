@@ -12,19 +12,12 @@ const INVENTARIO = [{"id": 1, "codigo": "20W501L", "nombre": "Aceite Elf Litro",
 const cleanCatalogText = (value) =>
   typeof value === "string"
     ? value
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡", "a")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©", "e")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­", "i")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³", "o")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âº", "u")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â±", "n")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â¡", "a")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â©", "e")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â­", "i")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â³", "o")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Âº", "u")
-        .replaceAll("ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â±", "n")
-        .replaceAll("", "")
+        .replaceAll("\u00e1", "a")
+        .replaceAll("\u00e9", "e")
+        .replaceAll("\u00ed", "i")
+        .replaceAll("\u00f3", "o")
+        .replaceAll("\u00fa", "u")
+        .replaceAll("\u00f1", "n")
     : value;
 
 const DEFAULT_PRODUCT_IMAGE = "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?q=80&w=600&auto=format&fit=crop";
@@ -515,7 +508,7 @@ function Catalogo({ onNeedLogin } = {}) {
               aria-label="Cerrar carrito"
               onClick={() => setShowCart(false)}
             >
-              Ã¢Å“â€¢
+              ×
             </button>
           </div>
           {cart.length === 0 ? (
@@ -1069,6 +1062,3 @@ function Catalogo({ onNeedLogin } = {}) {
 }
 
 export default Catalogo;
-
-
-
