@@ -46,6 +46,8 @@ body{
   border-right:1px solid rgba(255,0,0,0.25);
 
   min-height:100vh;
+
+  transition:padding-right 0.35s ease;
 }
 
 /* =========================
@@ -495,6 +497,19 @@ body{
   padding:25px;
 
   z-index:99999;
+
+  animation: cartSlideIn 0.3s ease;
+}
+
+@keyframes cartSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .cart-item{
@@ -3678,8 +3693,24 @@ main {
 }
 
 .mis-compras-panel {
-  width: min(460px, calc(100vw - 28px)) !important;
+  width: min(380px, calc(100vw - 28px)) !important;
   max-height: calc(100dvh - 140px) !important;
+}
+
+.mis-compras-panel .mc-item {
+  position: relative;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.mis-compras-panel .mc-price {
+  width: 100%;
+  text-align: left;
+}
+
+.mis-compras-panel .mc-remove {
+  position: absolute;
+  right: 10px;
 }
 
 @media (max-width: 700px) {
@@ -4430,4 +4461,25 @@ img{
 }
 .cart-close-btn:hover {
   background: rgb(255, 0, 0);
+}
+/* =========================
+   CARRITO: encoge el catalogo en vez de taparlo (estilo Mercado Libre)
+========================= */
+.main-container.cart-open {
+  padding-right: 428px !important;
+}
+
+.main-container.compras-open {
+  padding-right: 428px !important;
+}
+
+@media (max-width: 900px) {
+  .main-container.cart-open,
+  .main-container.compras-open {
+    padding-right: 0 !important;
+  }
+}
+
+.mis-compras-panel {
+  animation: cartSlideIn 0.3s ease;
 }

@@ -18,16 +18,16 @@ const Contacto = () => {
   return (
     <section id="contacto" className="section contacto">
       <div className="section-title">
-        <h2>Contacto</h2>
+        <span className="contacto-kicker">Hablemos</span>
+        <h2 className="contacto-title">Contacto</h2>
         <div className="title-underline"></div>
+        <p className="contacto-lead"><strong>Escribenos</strong> y con gusto resolvemos tus dudas o te contamos mas sobre nuestros servicios.</p>
       </div>
 
       <div className="contact-container">
         <div className="contact-info">
-          <h3>Listo para potenciar tu vehiculo?</h3>
-          <p>Visitanos en nuestro taller o agenda una cita directamente.</p>
-
           <div className="info-item">
+            <span className="info-index">01</span>
             <span className="icon">DM</span>
             <div>
               <h4>Ubicacion</h4>
@@ -36,6 +36,7 @@ const Contacto = () => {
           </div>
 
           <div className="info-item">
+            <span className="info-index">02</span>
             <span className="icon">TEL</span>
             <div>
               <h4>Telefono</h4>
@@ -48,6 +49,7 @@ const Contacto = () => {
           </div>
 
           <div className="info-item">
+            <span className="info-index">03</span>
             <span className="icon">@</span>
             <div>
               <h4>Email</h4>
@@ -75,36 +77,26 @@ const Contacto = () => {
             <input type="email" placeholder="Correo electronico" required />
           </div>
           <div className="form-group">
-            <select defaultValue="" required>
-              <option value="" disabled>Tipo de servicio</option>
-              <option value="reprogramacion">Reprogramacion</option>
-              <option value="inyeccion">Inyeccion electronica</option>
-              <option value="mantenimiento">Mantenimiento general</option>
-              <option value="diagnostico">Diagnostico scanner</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <textarea placeholder="Cuentanos sobre tu vehiculo o problema..." rows="5" required></textarea>
+            <textarea placeholder="Cuentanos sobre tu vehiculo o problema..." rows="6" required></textarea>
           </div>
           <button type="submit" className="btn primary large">Enviar mensaje</button>
+          <span className="contacto-form-note">Respondemos en menos de 24 horas habiles.</span>
         </form>
       </div>
 
       <div className="como-llegar">
-        <div className="como-llegar-header">
-          <h3>Como llegar</h3>
-        </div>
-        <div className="como-llegar-body">
-          <div className="mapa-wrapper">
-            <iframe
-              title="Ubicacion Disol Motors"
-              className="mapa-embed"
-              src={`https://www.google.com/maps?q=${direccionEncoded}&output=embed`}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
-          </div>
-          <div className="mapa-info">
+        <div className="mapa-wrapper">
+          <iframe
+            title="Ubicacion Disol Motors"
+            className="mapa-embed"
+            src={`https://www.google.com/maps?q=${direccionEncoded}&output=embed`}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          ></iframe>
+
+          <div className="mapa-overlay-card">
+            <span className="mapa-overlay-kicker">Como llegar</span>
+
             <div className="info-item">
               <span className="icon">DM</span>
               <div>
@@ -119,6 +111,7 @@ const Contacto = () => {
                 <p>Lun - Sab: 8:00 am - 6:00 pm</p>
               </div>
             </div>
+
             <a
               className="btn-maps"
               href={`https://www.google.com/maps/dir/?api=1&destination=${direccionEncoded}`}

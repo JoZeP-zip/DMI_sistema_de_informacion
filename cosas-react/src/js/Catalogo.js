@@ -412,7 +412,7 @@ function Catalogo({ onNeedLogin } = {}) {
   }, [search, selectedCategory]);
 
   return (
-    <div className="main-container">
+    <div className={`main-container${showCart ? " cart-open" : ""}${showMisCompras ? " compras-open" : ""}`}>
 
       {/* HEADER FIJO */}
       <header className="top-bar">
