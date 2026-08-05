@@ -305,7 +305,7 @@
 
             <div class="section-label mb-1">Inventario</div>
             <ul class="nav flex-column mb-2">
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('inventario', this)"><i class="bi bi-box-seam me-2"></i>Articulos</a></li>
+                <li class="nav-item"><a href="/admin/inventario" target="_top" class="nav-link"><i class="bi bi-box-seam me-2"></i>Articulos</a></li>
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('movimientos', this)"><i class="bi bi-arrow-left-right me-2"></i>Movimientos</a></li>
             </ul>
 
@@ -319,13 +319,13 @@
             <ul class="nav flex-column mb-2">
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('servicios', this)"><i class="bi bi-tools me-2"></i>Servicios</a></li>
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('tiporeparacion', this)"><i class="bi bi-wrench me-2"></i>Tipos Reparacion</a></li>
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('productos', this)"><i class="bi bi-cart me-2"></i>Productos</a></li>
+                <li class="nav-item"><a href="/admin/inventario" target="_top" class="nav-link"><i class="bi bi-cart me-2"></i>Productos</a></li>
             </ul>
 
             <div class="section-label mb-1">Catalogo de Precios</div>
             <ul class="nav flex-column mb-2">
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('serviciosprecio', this)"><i class="bi bi-cash-coin me-2"></i>Precios Serv.</a></li>
-                <li class="nav-item"><a href="#" class="nav-link" onclick="show('productoprecio', this)"><i class="bi bi-tag me-2"></i>Precios Prod.</a></li>
+                <li class="nav-item"><a href="/admin/inventario" target="_top" class="nav-link"><i class="bi bi-tag me-2"></i>Precios de productos</a></li>
+                <li class="nav-item"><a href="#" class="nav-link" onclick="show('servicios', this)"><i class="bi bi-cash-coin me-2"></i>Precios de servicios</a></li>
             </ul>
 
             <div class="section-label mb-1">Seguridad</div>
@@ -354,7 +354,7 @@
                     <button type="submit" class="btn btn-primary w-100">Registrar Pedido</button>
                 </form></div></div></div>
                 <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Pedidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Fecha Cita</th><th>Estado</th><th>Oficina</th><th>Acciones</th></tr></thead><tbody>
-                {% for p in pedidos %}<tr><td>{{p.idpedido}}</td><td>{{p.codigopedido}}</td><td>{{p.fecha_cita}}</td><td><span class="badge bg-warning text-dark">{{p.estado}}</span></td><td>{{p.oficinas_idoficinas}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-pedidos'), '{{ p.idpedido }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-pedidos'), '{{ p.idpedido }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                {% for p in pedidos %}<tr><td>{{p.idpedido}}</td><td>{{p.codigopedido}}</td><td>{{p.fecha_cita}}</td><td><span class="badge bg-warning text-dark">{{p.estado}}</span></td><td>{{p.oficinas_idoficinas}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-pedidos'), '{{ p.idpedido }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-pedidos'), '{{ p.idpedido }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
@@ -421,47 +421,21 @@
             </div>
 
             <div id="panel-metodopago" class="cfg-panel">
-                <div class="payment-config-shell">
-                    <div class="payment-config-card">
-                        <div class="payment-close">X</div>
-                        <p class="payment-kicker">PASARELA ADMIN</p>
-                        <h2>Metodos de <span>Pago</span></h2>
-
-                        <form action="/config/metodopago/nuevo" method="POST" class="payment-form">
-                            <div class="payment-section-label">Registrar metodo</div>
-
-                            <div class="payment-form-grid">
-                                <input type="text" name="codigompago" placeholder="Codigo MP" required>
-                                <input type="text" name="Descripcionmpago" placeholder="Descripcion del metodo" required>
-                            </div>
-
-                            <div class="payment-total-row">
-                                <span>ESTADO</span>
-                                <strong>ACTIVO</strong>
-                            </div>
-
-                            <button type="submit" class="payment-confirm-btn">Guardar metodo</button>
+                <div class="row g-4">
+                    <div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body">
+                        <h5 class="card-title fw-bold text-primary mb-3">Metodo de Pago</h5>
+                        <form action="/config/metodopago/nuevo" method="POST">
+                            <div class="mb-2"><label class="form-label">Codigo MP</label><input type="text" class="form-control form-control-sm" name="codigompago" required></div>
+                            <div class="mb-2"><label class="form-label">Descripcion del metodo</label><input type="text" class="form-control form-control-sm" name="Descripcionmpago" required></div>
+                            <button type="submit" class="btn btn-primary w-100 btn-sm mt-2">Guardar Metodo</button>
                         </form>
-
-                        <div class="payment-section-label mt-4">Metodos registrados</div>
-                        <div class="payment-method-grid">
-                            {% for m in metodopago %}
-                              <article class="payment-method-card">
-                                <div class="payment-method-icon">{{ m.codigompago[:2] if m.codigompago else 'MP' }}</div>
-                                <div>
-                                  <strong>{{ m.Descripcionmpago }}</strong>
-                                  <span>{{ m.codigompago }}</span>
-                                </div>
-                                <div class="cfg-actions-cell">
-                                  <button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-metodopago'), '{{ m.idmetodopago }}')"><i class="bi bi-pencil-square"></i> Editar</button>
-                                  <button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-metodopago'), '{{ m.idmetodopago }}')"><i class="bi bi-slash-circle"></i> Desactivar</button>
-                                </div>
-                              </article>
-                            {% else %}
-                              <div class="payment-empty">No hay metodos de pago registrados.</div>
-                            {% endfor %}
-                        </div>
-                    </div>
+                    </div></div></div>
+                    <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body">
+                        <h5 class="card-title fw-bold mb-3">Metodos Registrados</h5>
+                        <div class="table-responsive"><table class="table table-striped table-hover align-middle text-nowrap"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Acciones</th></tr></thead><tbody>
+                        {% for m in metodopago %}<tr><td>{{ m.idmetodopago }}</td><td>{{ m.codigompago }}</td><td>{{ m.Descripcionmpago }}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-metodopago'), '{{ m.idmetodopago }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-metodopago'), '{{ m.idmetodopago }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">No hay metodos de pago registrados.</td></tr>{% endfor %}
+                        </tbody></table></div>
+                    </div></div></div>
                 </div>
             </div>
 
@@ -546,19 +520,10 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Precio servicio</label>
-                        <select class="form-select" name="serviciosprecio_idserviciosprecio">
-                            <option value="">Sin precio asignado</option>
-                            {% for sp in serviciosprecio %}
-                            <option value="{{ sp.idserviciosprecio }}">{{ sp.Descripcionserviciosprecio }} - {{ sp.precioserviciosprecio }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
                     <button type="submit" class="btn btn-primary w-100">Guardar Servicio</button>
                 </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Servicios Ofrecidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Pedido</th><th>Precio</th><th>Acciones</th></tr></thead><tbody>
-                {% for s in servicios %}<tr><td>{{s.idservicios}}</td><td>{{s.codigoservicio}}</td><td>{{s.Descripcionservicio}}</td><td>{{s.codigopedido or s.pedido_idpedido}}</td><td>{{s.Descripcionserviciosprecio or "Sin precio"}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-servicios'), '{{ s.idservicios }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-servicios'), '{{ s.idservicios }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
+                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Servicios Ofrecidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Pedido</th><th>Acciones</th></tr></thead><tbody>
+                {% for s in servicios %}<tr><td>{{s.idservicios}}</td><td>{{s.codigoservicio}}</td><td>{{s.Descripcionservicio}}</td><td>{{s.codigopedido or s.pedido_idpedido}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-servicios'), '{{ s.idservicios }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-servicios'), '{{ s.idservicios }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
             </div>
 
@@ -592,6 +557,8 @@
                 </tbody></table></div></div></div></div></div>
             </div>
 
+
+            
             <div id="panel-productos" class="cfg-panel">
                 <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Producto</h5>
                 <form action="/config/productos/nuevo" method="POST">
@@ -620,7 +587,7 @@
                 <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Productos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Descripcion</th><th>Precio</th><th>Pedido</th><th>Acciones</th></tr></thead><tbody>
                 {% for p in productos %}<tr><td>{{p.idproductos}}</td><td>{{p.codigoproductos}}</td><td>{{p.Descripcionproductos}}</td><td>{{p.Descripcionprprecio or p.productoprecio_idproductoprecio}}</td><td>{{p.codigopedido or p.pedido_idpedido}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-productos'), '{{ p.idproductos }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-productos'), '{{ p.idproductos }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
-            </div>
+            </div>/////
 
             <div id="panel-serviciosprecio" class="cfg-panel">
                 <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Servicio</h5>

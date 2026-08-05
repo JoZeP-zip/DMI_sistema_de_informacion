@@ -47,7 +47,7 @@ function Login() {
     if (!correoLimpio || !passLimpio) {
       setNotice({
         title: 'Completa tus datos',
-        message: 'Ingresa tu correo electronico y tu contrasena para poder iniciar sesion.',
+        message: 'Ingresa tu correo electronico y tu contraseña para poder iniciar sesion.',
       });
       return;
     }
@@ -69,7 +69,7 @@ function Login() {
       if (!response.ok) {
         setNotice({
           title: 'No se pudo iniciar sesion',
-          message: data.detail || data.message || 'Credenciales invalidas. Verifica tu correo y contrasena.',
+          message: data.detail || data.message || 'Credenciales invalidas. Verifica tu correo y contraseña.',
         });
         return;
       }
@@ -143,7 +143,7 @@ function Login() {
             display: 'block',
             marginBottom: '5px'
           }}>
-            Contrasena:
+            contraseña:
           </label>
 
           <div style={{ position: 'relative' }}>

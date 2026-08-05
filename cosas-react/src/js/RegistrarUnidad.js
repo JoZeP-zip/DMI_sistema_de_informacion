@@ -27,7 +27,7 @@ const STEPS          = ['Cliente', 'VehÃ­culo'];
 const tiposDocumento = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI'];
 
 const initialCliente = {
-  email: '', contrasena: '', confirmarContrasena: '', nombre: '', apellido: '',
+  email: '', contraseña: '', confirmarcontraseña: '', nombre: '', apellido: '',
   fechaNacimiento: '', tipoDocumento: '', documento: '',
   telefono: '', nombreUsuario: '',
 };
@@ -85,8 +85,8 @@ export default function RegistrarUnidad({ onComplete } = {}) {
     e.preventDefault();
     setError('');
 
-    if (!isExistingUser && cliente.contrasena !== cliente.confirmarContrasena) {
-      showDmiError('Las contrasenas no coinciden', 'La contrasena y la confirmacion deben ser iguales para continuar.');
+    if (!isExistingUser && cliente.contraseña !== cliente.confirmarcontraseña) {
+      showDmiError('Las contraseñas no coinciden', 'La contraseña y la confirmacion deben ser iguales para continuar.');
       return;
     }
 
@@ -115,7 +115,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
         credentials: 'include',
         body: JSON.stringify({
           email:            cliente.email,
-          password:         cliente.contrasena,
+          password:         cliente.contraseña,
           nombre:           cliente.nombre,
           apellidos:        cliente.apellido,
           documento:        cliente.documento,
@@ -134,7 +134,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email: cliente.email, password: cliente.contrasena }),
+        body: JSON.stringify({ email: cliente.email, password: cliente.contraseña }),
       });
 
       loginData = await loginRes.json();
@@ -191,7 +191,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
           ...(loginData.token ? { Authorization: `Bearer ${loginData.token}` } : {}),
         },
         credentials: 'include',
-        body: new URLSearchParams({ email: cliente.email, password: cliente.contrasena }).toString(),
+        body: new URLSearchParams({ email: cliente.email, password: cliente.contraseña }).toString(),
       });
       // (ignoramos el redirect, lo que nos importa es que la cookie quede seteada)
       }
@@ -326,29 +326,29 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
                 <div className="ru-row mb-22">
                   <div className="ru-field">
-                    <label className="ru-label">Contrasena <span className="ru-req">*</span></label>
+                    <label className="ru-label">contraseña <span className="ru-req">*</span></label>
                     <div className="ru-pw-wrap">
                       <input
                         className="ru-input pr-40"
                         type={showPw ? 'text' : 'password'}
-                        name="contrasena" value={cliente.contrasena}
+                        name="contraseña" value={cliente.contraseña}
                         onChange={onCliente} placeholder="********" required minLength={6}
                       />
-                      <button type="button" className="ru-pw-eye" onClick={() => setShowPw((value) => !value)} aria-label={showPw ? 'Ocultar contrasena' : 'Ver contrasena'}>
+                      <button type="button" className="ru-pw-eye" onClick={() => setShowPw((value) => !value)} aria-label={showPw ? 'Ocultar contraseña' : 'Ver contraseña'}>
                         <FontAwesomeIcon icon={showPw ? faEyeSlash : faEye} />
                       </button>
                     </div>
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Confirmar contrasena <span className="ru-req">*</span></label>
+                    <label className="ru-label">Confirmar contraseña <span className="ru-req">*</span></label>
                     <div className="ru-pw-wrap">
                       <input
                         className="ru-input pr-40"
                         type={showConfirmPw ? 'text' : 'password'}
-                        name="confirmarContrasena"
-                        value={cliente.confirmarContrasena}
+                        name="confirmarcontraseña"
+                        value={cliente.confirmarcontraseña}
                         onChange={onCliente}
-                        placeholder="Confirma tu contrasena"
+                        placeholder="Confirma tu contraseña"
                         required
                         minLength={6}
                       />

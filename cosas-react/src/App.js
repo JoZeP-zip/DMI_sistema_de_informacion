@@ -187,7 +187,7 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
     if (!trimmedEmail || !password) {
       showLoginIssue({
         title: "Completa tus datos",
-        message: "Completa tu correo y contrasena."
+        message: "Completa tu correo y contraseña."
       });
       return;
     }
@@ -215,14 +215,14 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
         /failed to fetch|networkerror|network error|conexion|conexion|timeout/.test(rawMessage);
 
       const looksLikeWrongPassword =
-        /contrasena|contrasena|password|clave incorrecta/.test(rawMessage);
+        /contraseña|contraseña|password|clave incorrecta/.test(rawMessage);
 
       const looksLikeUnknownEmail =
         /usuario no existe|correo no registrado|no encontr|not found|no existe|no registrad/.test(rawMessage);
 
       // El backend en /login-react puede responder con un mensaje generico
       // (p.ej. "Credenciales invalidas" o "Error 401") que no distingue si
-      // fallo el correo o la contrasena. En ese caso mostramos un mensaje
+      // fallo el correo o la contraseña. En ese caso mostramos un mensaje
       // combinado en vez de adivinar cual de los dos esta mal.
       const looksLikeGenericInvalidCredentials =
         /error 401|credenciales|invalid|no autorizado|unauthorized/.test(rawMessage);
@@ -239,18 +239,18 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
         });
       } else if (looksLikeWrongPassword) {
         showLoginIssue({
-          title: "Contrasena incorrecta",
-          message: "La contrasena ingresada no es correcta. Intentalo de nuevo."
+          title: "contraseña incorrecta",
+          message: "La contraseña ingresada no es correcta. Intentalo de nuevo."
         });
       } else if (looksLikeGenericInvalidCredentials) {
         showLoginIssue({
-          title: "Correo o contrasena incorrectos",
-          message: "Verifica que tu correo y tu contrasena esten bien escritos e intenta de nuevo."
+          title: "Correo o contraseña incorrectos",
+          message: "Verifica que tu correo y tu contraseña esten bien escritos e intenta de nuevo."
         });
       } else {
         showLoginIssue({
           title: "No se pudo iniciar sesion",
-          message: err?.message || "Verifica tu correo y contrasena e intenta de nuevo."
+          message: err?.message || "Verifica tu correo y contraseña e intenta de nuevo."
         });
       }
     }
@@ -273,7 +273,7 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
           />
         </div>
         <div className="mb-4">
-          <label className="form-label text-white small fw-bold">CONTRASENA</label>
+          <label className="form-label text-white small fw-bold">contraseña</label>
           <div className="position-relative">
             <input 
               type={showPassword ? "text" : "password"} 
@@ -286,7 +286,7 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
               type="button"
               className="btn btn-sm position-absolute top-50 end-0 translate-middle-y text-danger fw-bold bg-transparent border-0"
               onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? "Ocultar contrasena" : "Ver contrasena"}
+              aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
             >
               {showPassword ? "Ocultar" : "Ver"}
             </button>
@@ -336,8 +336,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
     if (password !== confirmPassword) {
       openConfirm({
         kicker: "Registro de cuenta",
-        title: "Las contrasenas no coinciden",
-        message: "La contrasena y la confirmacion deben ser iguales para crear tu cuenta.",
+        title: "Las contraseñas no coinciden",
+        message: "La contraseña y la confirmacion deben ser iguales para crear tu cuenta.",
         confirmText: "Entendido"
       });
       return;
@@ -484,7 +484,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
           />
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">CONTRASENA</label>
+          <label className="form-label text-white small fw-bold">contraseña</label>
           <div className="position-relative">
             <input 
               type={showPassword ? "text" : "password"} 
@@ -497,14 +497,14 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
               type="button"
               className="btn btn-sm position-absolute top-50 end-0 translate-middle-y text-danger fw-bold bg-transparent border-0"
               onClick={() => setShowPassword((value) => !value)}
-              aria-label={showPassword ? "Ocultar contrasena" : "Ver contrasena"}
+              aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
             >
               {showPassword ? "Ocultar" : "Ver"}
             </button>
           </div>
         </div>
         <div className="mb-4">
-          <label className="form-label text-white small fw-bold">CONFIRMAR CONTRASENA</label>
+          <label className="form-label text-white small fw-bold">CONFIRMAR contraseña</label>
           <div className="position-relative">
             <input 
               type={showConfirmPassword ? "text" : "password"} 

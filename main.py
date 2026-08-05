@@ -79,9 +79,11 @@ def asegurar_servicios_base(conn):
     pedido_id = conn.execute(
         text("SELECT idpedido FROM dmi.pedido ORDER BY idpedido DESC LIMIT 1")
     ).scalar()
-    precio_id = conn.execute(
-        text("SELECT idserviciosprecio FROM dmi.serviciosprecio ORDER BY idserviciosprecio LIMIT 1")
-    ).scalar()
+    precio_id = None
+    if table_exists(conn, "dmi", "serviciosprecio"):
+        precio_id = conn.execute(
+            text("SELECT idserviciosprecio FROM dmi.serviciosprecio ORDER BY idserviciosprecio LIMIT 1")
+        ).scalar()
 
     necesita_pedido = columnas.get("pedido_idpedido") == "NO"
     necesita_precio = columnas.get("serviciosprecio_idserviciosprecio") == "NO"
@@ -123,7 +125,7 @@ def obtener_usuario(access_token: Optional[str], request: Request = None) -> Opt
     if not access_token:
         return None
     try:
-        # Se mantiene el decodificador sin verificaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n automÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡tica
+        # Se mantiene el decodificador sin verificaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n automÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡tica
         payload = jwt.decode(access_token, options={"verify_signature": False})
         user_id = payload.get("sub")
         if not user_id:
@@ -407,7 +409,7 @@ def generar_codigo_orden(conn) -> str:
         {"base": f"{base}%"},
     ).scalar() or 0
     return f"{base}-{int(total_dia) + 1:04d}"
-# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, access_token: str = Cookie(None)):
     data = []
@@ -1269,7 +1271,7 @@ async def generar_cotizacion_orden(
             conn.commit()
 
         return RedirectResponse(
-            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"CotizaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n generada correctamente",
+            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"CotizaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n generada correctamente",
             status_code=302,
         )
 
@@ -1789,7 +1791,7 @@ async def registro_react(request: Request):
                 or ("email" in auth_text and "exists" in auth_text)
             ):
                 return JSONResponse(
-                    {"error": "Este correo ya tiene una cuenta. Inicia sesion o recupera la contrasena."},
+                    {"error": "Este correo ya tiene una cuenta. Inicia sesion o recupera la contraseÃ±a."},
                     status_code=400,
                 )
             raise auth_error
@@ -1888,7 +1890,7 @@ async def login_react(request: Request):
         password = str(body.get("password") or "")
 
         if not email or not password:
-            return JSONResponse({"message": "Correo y contrasena son obligatorios"}, status_code=400)
+            return JSONResponse({"message": "Correo y contraseÃ±a son obligatorios"}, status_code=400)
 
         res = supabase.auth.sign_in_with_password({
             "email": email,
@@ -1963,9 +1965,9 @@ async def login_react(request: Request):
             except Exception:
                 existe_en_tablas = False
 
-            mensaje = "Correo o contrasena incorrectos"
+            mensaje = "Correo o contraseÃ±a incorrectos"
             if existe_en_tablas:
-                mensaje = "El correo existe en la base de datos, pero no coincide con Supabase Auth. Revisa la contrasena o crea la cuenta de acceso en Supabase Authentication."
+                mensaje = "El correo existe en la base de datos, pero no coincide con Supabase Auth. Revisa la contraseÃ±a o crea la cuenta de acceso en Supabase Authentication."
             return JSONResponse({"message": mensaje}, status_code=401)
 
         print("ERROR login-react:", e)
@@ -1983,7 +1985,7 @@ async def logout():
         pass
 
     response = RedirectResponse(
-        url="/?success=SesiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n cerrada correctamente",
+        url="/?success=SesiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n cerrada correctamente",
         status_code=302
     )
 
@@ -2034,7 +2036,7 @@ async def promover_admin(
         )
 
 
-# ==================== CREAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
+# ==================== CREAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/nuevo")
 async def crear_vehiculo(
     request: Request,
@@ -2127,7 +2129,7 @@ async def crear_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== FORMULARIO EDITAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
+# ==================== FORMULARIO EDITAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
 @app.get("/vehiculo/editar/{vehiculo_id}", response_class=HTMLResponse)
 async def editar_vehiculo_form(
     request: Request, vehiculo_id: int, access_token: str = Cookie(None)
@@ -2166,7 +2168,7 @@ async def editar_vehiculo_form(
     )
 
 
-# ==================== ACTUALIZAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
+# ==================== ACTUALIZAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/editar/{vehiculo_id}")
 async def actualizar_vehiculo(
     vehiculo_id: int,
@@ -2218,7 +2220,7 @@ async def actualizar_vehiculo(
             conn.commit()
 
         return RedirectResponse(
-            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­culo actualizado correctamente",
+            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­culo actualizado correctamente",
             status_code=302
         )
 
@@ -2226,7 +2228,7 @@ async def actualizar_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== ELIMINAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
+# ==================== ELIMINAR VEHÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/eliminar/{vehiculo_id}")
 async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -2243,7 +2245,7 @@ async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
             conn.commit()
 
         return RedirectResponse(
-            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­culo eliminado correctamente",
+            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­culo eliminado correctamente",
             status_code=302
         )
 
@@ -2251,8 +2253,8 @@ async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
-# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
 @app.get("/citas", response_class=HTMLResponse)
 async def ver_citas(request: Request, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token, request)
@@ -2656,12 +2658,12 @@ async def guardar_factura_servicio(
 
         concepto = (
             body.get("concepto") or
-            "Servicio tÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©cnico automotriz"
+            "Servicio tÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©cnico automotriz"
         ).strip()
 
         if costo <= 0:
             return JSONResponse(
-                {"error": "Ingresa un costo vÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lido para la factura"},
+                {"error": "Ingresa un costo vÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lido para la factura"},
                 status_code=400
             )
 
@@ -2704,7 +2706,7 @@ async def guardar_factura_servicio(
 
             if not row:
                 return JSONResponse(
-                    {"error": "No se encontrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ la cita"},
+                    {"error": "No se encontrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ la cita"},
                     status_code=404
                 )
 
@@ -2769,7 +2771,7 @@ async def cambiar_rol_usuario(
 
     if rol not in ("admin", "usuario", "mecanico"):
         return RedirectResponse(
-            url="/?error=Rol invÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lido",
+            url="/?error=Rol invÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡lido",
             status_code=302
         )
 
@@ -2944,6 +2946,10 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
                     return [dict(r) for r in conn.execute(text(query)).mappings().fetchall()]
                 except Exception as e:
                     load_errors.append(f"{label}: {e}")
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
                     return []
 
             try:
@@ -2954,29 +2960,50 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
             ctx["ciudades"]         = fetch("SELECT * FROM dmi.ciudades ORDER BY idciudades", "ciudades")
             ctx["tipovehiculos"]    = fetch("SELECT * FROM dmi.tipovehiculos ORDER BY idtipovehiculos", "tipos de vehiculo")
             ctx["metodospago"]      = fetch("SELECT * FROM dmi.metodopago ORDER BY idmetodopago", "metodos de pago")
-            ctx["productosprecios"] = fetch("SELECT * FROM dmi.productoprecio ORDER BY idproductoprecio", "precios producto")
-            ctx["serviciosprecios"] = fetch("SELECT * FROM dmi.serviciosprecio ORDER BY idserviciosprecio", "precios servicio")
-            ctx["inventario"]       = fetch("SELECT * FROM dmi.inventario ORDER BY idinventario", "inventario")
+            ctx["productosprecios"] = fetch("""
+                SELECT
+                    id AS idproductoprecio,
+                    codigo AS codigoproductoprecio,
+                    nombre AS descripcionprprecio,
+                    precio_venta AS valor
+                FROM dmi.inventario_catalogo
+                WHERE COALESCE(activo, TRUE) = TRUE
+                ORDER BY nombre
+            """, "precios producto desde catalogo")
+            ctx["serviciosprecios"] = []
+            ctx["inventario"]       = fetch("""
+                SELECT
+                    id AS idinventario,
+                    codigo AS codigoinventario,
+                    nombre AS descripcioninventario,
+                    nombre AS "Descripciontario",
+                    cantidad,
+                    precio_costo AS costo_unitario,
+                    'UND' AS unidad_medida,
+                    CASE WHEN COALESCE(activo, TRUE) THEN 'activo' ELSE 'desactivado' END AS estado
+                FROM dmi.inventario_catalogo
+                WHERE COALESCE(activo, TRUE) = TRUE
+                ORDER BY nombre
+            """, "inventario desde catalogo")
             ctx["oficinas"] = fetch("""
                 SELECT
                     o.*,
                     c.descripcion_ciudad,
                     c.codigo_ciudad,
-                    i.codigoinventario,
-                    i.descripcioninventario
+                    i.codigo AS codigoinventario,
+                    i.nombre AS descripcioninventario
                 FROM dmi.oficinas o
                 LEFT JOIN dmi.ciudades c ON c.idciudades = o.ciudades_idciudades
-                LEFT JOIN dmi.inventario i ON i.idinventario = o.inventario_idinventario
+                LEFT JOIN dmi.inventario_catalogo i ON i.id = o.inventario_idinventario
                 ORDER BY o.idoficinas
             """, "oficinas")
             ctx["servicios"] = fetch("""
                 SELECT
                     s.*,
-                    sp.descripcionserviciosprecio,
-                    sp.precioserviciosprecio,
+                    NULL::varchar AS descripcionserviciosprecio,
+                    NULL::varchar AS precioserviciosprecio,
                     pe.codigopedido
                 FROM dmi.servicios s
-                LEFT JOIN dmi.serviciosprecio sp ON sp.idserviciosprecio = s.serviciosprecio_idserviciosprecio
                 LEFT JOIN dmi.pedido pe ON pe.idpedido = s.pedido_idpedido
                 ORDER BY s.idservicios
             """, "servicios")
@@ -2993,19 +3020,23 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
             ctx["pedidos"]          = fetch("SELECT * FROM dmi.pedido ORDER BY idpedido DESC LIMIT 50", "pedidos")
             ctx["productos"]        = fetch("""
                 SELECT
-                    p.*,
-                    pp.descripcionprprecio,
-                    pp.valor AS valor_precio,
-                    pe.codigopedido
-                FROM dmi.productos p
-                LEFT JOIN dmi.productoprecio pp ON pp.idproductoprecio = p.productoprecio_idproductoprecio
-                LEFT JOIN dmi.pedido pe ON pe.idpedido = p.pedido_idpedido
-                ORDER BY p.idproductos
-            """, "productos")
+                    id AS idproductos,
+                    codigo AS codigoproductos,
+                    nombre AS descripcionproductos,
+                    precio_venta AS descripcionprprecio,
+                    precio_venta AS valor_precio,
+                    NULL::varchar AS codigopedido,
+                    NULL::int AS pedido_idpedido,
+                    id AS productoprecio_idproductoprecio
+                FROM dmi.inventario_catalogo
+                WHERE COALESCE(activo, TRUE) = TRUE
+                ORDER BY nombre
+                LIMIT 100
+            """, "productos desde catalogo")
             ctx["movimientos"] = fetch("""
-                SELECT m.*, i.codigoinventario, i.descripcioninventario 
+                SELECT m.*, i.codigo AS codigoinventario, i.nombre AS descripcioninventario 
                 FROM dmi.movimientos_inventario m
-                LEFT JOIN dmi.inventario i ON i.idinventario = m.inventario_id
+                LEFT JOIN dmi.inventario_catalogo i ON i.id = m.inventario_id
                 ORDER BY m.fecha DESC 
                 LIMIT 50
             """, "movimientos")
@@ -3093,7 +3124,20 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
 async def api_inventario():
     try:
         with engine.connect() as conn:
-            data = conn.execute(text("SELECT * FROM dmi.inventario ORDER BY idinventario")).mappings().fetchall()
+            data = conn.execute(text("""
+                SELECT
+                    id AS idinventario,
+                    codigo AS codigoinventario,
+                    nombre AS descripcioninventario,
+                    nombre AS "Descripciontario",
+                    cantidad,
+                    precio_costo AS costo_unitario,
+                    'UND' AS unidad_medida,
+                    CASE WHEN COALESCE(activo, TRUE) THEN 'activo' ELSE 'desactivado' END AS estado
+                FROM dmi.inventario_catalogo
+                WHERE COALESCE(activo, TRUE) = TRUE
+                ORDER BY nombre
+            """)).mappings().fetchall()
             return JSONResponse([dict(r) for r in data])
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -3223,9 +3267,9 @@ async def api_movimientos():
     try:
         with engine.connect() as conn:
             data = conn.execute(text("""
-                SELECT m.*, i.codigoinventario 
+                SELECT m.*, i.codigo AS codigoinventario 
                 FROM dmi.movimientos_inventario m
-                LEFT JOIN dmi.inventario i ON i.idinventario = m.inventario_id
+                LEFT JOIN dmi.inventario_catalogo i ON i.id = m.inventario_id
                 ORDER BY m.fecha DESC LIMIT 50
             """)).mappings().fetchall()
             result = []
@@ -3310,7 +3354,16 @@ async def api_crear_tipo_vehiculo(request: Request):
 async def api_precios_producto():
     try:
         with engine.connect() as conn:
-            data = conn.execute(text("SELECT idproductoprecio as id, codigoproductoprecio, descripcionprprecio, valor as precio FROM dmi.productoprecio ORDER BY idproductoprecio")).mappings().fetchall()
+            data = conn.execute(text("""
+                SELECT
+                    id,
+                    codigo AS codigoproductoprecio,
+                    nombre AS descripcionprprecio,
+                    precio_venta AS precio
+                FROM dmi.inventario_catalogo
+                WHERE COALESCE(activo, TRUE) = TRUE
+                ORDER BY nombre
+            """)).mappings().fetchall()
             return JSONResponse([dict(r) for r in data])
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -3326,12 +3379,11 @@ async def api_servicios():
                     s.codigoservicio,
                     s.descripcionservicio,
                     s.pedido_idpedido,
-                    s.serviciosprecio_idserviciosprecio,
-                    sp.descripcionserviciosprecio,
-                    sp.precioserviciosprecio,
+                    NULL::int AS serviciosprecio_idserviciosprecio,
+                    NULL::varchar AS descripcionserviciosprecio,
+                    NULL::varchar AS precioserviciosprecio,
                     pe.codigopedido
                 FROM dmi.servicios s
-                LEFT JOIN dmi.serviciosprecio sp ON sp.idserviciosprecio = s.serviciosprecio_idserviciosprecio
                 LEFT JOIN dmi.pedido pe ON pe.idpedido = s.pedido_idpedido
                 ORDER BY s.idservicios
             """)).mappings().fetchall()
@@ -3343,7 +3395,15 @@ async def api_servicios():
 async def api_precios_servicio():
     try:
         with engine.connect() as conn:
-            data = conn.execute(text("SELECT idserviciosprecio as id, codigoserviciosprecio, descripcionserviciosprecio, precioserviciosprecio as precio FROM dmi.serviciosprecio ORDER BY idserviciosprecio")).mappings().fetchall()
+            data = conn.execute(text("""
+                SELECT
+                    idservicios AS id,
+                    codigoservicio AS codigoserviciosprecio,
+                    descripcionservicio AS descripcionserviciosprecio,
+                    NULL::varchar AS precio
+                FROM dmi.servicios
+                ORDER BY idservicios
+            """)).mappings().fetchall()
             return JSONResponse([dict(r) for r in data])
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -3526,9 +3586,9 @@ async def config_crear_inventario(
         with engine.connect() as conn:
             conn.execute(
                 text("""
-                    INSERT INTO dmi.inventario
-                    (codigoinventario, descripcioninventario, pedido_idpedido, cantidad, costo_unitario, unidad_medida, estado, oficinas_idoficinas)
-                    VALUES (:codigo, :descripcion, :pedido, :cantidad, :costo, :unidad, :estado, :oficina)
+                    INSERT INTO dmi.inventario_catalogo
+                    (codigo, nombre, precio_costo, precio_venta, cantidad, categoria, departamento, activo)
+                    VALUES (:codigo, :descripcion, COALESCE(:costo, 0), COALESCE(:costo, 0), COALESCE(:cantidad, 0), 'General', COALESCE(:unidad, 'UND'), COALESCE(:estado, 'activo') <> 'desactivado')
                 """),
                 {
                     "codigo": codigoinventario,
@@ -4283,10 +4343,10 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     dr.subtotal,
                     dr.consumido,
                     dr.fecha_consumo,
-                    p.codigoproductos,
-                    p.descripcionproductos
+                    p.codigo AS codigoproductos,
+                    p.nombre AS descripcionproductos
                 FROM dmi.detalle_repuestos dr
-                LEFT JOIN dmi.productos p ON p.idproductos = dr.producto_id
+                LEFT JOIN dmi.inventario_catalogo p ON p.id = COALESCE(dr.producto_id, dr.inventario_id)
                 JOIN dmi.orden_trabajo ot ON ot.idorden = dr.orden_id
                 WHERE ot.cliente_id = :usuario_id
                 ORDER BY dr.iddetalle_repuesto DESC
@@ -4658,6 +4718,9 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
 
 
 
