@@ -23,11 +23,11 @@ const getApiBaseUrl = () => {
 };
 
 const BASE_URL = getApiBaseUrl();
-const STEPS          = ['Cliente', 'Vehículo'];
+const STEPS          = ['Cliente', 'VehÃ­culo'];
 const tiposDocumento = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI'];
 
 const initialCliente = {
-  email: '', contrasena: '', nombre: '', apellido: '',
+  email: '', contrasena: '', confirmarContrasena: '', nombre: '', apellido: '',
   fechaNacimiento: '', tipoDocumento: '', documento: '',
   telefono: '', nombreUsuario: '',
 };
@@ -47,12 +47,13 @@ export default function RegistrarUnidad({ onComplete } = {}) {
   const [cliente, setCliente]       = useState(initialCliente);
   const [vehiculo, setVehiculo]     = useState(initialVehiculo);
   const [showPw, setShowPw]         = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [loading, setLoading]       = useState(false);
   const [, setError]                = useState('');
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
 
-  // ── Cargar tipos de vehículo desde la BD ───────────────────────
+  // â”€â”€ Cargar tipos de vehÃ­culo desde la BD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     fetch(`${BASE_URL}/api/tipovehiculos`)
       .then(res => {
@@ -83,10 +84,16 @@ export default function RegistrarUnidad({ onComplete } = {}) {
   const handleNext = (e) => {
     e.preventDefault();
     setError('');
+
+    if (!isExistingUser && cliente.contrasena !== cliente.confirmarContrasena) {
+      showDmiError('Las contrasenas no coinciden', 'La contrasena y la confirmacion deben ser iguales para continuar.');
+      return;
+    }
+
     setStep(1);
   };
 
-  // ── Submit final: registro usuario + vehículo ──────────────────
+  // â”€â”€ Submit final: registro usuario + vehÃ­culo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -100,7 +107,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
         nombre: localStorage.getItem('nombre') || '',
       };
 
-      // PASO 1: Registrar usuario vía /registro-react (devuelve JSON)
+      // PASO 1: Registrar usuario vÃ­a /registro-react (devuelve JSON)
       if (!isExistingUser) {
       const regRes = await fetch(`${BASE_URL}/registro-react`, {
         method: 'POST',
@@ -122,7 +129,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
       const regData = await regRes.json();
       if (!regRes.ok || regData.error) throw new Error(regData.error || regData.message || 'No se pudo registrar el usuario.');
 
-      // PASO 2: Login automático para obtener cookie de sesión
+      // PASO 2: Login automÃ¡tico para obtener cookie de sesiÃ³n
       const loginRes = await fetch(`${BASE_URL}/login-react`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,7 +147,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
       localStorage.setItem('nombre', loginData.nombre);
       }
 
-      // PASO 3: Registrar vehículo vía /vehiculo/nuevo (usa cookie de sesión)
+      // PASO 3: Registrar vehÃ­culo vÃ­a /vehiculo/nuevo (usa cookie de sesiÃ³n)
       // Como FastAPI lee la cookie httponly, necesitamos hacer login tradicional
       // para que la cookie quede seteada correctamente.
       // Usamos el token JWT como header Authorization en su lugar:
@@ -172,8 +179,8 @@ export default function RegistrarUnidad({ onComplete } = {}) {
       });
 
       // Nota: /vehiculo/nuevo lee la cookie access_token.
-      // Como el registro es nuevo, la cookie no está seteada aún en el browser.
-      // Solución: llamar al endpoint /login estándar para que FastAPI setee la cookie.
+      // Como el registro es nuevo, la cookie no estÃ¡ seteada aÃºn en el browser.
+      // SoluciÃ³n: llamar al endpoint /login estÃ¡ndar para que FastAPI setee la cookie.
       if (!isExistingUser) {
       await fetch(`${BASE_URL}/login`, {
         method: 'POST',
@@ -229,18 +236,18 @@ export default function RegistrarUnidad({ onComplete } = {}) {
     setVehiculo(initialVehiculo);
   };
 
-  // ── Pantalla de éxito ──────────────────────────────────────────
+  // â”€â”€ Pantalla de Ã©xito â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (submitted) return (
     <div className="ru-wrapper">
       <div className="ru-container">
         <div className="ru-card">
           <div className="ru-success-box">
             <div className="ru-success-icon"><FontAwesomeIcon icon={faCheckCircle} /></div>
-            <p className="ru-success-title">¡Registro Completado!</p>
+            <p className="ru-success-title">Â¡Registro Completado!</p>
             <p className="ru-success-text">
               El cliente{' '}
               <strong className="ru-highlight">{isExistingUser ? existingName : `${cliente.nombre} ${cliente.apellido}`}</strong>{' '}
-              y el vehículo con placa{' '}
+              y el vehÃ­culo con placa{' '}
               <strong className="ru-highlight">{vehiculo.placa}</strong>{' '}
               han sido registrados exitosamente en Disol Motors.
             </p>
@@ -257,7 +264,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
     <div className="ru-wrapper">
       <div className="ru-container">
 
-        {/* ── Header ── */}
+        {/* â”€â”€ Header â”€â”€ */}
         <div className="ru-header">
           <div className="ru-icon-row">
             <div className="ru-icon-box"><FontAwesomeIcon icon={faKey} /></div>
@@ -271,7 +278,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
           </p>
         </div>
 
-        {/* ── Stepper ── */}
+        {/* â”€â”€ Stepper â”€â”€ */}
         <div className="ru-stepper">
           {STEPS.map((label, i) => (
             <React.Fragment key={i}>
@@ -291,13 +298,13 @@ export default function RegistrarUnidad({ onComplete } = {}) {
         </div>
 
 
-        {/* ══════ PASO 1 – CLIENTE ══════ */}
+        {/* â•â•â•â•â•â• PASO 1 â€“ CLIENTE â•â•â•â•â•â• */}
         {!isExistingUser && step === 0 && (
           <form onSubmit={handleNext}>
             <div className="ru-card">
               <div className="ru-card-head cliente">
                 <div className="ru-head-icon"><FontAwesomeIcon icon={faUserCheck} /></div>
-                <h5 className="ru-head-title">Información del Cliente</h5>
+                <h5 className="ru-head-title">InformaciÃ³n del Cliente</h5>
               </div>
 
               <div className="ru-body">
@@ -310,7 +317,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                       placeholder="juanperez92" required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Correo electrónico <span className="ru-req">*</span></label>
+                    <label className="ru-label">Correo electrÃ³nico <span className="ru-req">*</span></label>
                     <input className="ru-input" type="email" name="email"
                       value={cliente.email} onChange={onCliente}
                       placeholder="juan@email.com" required />
@@ -319,20 +326,37 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
                 <div className="ru-row mb-22">
                   <div className="ru-field">
-                    <label className="ru-label">Contraseña <span className="ru-req">*</span></label>
+                    <label className="ru-label">Contrasena <span className="ru-req">*</span></label>
                     <div className="ru-pw-wrap">
                       <input
                         className="ru-input pr-40"
                         type={showPw ? 'text' : 'password'}
                         name="contrasena" value={cliente.contrasena}
-                        onChange={onCliente} placeholder="••••••••" required minLength={6}
+                        onChange={onCliente} placeholder="********" required minLength={6}
                       />
-                      <button type="button" className="ru-pw-eye" onClick={() => setShowPw(p => !p)}>
+                      <button type="button" className="ru-pw-eye" onClick={() => setShowPw((value) => !value)} aria-label={showPw ? 'Ocultar contrasena' : 'Ver contrasena'}>
                         <FontAwesomeIcon icon={showPw ? faEyeSlash : faEye} />
                       </button>
                     </div>
                   </div>
-                  <div className="ru-field empty" />
+                  <div className="ru-field">
+                    <label className="ru-label">Confirmar contrasena <span className="ru-req">*</span></label>
+                    <div className="ru-pw-wrap">
+                      <input
+                        className="ru-input pr-40"
+                        type={showConfirmPw ? 'text' : 'password'}
+                        name="confirmarContrasena"
+                        value={cliente.confirmarContrasena}
+                        onChange={onCliente}
+                        placeholder="Confirma tu contrasena"
+                        required
+                        minLength={6}
+                      />
+                      <button type="button" className="ru-pw-eye" onClick={() => setShowConfirmPw((value) => !value)} aria-label={showConfirmPw ? 'Ocultar confirmacion' : 'Ver confirmacion'}>
+                        <FontAwesomeIcon icon={showConfirmPw ? faEyeSlash : faEye} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <p className="ru-section">Datos personales</p>
@@ -347,7 +371,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                     <label className="ru-label">Apellido <span className="ru-req">*</span></label>
                     <input className="ru-input" type="text" name="apellido"
                       value={cliente.apellido} onChange={onCliente}
-                      placeholder="Pérez" required />
+                      placeholder="PÃ©rez" required />
                   </div>
                 </div>
 
@@ -361,7 +385,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                     </select>
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">N° Documento <span className="ru-req">*</span></label>
+                    <label className="ru-label">NÂ° Documento <span className="ru-req">*</span></label>
                     <input className="ru-input" type="text" name="documento"
                       value={cliente.documento} onChange={onCliente}
                       placeholder="1234567890" required />
@@ -375,7 +399,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                       value={cliente.fechaNacimiento} onChange={onCliente} required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Teléfono</label>
+                    <label className="ru-label">TelÃ©fono</label>
                     <input className="ru-input" type="tel" name="telefono"
                       value={cliente.telefono} onChange={onCliente}
                       placeholder="555-0123" />
@@ -386,26 +410,26 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
             <div className="ru-btn-row">
               <button type="submit" className="ru-btn-primary">
-                Siguiente: Vehículo <FontAwesomeIcon icon={faChevronRight} />
+                Siguiente: VehÃ­culo <FontAwesomeIcon icon={faChevronRight} />
               </button>
             </div>
           </form>
         )}
 
-        {/* ══════ PASO 2 – VEHÍCULO ══════ */}
+        {/* â•â•â•â•â•â• PASO 2 â€“ VEHÃCULO â•â•â•â•â•â• */}
         {step === 1 && (
           <form onSubmit={handleSubmit}>
             <div className="ru-card">
               <div className="ru-card-head vehiculo">
                 <div className="ru-head-icon"><FontAwesomeIcon icon={faShield} /></div>
-                <h5 className="ru-head-title">Detalles del Vehículo</h5>
+                <h5 className="ru-head-title">Detalles del VehÃ­culo</h5>
               </div>
 
               <div className="ru-body">
-                <p className="ru-section">Identificación</p>
+                <p className="ru-section">IdentificaciÃ³n</p>
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">Código <span className="ru-req">*</span></label>
+                    <label className="ru-label">CÃ³digo <span className="ru-req">*</span></label>
                     <input className="ru-input" type="text" name="codigo"
                       value={vehiculo.codigo} onChange={onVehiculo}
                       placeholder="VEH-001" required />
@@ -426,7 +450,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                       placeholder="Nissan" required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Tipo de vehículo <span className="ru-req">*</span></label>
+                    <label className="ru-label">Tipo de vehÃ­culo <span className="ru-req">*</span></label>
                     <select className="ru-select" name="tipoVehiculo"
                       value={vehiculo.tipoVehiculo} onChange={onVehiculo} required>
                       <option value="">Seleccionar</option>
@@ -483,10 +507,10 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                 </div>
 
                 <div className="ru-field">
-                  <label className="ru-label">Descripción</label>
+                  <label className="ru-label">DescripciÃ³n</label>
                   <textarea className="ru-textarea" name="descripcion"
                     value={vehiculo.descripcion} onChange={onVehiculo}
-                    placeholder="Descripción general del vehículo..." />
+                    placeholder="DescripciÃ³n general del vehÃ­culo..." />
                 </div>
               </div>
             </div>
@@ -520,3 +544,5 @@ export default function RegistrarUnidad({ onComplete } = {}) {
     </div>
   );
 }
+
+

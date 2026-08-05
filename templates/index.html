@@ -5,6 +5,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -516,6 +517,7 @@
       height: 42px;
     }
   </style>
+  <link rel="stylesheet" href="/static/dmi-messages.css?v=20260728">
 </head>
 <body>
   {% set total_vehiculos = data|length if data else 0 %}
@@ -1393,7 +1395,7 @@
     const openServiceInvoice = (invoice) => {
       const invoiceWindow = window.open("", "_blank", "width=980,height=900");
       if (!invoiceWindow) {
-        alert("El navegador bloqueo la factura. Permite ventanas emergentes para descargarla.");
+        window.dmiShowMessage({ kicker: "Factura", title: "Ventana bloqueada", message: "El navegador bloqueo la factura. Permite ventanas emergentes para descargarla.", confirmText: "Entendido" });
         return;
       }
 
@@ -1420,7 +1422,8 @@
             .legal{margin-top:28px;color:#666;font-size:12px;line-height:1.55;border-top:1px solid #eee;padding-top:16px}
             @media print{body{background:#fff}.toolbar{display:none}.invoice{width:100%;margin:0}}
           </style>
-        </head>
+          <link rel="stylesheet" href="/static/dmi-messages.css?v=20260728">
+</head>
         <body>
           <div class="toolbar">
             <button onclick="window.print()">Descargar PDF</button>
@@ -1479,7 +1482,8 @@
               numeracion autorizada y responsabilidades fiscales antes de usarlo como factura electronica legal ante la DIAN.
             </p>
           </main>
-        </body>
+          <script src="/static/dmi-messages.js?v=20260728"></script>
+</body>
         </html>
       `);
       invoiceWindow.document.close();
@@ -1513,7 +1517,7 @@
       const costo = Number(costInput.value || 0);
       const concepto = conceptInput.value.trim() || activeCita.motivo || "Servicio tecnico automotriz";
       if (!costo || costo <= 0) {
-        alert("Ingresa el costo final del servicio.");
+        window.dmiShowMessage({ kicker: "Factura", title: "Falta el costo", message: "Ingresa el costo final del servicio para generar la factura.", confirmText: "Entendido" });
         return;
       }
 
@@ -1552,10 +1556,10 @@
         });
 
         closeInvoiceModal();
-        alert("Factura generada. La cita quedo marcada como completada.");
+        window.dmiShowMessage({ kicker: "Factura generada", title: "Servicio completado", message: "Factura generada. La cita quedo marcada como completada.", confirmText: "Aceptar" });
         window.location.href = "/admin/citas?success=Factura de servicio generada";
       } catch (error) {
-        alert(error.message || "No se pudo generar la factura");
+        window.dmiShowMessage({ kicker: "Factura", title: "No se pudo generar", message: error.message || "No se pudo generar la factura", confirmText: "Entendido" });
       } finally {
         confirmBtn.disabled = false;
         confirmBtn.textContent = "Generar factura";
@@ -2145,6 +2149,7 @@
   if (activeLink) activeLink.classList.add("active");
 })();
 </script>
+  <script src="/static/dmi-messages.js?v=20260728"></script>
 </body>
 </html>
 

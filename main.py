@@ -123,7 +123,7 @@ def obtener_usuario(access_token: Optional[str], request: Request = None) -> Opt
     if not access_token:
         return None
     try:
-        # Se mantiene el decodificador sin verificaciÃƒÂ³n automÃƒÂ¡tica
+        # Se mantiene el decodificador sin verificaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tica
         payload = jwt.decode(access_token, options={"verify_signature": False})
         user_id = payload.get("sub")
         if not user_id:
@@ -407,7 +407,7 @@ def generar_codigo_orden(conn) -> str:
         {"base": f"{base}%"},
     ).scalar() or 0
     return f"{base}-{int(total_dia) + 1:04d}"
-# ==================== PÃƒÂGINA PRINCIPAL ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, access_token: str = Cookie(None)):
     data = []
@@ -741,6 +741,24 @@ def actualizar_totales_orden(conn, orden_id: int):
     return total_servicios, total_repuestos, total_orden
 
 
+
+def registrar_historial_orden(conn, orden_id: int, tipo_evento: str, descripcion: str, costo_total: float = 0, factura_id=None):
+    if not table_exists(conn, "dmi", "historial_vehiculo"):
+        return
+    orden = obtener_resumen_orden(conn, orden_id)
+    if not orden:
+        return
+    insert_dynamic_returning(conn, "historial_vehiculo", {
+        "cliente_id": orden.get("cliente_id"),
+        "vehiculo_id": orden.get("idvehiculo") or orden.get("vehiculo_id"),
+        "orden_id": orden_id,
+        "factura_id": factura_id,
+        "fecha_evento": datetime.now(),
+        "tipo_evento": tipo_evento,
+        "descripcion": descripcion,
+        "kilometraje": orden.get("kilometraje_actual"),
+        "costo_total": costo_total,
+    })
 def generar_codigo_documento(conn, table: str, column: str, prefix: str):
     base = f"{prefix}-{datetime.utcnow().strftime('%Y%m%d')}"
     if not table_exists(conn, "dmi", table) or column not in table_columns(conn, "dmi", table):
@@ -893,10 +911,11 @@ async def admin_orden_detalle(orden_id: int, request: Request, access_token: str
             if not orden:
                 return RedirectResponse(url="/admin/ordenes?error=Orden no encontrada", status_code=302)
 
-            diagnostico = conn.execute(
-                text("SELECT * FROM dmi.diagnosticos WHERE orden_id = :id ORDER BY fecha_diagnostico DESC LIMIT 1"),
+            diagnosticos = [dict(row) for row in conn.execute(
+                text("SELECT * FROM dmi.diagnosticos WHERE orden_id = :id ORDER BY fecha_diagnostico DESC, iddiagnostico DESC"),
                 {"id": orden_id},
-            ).mappings().fetchone()
+            ).mappings().fetchall()]
+            diagnostico = diagnosticos[0] if diagnosticos else None
             servicios = [dict(row) for row in conn.execute(
                 text("SELECT * FROM dmi.detalle_servicios WHERE orden_id = :id ORDER BY iddetalle_servicio"),
                 {"id": orden_id},
@@ -940,6 +959,7 @@ async def admin_orden_detalle(orden_id: int, request: Request, access_token: str
             "ordenes": [dict(orden)] if orden else [],
             "orden_detalle": dict(orden) if orden else None,
             "diagnostico": dict(diagnostico) if diagnostico else None,
+            "diagnosticos_orden": diagnosticos,
             "servicios_orden": servicios,
             "repuestos_orden": repuestos,
             "factura_orden": dict(factura) if factura else None,
@@ -947,7 +967,7 @@ async def admin_orden_detalle(orden_id: int, request: Request, access_token: str
             "productos_inventario": productos_inventario,
             "metodos_pago": metodos_pago,
             "total_ordenes": 1 if orden else 0,
-            "total_diagnostico": 1 if diagnostico else 0,
+            "total_diagnostico": len(diagnosticos),
             "total_reparacion": 1 if orden and orden.get("estado") == "en_reparacion" else 0,
             "total_facturadas": 1 if factura else 0,
             "success_msg": success_msg,
@@ -1011,64 +1031,40 @@ async def guardar_diagnostico_orden(
 
     try:
         with engine.connect() as conn:
-
-            diagnostico_existente = conn.execute(
+            conn.execute(
                 text("""
-                    SELECT iddiagnostico
-                    FROM dmi.diagnosticos
-                    WHERE orden_id = :orden_id
+                    INSERT INTO dmi.diagnosticos
+                    (
+                        orden_id,
+                        diagnostico_tecnico,
+                        recomendacion,
+                        fecha_diagnostico,
+                        estado
+                    )
+                    VALUES
+                    (
+                        :orden_id,
+                        :diagnostico,
+                        :recomendacion,
+                        :fecha,
+                        'registrado'
+                    )
                 """),
-                {"orden_id": orden_id},
-            ).fetchone()
+                {
+                    "orden_id": orden_id,
+                    "diagnostico": diagnostico_tecnico,
+                    "recomendacion": recomendacion,
+                    "fecha": datetime.now(),
+                },
+            )
 
-            if diagnostico_existente:
-
-                conn.execute(
-                    text("""
-                        UPDATE dmi.diagnosticos
-                        SET
-                            diagnostico_tecnico = :diagnostico,
-                            recomendacion = :recomendacion,
-                            fecha_diagnostico = :fecha,
-                            estado = 'registrado'
-                        WHERE orden_id = :orden_id
-                    """),
-                    {
-                        "orden_id": orden_id,
-                        "diagnostico": diagnostico_tecnico,
-                        "recomendacion": recomendacion,
-                        "fecha": datetime.now(),
-                    },
-                )
-
-            else:
-
-                conn.execute(
-                    text("""
-                        INSERT INTO dmi.diagnosticos
-                        (
-                            orden_id,
-                            diagnostico_tecnico,
-                            recomendacion,
-                            fecha_diagnostico,
-                            estado
-                        )
-                        VALUES
-                        (
-                            :orden_id,
-                            :diagnostico,
-                            :recomendacion,
-                            :fecha,
-                            'registrado'
-                        )
-                    """),
-                    {
-                        "orden_id": orden_id,
-                        "diagnostico": diagnostico_tecnico,
-                        "recomendacion": recomendacion,
-                        "fecha": datetime.now(),
-                    },
-                )
+            registrar_historial_orden(
+                conn,
+                orden_id,
+                "diagnostico",
+                f"Diagnostico agregado: {diagnostico_tecnico}",
+                0,
+            )
 
             conn.execute(
                 text("""
@@ -1082,7 +1078,7 @@ async def guardar_diagnostico_orden(
             conn.commit()
 
         return RedirectResponse(
-            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"DiagnÃƒÂ³stico guardado correctamente",
+            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"Diagnostico agregado correctamente",
             status_code=302,
         )
 
@@ -1120,6 +1116,13 @@ async def agregar_servicio_orden(
             })
             actualizar_totales_orden(conn, orden_id)
             update_dynamic(conn, "orden_trabajo", "idorden", orden_id, {"estado": "en_reparacion"})
+            registrar_historial_orden(
+                conn,
+                orden_id,
+                "servicio",
+                f"Servicio realizado: {descripcion}",
+                subtotal,
+            )
             conn.commit()
         return RedirectResponse(url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"Servicio agregado", status_code=302)
     except Exception as e:
@@ -1179,6 +1182,13 @@ async def agregar_repuesto_orden(
                 })
             actualizar_totales_orden(conn, orden_id)
             update_dynamic(conn, "orden_trabajo", "idorden", orden_id, {"estado": "en_reparacion"})
+            registrar_historial_orden(
+                conn,
+                orden_id,
+                "repuesto",
+                f"Repuesto usado: {descripcion or 'Repuesto sin descripcion'}",
+                subtotal,
+            )
             conn.commit()
         return RedirectResponse(url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"Repuesto agregado e inventario actualizado", status_code=302)
     except Exception as e:
@@ -1259,7 +1269,7 @@ async def generar_cotizacion_orden(
             conn.commit()
 
         return RedirectResponse(
-            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"CotizaciÃƒÂ³n generada correctamente",
+            url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"CotizaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n generada correctamente",
             status_code=302,
         )
 
@@ -1973,7 +1983,7 @@ async def logout():
         pass
 
     response = RedirectResponse(
-        url="/?success=SesiÃƒÂ³n cerrada correctamente",
+        url="/?success=SesiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n cerrada correctamente",
         status_code=302
     )
 
@@ -2024,7 +2034,7 @@ async def promover_admin(
         )
 
 
-# ==================== CREAR VEHÃƒÂCULO ====================
+# ==================== CREAR VEHÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/nuevo")
 async def crear_vehiculo(
     request: Request,
@@ -2117,7 +2127,7 @@ async def crear_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== FORMULARIO EDITAR VEHÃƒÂCULO ====================
+# ==================== FORMULARIO EDITAR VEHÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂCULO ====================
 @app.get("/vehiculo/editar/{vehiculo_id}", response_class=HTMLResponse)
 async def editar_vehiculo_form(
     request: Request, vehiculo_id: int, access_token: str = Cookie(None)
@@ -2156,7 +2166,7 @@ async def editar_vehiculo_form(
     )
 
 
-# ==================== ACTUALIZAR VEHÃƒÂCULO ====================
+# ==================== ACTUALIZAR VEHÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/editar/{vehiculo_id}")
 async def actualizar_vehiculo(
     vehiculo_id: int,
@@ -2208,7 +2218,7 @@ async def actualizar_vehiculo(
             conn.commit()
 
         return RedirectResponse(
-            url="/?success=VehÃƒÂ­culo actualizado correctamente",
+            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­culo actualizado correctamente",
             status_code=302
         )
 
@@ -2216,7 +2226,7 @@ async def actualizar_vehiculo(
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== ELIMINAR VEHÃƒÂCULO ====================
+# ==================== ELIMINAR VEHÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂCULO ====================
 @app.post("/vehiculo/eliminar/{vehiculo_id}")
 async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token)
@@ -2233,7 +2243,7 @@ async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
             conn.commit()
 
         return RedirectResponse(
-            url="/?success=VehÃƒÂ­culo eliminado correctamente",
+            url="/?success=VehÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­culo eliminado correctamente",
             status_code=302
         )
 
@@ -2241,8 +2251,8 @@ async def eliminar_vehiculo(vehiculo_id: int, access_token: str = Cookie(None)):
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
-# ==================== PÃƒÂGINA DE CITAS ====================
-# ==================== PÃƒÂGINA DE CITAS ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚ÂGINA DE CITAS ====================
 @app.get("/citas", response_class=HTMLResponse)
 async def ver_citas(request: Request, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token, request)
@@ -2646,12 +2656,12 @@ async def guardar_factura_servicio(
 
         concepto = (
             body.get("concepto") or
-            "Servicio tÃƒÂ©cnico automotriz"
+            "Servicio tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cnico automotriz"
         ).strip()
 
         if costo <= 0:
             return JSONResponse(
-                {"error": "Ingresa un costo vÃƒÂ¡lido para la factura"},
+                {"error": "Ingresa un costo vÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido para la factura"},
                 status_code=400
             )
 
@@ -2694,7 +2704,7 @@ async def guardar_factura_servicio(
 
             if not row:
                 return JSONResponse(
-                    {"error": "No se encontrÃƒÂ³ la cita"},
+                    {"error": "No se encontrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³ la cita"},
                     status_code=404
                 )
 
@@ -2759,7 +2769,7 @@ async def cambiar_rol_usuario(
 
     if rol not in ("admin", "usuario", "mecanico"):
         return RedirectResponse(
-            url="/?error=Rol invÃƒÂ¡lido",
+            url="/?error=Rol invÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡lido",
             status_code=302
         )
 
@@ -3085,6 +3095,53 @@ async def api_inventario():
         with engine.connect() as conn:
             data = conn.execute(text("SELECT * FROM dmi.inventario ORDER BY idinventario")).mappings().fetchall()
             return JSONResponse([dict(r) for r in data])
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/catalogo-productos")
+async def api_catalogo_productos():
+    try:
+        with engine.connect() as conn:
+            if not table_exists(conn, "dmi", "inventario_catalogo"):
+                return JSONResponse([])
+
+            rows = conn.execute(text("""
+                SELECT
+                    id,
+                    id_original,
+                    codigo,
+                    nombre,
+                    precio_costo,
+                    precio_venta,
+                    cantidad,
+                    categoria,
+                    departamento,
+                    imagen_url,
+                    activo
+                FROM dmi.inventario_catalogo
+                WHERE COALESCE(activo, TRUE) = TRUE
+                ORDER BY nombre
+                LIMIT 1000
+            """)).mappings().fetchall()
+
+            productos = []
+            for row in rows:
+                item = dict(row)
+                productos.append({
+                    "id": item.get("id") or item.get("id_original"),
+                    "codigo": item.get("codigo") or "",
+                    "nombre": item.get("nombre") or "Producto sin nombre",
+                    "precioCosto": float(item.get("precio_costo") or 0),
+                    "precioVenta": float(item.get("precio_venta") or 0),
+                    "inventario": int(item.get("cantidad") or 0),
+                    "categoria": item.get("categoria") or "General",
+                    "departamento": item.get("departamento") or "",
+                    "image": item.get("imagen_url") or "",
+                    "imagen_url": item.get("imagen_url") or "",
+                    "activo": bool(item.get("activo", True)),
+                })
+
+            return JSONResponse(productos)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
@@ -4097,6 +4154,24 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                 orden["progreso"] = progreso_por_estado.get(estado, 10)
                 orden["estado_label"] = etiqueta_por_estado.get(estado, estado)
 
+            diagnosticos_orden = query_rows(
+                conn,
+                """
+                SELECT
+                    d.iddiagnostico,
+                    d.orden_id,
+                    d.diagnostico_tecnico,
+                    d.recomendacion,
+                    d.fecha_diagnostico,
+                    d.estado
+                FROM dmi.diagnosticos d
+                JOIN dmi.orden_trabajo ot ON ot.idorden = d.orden_id
+                WHERE ot.cliente_id = :usuario_id
+                ORDER BY d.fecha_diagnostico DESC, d.iddiagnostico DESC
+                """,
+                {"usuario_id": usuario_id},
+            )
+
             servicios_orden = query_rows(
                 conn,
                 """
@@ -4271,6 +4346,7 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                 "vehiculos": vehiculos,
                 "citas": citas,
                 "ordenes": ordenes,
+                "diagnosticos_orden": diagnosticos_orden,
                 "servicios_orden": servicios_orden,
                 "repuestos_orden": repuestos_orden,
                 "facturas": facturas,
@@ -4510,6 +4586,9 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
 
 
 

@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,6 +9,7 @@
   <link rel="stylesheet" href="/static/citas.css">
 
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Condensed:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/dmi-messages.css?v=20260728">
 </head>
 <body>
 
@@ -336,7 +338,7 @@
       event.preventDefault();
 
       if (!fechaInput.value) {
-        alert("Selecciona una fecha en el calendario");
+        window.dmiShowMessage({ kicker: "Cita", title: "Selecciona una fecha", message: "Selecciona una fecha en el calendario para continuar.", confirmText: "Entendido" });
         return;
       }
 
@@ -349,7 +351,7 @@
       estadoReserva.textContent = "Confirmada";
       renderAppointmentsTable();
 
-      alert("Cita guardada correctamente");
+      window.dmiShowMessage({ kicker: "Cita agendada", title: "Cita guardada", message: "Tu cita fue guardada correctamente.", confirmText: "Aceptar" });
       form.reset();
 
       selectedDate = null;
@@ -366,5 +368,6 @@
     renderAppointmentsTable();
   </script>
 
+  <script src="/static/dmi-messages.js?v=20260728"></script>
 </body>
 </html>
