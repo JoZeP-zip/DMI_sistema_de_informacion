@@ -1,6 +1,10 @@
 import React, { useMemo } from 'react';
 
 const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
   const { protocol, hostname } = window.location;
 
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
