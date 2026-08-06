@@ -1,0 +1,431 @@
+/* =====================================================
+   DISOL MOTORS - NIGHT SKY
+===================================================== */
+
+#night-sky{
+
+    --mouse-x:50%;
+    --mouse-y:50%;
+
+    position:fixed;
+    inset:0;
+
+    overflow:hidden;
+
+    pointer-events:none;
+
+    z-index:0;
+
+    background:
+        radial-gradient(
+            circle at top,
+            #1a1a1a 0%,
+            #0d0d0d 30%,
+            #050505 70%,
+            #000000 100%
+        );
+
+}
+
+
+/* =====================================================
+   TEXTURA
+===================================================== */
+
+#night-sky::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    opacity:.05;
+
+    background:
+
+        repeating-linear-gradient(
+
+            45deg,
+
+            transparent 0,
+
+            transparent 5px,
+
+            rgba(255,255,255,.03) 6px,
+
+            transparent 7px
+
+        ),
+
+        repeating-linear-gradient(
+
+            -45deg,
+
+            transparent 0,
+
+            transparent 5px,
+
+            rgba(255,255,255,.02) 6px,
+
+            transparent 7px
+
+        );
+
+}
+
+
+/* =====================================================
+   LUZ ROJA
+===================================================== */
+
+#night-sky::after{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    pointer-events:none;
+
+    background:
+
+        radial-gradient(
+
+            ellipse 900px 450px
+
+            at var(--mouse-x) var(--mouse-y),
+
+            rgba(255,0,0,.12),
+
+            rgba(255,0,0,.05),
+
+            transparent 70%
+
+        );
+
+    transition:.2s;
+
+}
+
+
+/* =====================================================
+   CONTENIDO
+===================================================== */
+
+.navbar,
+main,
+footer{
+
+    position:relative;
+
+    z-index:2;
+
+}
+
+
+/* =====================================================
+   ESTRELLAS
+===================================================== */
+
+.star{
+
+    position:absolute;
+
+    border-radius:50%;
+
+    background:#fff;
+
+    opacity:.55;
+
+    animation:
+
+        metalFloat linear infinite;
+
+    box-shadow:
+
+        0 0 3px rgba(255,255,255,.8),
+
+        0 0 6px rgba(255,255,255,.4);
+
+}
+
+
+
+@keyframes metalFloat{
+
+    0%{
+
+        transform:
+
+            translateY(0)
+
+            scale(.9);
+
+        opacity:.3;
+
+    }
+
+    50%{
+
+        transform:
+
+            translateY(-6px)
+
+            scale(1);
+
+        opacity:.7;
+
+    }
+
+    100%{
+
+        transform:
+
+            translateY(0)
+
+            scale(.9);
+
+        opacity:.3;
+
+    }
+
+}
+
+
+/* =====================================================
+   ESTRELLA FUGAZ
+===================================================== */
+
+.shooting-star{
+
+    position:absolute;
+
+    width:120px;
+
+    height:2px;
+
+    border-radius:999px;
+
+    background:
+
+        linear-gradient(
+
+            90deg,
+
+            transparent 0%,
+
+            rgba(255,220,120,.25) 35%,
+
+            #ffd56b 70%,
+
+            white 100%
+
+        );
+
+    filter:
+
+        brightness(1.3)
+
+        drop-shadow(0 0 4px white)
+
+        drop-shadow(0 0 8px #ffd56b);
+
+    animation:
+
+        shoot linear forwards;
+
+}
+
+
+/* CABEZA */
+
+.shooting-star::after{
+
+    content:"";
+
+    position:absolute;
+
+    left:-3px;
+
+    top:-2px;
+
+    width:8px;
+
+    height:8px;
+
+    border-radius:50%;
+
+    background:white;
+
+    box-shadow:
+
+        0 0 6px white,
+
+        0 0 12px #ffd56b;
+
+}
+
+/* =====================================================
+   MOVIMIENTO DE LA ESTRELLA FUGAZ
+===================================================== */
+
+@keyframes shoot{
+
+    0%{
+
+        opacity:0;
+
+        transform:
+            translate3d(0,0,0)
+            rotate(-45deg);
+
+    }
+
+    8%{
+
+        opacity:1;
+
+    }
+
+    90%{
+
+        opacity:1;
+
+    }
+
+    100%{
+
+        opacity:0;
+
+        transform:
+            translate3d(-2500px,2500px,0)
+            rotate(-45deg);
+
+    }
+
+}
+
+
+/* =====================================================
+   VARIACIÓN ENTRE ESTRELLAS
+===================================================== */
+
+.star:nth-child(2n){
+
+    animation-duration:5s;
+
+}
+
+.star:nth-child(3n){
+
+    animation-duration:6.5s;
+
+}
+
+.star:nth-child(5n){
+
+    animation-duration:8s;
+
+}
+
+.star:nth-child(7n){
+
+    opacity:.40;
+
+}
+
+.star:nth-child(11n){
+
+    opacity:.80;
+
+}
+
+.star:nth-child(13n){
+
+    transform:scale(1.2);
+
+}
+
+
+/* =====================================================
+   SUAVIZADO
+===================================================== */
+
+.star,
+.shooting-star{
+
+    will-change:
+        transform,
+        opacity,
+        filter;
+
+    backface-visibility:hidden;
+
+    transform-style:preserve-3d;
+
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width:992px){
+
+    .shooting-star{
+
+        width:100px;
+
+    }
+
+}
+
+@media (max-width:768px){
+
+    .shooting-star{
+
+        width:80px;
+
+        height:2px;
+
+    }
+
+    .star{
+
+        box-shadow:
+
+            0 0 2px rgba(255,255,255,.8),
+
+            0 0 5px rgba(255,255,255,.35);
+
+    }
+
+}
+
+@media (max-width:480px){
+
+    .shooting-star{
+
+        width:60px;
+
+    }
+
+}
+
+
+/* =====================================================
+   REDUCIR ANIMACIONES
+===================================================== */
+
+@media (prefers-reduced-motion: reduce){
+
+    .star,
+    .shooting-star{
+
+        animation:none !important;
+
+    }
+
+}
