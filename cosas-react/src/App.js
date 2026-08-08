@@ -3,6 +3,7 @@ import { AuthService } from './services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import './styles/App.css';
+import NightSky from './components/NightSky';
 
 import RegistroVehiculo from './js/RegistrarUnidad.js';
 import Contacto from './js/Contacto.js';
@@ -791,6 +792,8 @@ function App() {
 
   return (
     <div className="bg-black text-white min-vh-100 d-flex flex-column">
+
+        <NightSky />
 
       {/* NAVBAR */}
       <nav className="navbar navbar-expand-lg navbar-dark bg-black sticky-top border-bottom border-danger py-3 dmi-navbar">
