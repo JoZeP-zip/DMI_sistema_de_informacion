@@ -114,6 +114,7 @@ function Catalogo({ onNeedLogin } = {}) {
       }
     }
 
+   
     return [];
   } catch (error) {
     console.error("No se pudo cargar el catalogo guardado:", error);
