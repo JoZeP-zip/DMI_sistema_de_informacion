@@ -102,16 +102,24 @@ function Catalogo({ onNeedLogin } = {}) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const productsRef = useRef(null);
 
-  const [products, setProducts] = useState(() => {
-    try {
-      const savedProducts = localStorage.getItem("catalogoProducts");
-      const loadedProducts = savedProducts ? JSON.parse(savedProducts) : INVENTARIO;
-      return loadedProducts.map(mapCatalogProduct);
-    } catch (error) {
-      console.error("No se pudo cargar el catalogo guardado:", error);
-      return INVENTARIO.map(mapCatalogProduct);
+ const [products, setProducts] = useState(() => {
+  try {
+    const savedProducts = localStorage.getItem("catalogoProducts");
+
+    if (savedProducts) {
+      const loadedProducts = JSON.parse(savedProducts);
+
+      if (Array.isArray(loadedProducts)) {
+        return loadedProducts.map(mapCatalogProduct);
+      }
     }
-  });
+
+    return [];
+  } catch (error) {
+    console.error("No se pudo cargar el catalogo guardado:", error);
+    return [];
+  }
+});
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showCreateProduct, setShowCreateProduct] = useState(false);
