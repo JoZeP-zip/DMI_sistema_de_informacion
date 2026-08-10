@@ -33,11 +33,18 @@ engine = create_engine(
 )
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# URL a la que Supabase redirige despues de validar el enlace de recuperacion.
+# En produccion se debe definir PASSWORD_RECOVERY_REDIRECT_URL en el archivo .env.
+PASSWORD_RECOVERY_REDIRECT_URL = os.getenv(
+    "PASSWORD_RECOVERY_REDIRECT_URL",
+    "http://localhost:3000/?recovery=1",
+)
+
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.app\.github\.dev|http://localhost:3000|http://127\.0\.0\.1:3000|https://.*\.vercel\.app",
+    allow_origin_regex=r"https://.*\.app\.github\.dev|http://localhost:3000|http://127\.0\.0\.1:3000|http://(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):3000|https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1779,8 +1786,26 @@ async def registro_react(request: Request):
                 ).first():
                     documento = int(documento) + 1
 
+        # Estos datos se conservan temporalmente en Auth hasta que el PIN sea
+        # confirmado; asi dmi.usuarios no recibe cuentas sin verificar.
+        registration_metadata = {
+            "usuarionombre": usuarionombre,
+            "nombre": nombre,
+            "apellidos": apellidos,
+            "email": email,
+            "documento": documento,
+            "tipodedocumento": tipodedocumento,
+            "fechadenacimiento": fechadenacimiento,
+            "telefono": telefono,
+            "rol": body.get("role") or body.get("rol") or "usuario",
+        }
+
         try:
-            res = supabase.auth.sign_up({"email": email, "password": password})
+            res = supabase.auth.sign_up({
+                "email": email,
+                "password": password,
+                "options": {"data": registration_metadata},
+            })
         except Exception as auth_error:
             auth_text = str(auth_error).lower()
             if (
@@ -1806,22 +1831,11 @@ async def registro_react(request: Request):
                 status_code=400,
             )
 
-        usuario_payload = {
-            "id": res.user.id,
-            "usuarionombre": usuarionombre,
-            "nombre": nombre,
-            "apellidos": apellidos,
-            "email": email,
-            "documento": documento,
-            "tipodedocumento": tipodedocumento,
-            "fechadenacimiento": fechadenacimiento,
-            "telefono": telefono,
-            "rol": body.get("role") or body.get("rol") or "usuario",
-        }
-
-        supabase.schema("dmi").table("usuarios").insert(usuario_payload).execute()
-
-        return JSONResponse({"success": True, "message": "Usuario registrado correctamente"})
+        return JSONResponse({
+            "success": True,
+            "requiresVerification": True,
+            "message": "Te enviamos un codigo de confirmacion a tu correo.",
+        })
     except Exception as e:
         print("ERROR registro-react:", e)
         error_text = str(e).lower()
@@ -1838,7 +1852,125 @@ async def registro_react(request: Request):
         return JSONResponse({"error": f"No se pudo registrar el usuario: {str(e)[:180]}"}, status_code=500)
 
 
+@app.post("/registro-react/verificar")
+async def verificar_registro_react(request: Request):
+    """Confirma el PIN de Supabase y crea el perfil DMI solo despues del correo."""
+    try:
+        body = await request.json()
+        email = str(body.get("email") or "").strip().lower()
+        pin = str(body.get("pin") or "").strip()
+
+        if not email or not pin.isdigit() or len(pin) != 8:
+            return JSONResponse({"error": "Ingresa el codigo de 8 digitos enviado a tu correo."}, status_code=400)
+
+        verification = supabase.auth.verify_otp({
+            "email": email,
+            "token": pin,
+            "type": "signup",
+        })
+        user = verification.user
+        if not user:
+            return JSONResponse({"error": "El codigo no es valido o ya vencio."}, status_code=400)
+
+        metadata = getattr(user, "user_metadata", {}) or {}
+        usuario_payload = {
+            "id": user.id,
+            "usuarionombre": metadata.get("usuarionombre") or email.split("@")[0],
+            "nombre": metadata.get("nombre") or "",
+            "apellidos": metadata.get("apellidos") or "",
+            "email": email,
+            "documento": metadata.get("documento"),
+            "tipodedocumento": metadata.get("tipodedocumento") or "CC",
+            "fechadenacimiento": metadata.get("fechadenacimiento") or "2000-01-01",
+            "telefono": metadata.get("telefono") or "",
+            "rol": metadata.get("rol") or "usuario",
+        }
+
+        # Un segundo envio del mismo PIN no crea registros duplicados.
+        existing_profile = (
+            supabase.schema("dmi").table("usuarios").select("idusuarios").eq("id", user.id).execute()
+        )
+        if not existing_profile.data:
+            with engine.connect() as conn:
+                existing_documento = conn.execute(
+                    text("SELECT 1 FROM dmi.usuarios WHERE documento = :documento LIMIT 1"),
+                    {"documento": usuario_payload["documento"]},
+                ).first()
+            if existing_documento:
+                return JSONResponse({"error": "Ya existe una cuenta con ese documento."}, status_code=400)
+
+            supabase.schema("dmi").table("usuarios").insert(usuario_payload).execute()
+
+        return JSONResponse({"success": True, "message": "Correo confirmado y cuenta creada correctamente."})
+    except Exception as e:
+        print("ERROR registro-react/verificar:", e)
+        return JSONResponse({"error": "El codigo no es valido, ya vencio o no se pudo confirmar la cuenta."}, status_code=400)
+
+
 # ==================== LOGIN / LOGOUT ====================
+@app.post("/password-recovery/request")
+async def solicitar_recuperacion_password(request: Request):
+    """Envia el correo de recuperacion sin revelar si una cuenta existe."""
+    generic_response = {
+        "success": True,
+        "message": "Si el correo esta registrado, recibiras las instrucciones para restablecer tu contrasena.",
+    }
+
+    try:
+        body = await request.json()
+        email = str(body.get("email") or "").strip().lower()
+
+        # La misma respuesta para correos invalidos, inexistentes o validos evita
+        # que este endpoint se use para enumerar cuentas registradas.
+        if not email or "@" not in email:
+            return JSONResponse(generic_response)
+
+        supabase.auth.reset_password_email(
+            email,
+            {"redirect_to": PASSWORD_RECOVERY_REDIRECT_URL},
+        )
+    except Exception as e:
+        # Supabase tambien puede responder igual para cuentas inexistentes. No se
+        # expone ese detalle al navegador, pero queda disponible para diagnostico.
+        print("ERROR password-recovery/request:", e)
+
+    return JSONResponse(generic_response)
+
+
+@app.post("/password-recovery/reset")
+async def restablecer_password(request: Request):
+    """Actualiza la contrasena usando la sesion temporal del enlace de Supabase."""
+    try:
+        body = await request.json()
+        access_token = str(body.get("access_token") or "").strip()
+        refresh_token = str(body.get("refresh_token") or "").strip()
+        password = str(body.get("password") or "")
+
+        if not access_token or not refresh_token:
+            return JSONResponse(
+                {"error": "El enlace de recuperacion no es valido o ya vencio."},
+                status_code=400,
+            )
+
+        if len(password) < 8:
+            return JSONResponse(
+                {"error": "La contrasena debe tener al menos 8 caracteres."},
+                status_code=400,
+            )
+
+        recovery_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        recovery_client.auth.set_session(access_token, refresh_token)
+        recovery_client.auth.update_user({"password": password})
+
+        return JSONResponse({"success": True, "message": "Contrasena actualizada correctamente."})
+    except Exception as e:
+        print("ERROR password-recovery/reset:", e)
+        return JSONResponse(
+            {"error": "El enlace de recuperacion no es valido, ya vencio o ya fue utilizado."},
+            status_code=400,
+        )
+
+
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     host = (
@@ -4718,11 +4850,6 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
-
-
-
 
 
 

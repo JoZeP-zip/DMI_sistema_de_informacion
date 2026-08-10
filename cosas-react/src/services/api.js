@@ -17,6 +17,11 @@ const getApiBaseUrl = () => {
     return "http://localhost:8000";
   }
 
+  const isLocalNetworkHost = /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(hostname);
+  if (isLocalNetworkHost) {
+    return `http://${hostname}:8000`;
+  }
+
   if (hostname.includes("app.github.dev")) {
     return `${protocol}//${hostname.replace(
       /-3000\.app\.github\.dev$/,
@@ -105,6 +110,28 @@ export const AuthService = {
       body: JSON.stringify(formData),
     });
   },
+
+  verificarRegistro: (email, pin) => request("/registro-react/verificar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, pin }),
+  }),
+
+  solicitarRecuperacionPassword: (email) => request("/password-recovery/request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  }),
+
+  restablecerPassword: ({ accessToken, refreshToken, password }) => request("/password-recovery/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      password,
+    }),
+  }),
 
   /** Limpia localStorage y cierra sesion local. */
   logout: () => {

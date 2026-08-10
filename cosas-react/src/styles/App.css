@@ -1523,3 +1523,84 @@ body {
     color: rgba(255, 255, 255, 0.66);
     line-height: 1.5;
 }
+/* Confirmacion de correo: PIN de un solo uso */
+.dmi-otp-header {
+  border-bottom: 1px solid rgba(255, 47, 85, 0.28);
+  padding-bottom: 1.5rem;
+}
+
+.dmi-otp-icon {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  border: 1px solid #ff2f55;
+  border-radius: 50%;
+  color: #ff2f55;
+  background: rgba(255, 47, 85, 0.08);
+  font-size: 1.35rem;
+  box-shadow: 0 0 22px rgba(255, 47, 85, 0.18);
+}
+
+.dmi-otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.dmi-otp-input {
+  width: clamp(34px, 8vw, 43px);
+  height: 54px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: #09090b;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.dmi-otp-input:focus {
+  border-color: #ff2f55;
+  box-shadow: 0 0 0 3px rgba(255, 47, 85, 0.16);
+  transform: translateY(-2px);
+}
+
+.dmi-otp-input.filled {
+  border-color: rgba(255, 47, 85, 0.75);
+  background: rgba(255, 47, 85, 0.08);
+}
+
+@media (max-width: 380px) {
+  .dmi-otp-inputs { gap: 0.28rem; }
+  .dmi-otp-input { height: 48px; }
+}
+.dmi-catalog-section {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dmi-catalog-section > .row {
+  margin: 0 !important;
+}
+
+.dmi-catalog-section .dmi-view-column {
+  padding: 0 !important;
+}
+
+/* El catalogo tiene sus propios paneles y fondo. La tarjeta generica de las
+   demas vistas lo hacia parecer una ficha gris gigante detras del contenido. */
+.dmi-view-card.dmi-catalog-card {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}

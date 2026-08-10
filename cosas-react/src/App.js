@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AuthService } from './services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
@@ -17,6 +17,11 @@ const getApiBaseUrl = () => {
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return "http://localhost:8000";
+  }
+
+  const isLocalNetworkHost = /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(hostname);
+  if (isLocalNetworkHost) {
+    return `http://${hostname}:8000`;
   }
 
   if (hostname.includes("app.github.dev")) {
@@ -166,7 +171,7 @@ const DmiToast = ({ toast, onClose }) => {
 // Componente para Iniciar Sesion
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
+const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -296,6 +301,25 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
         <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3">
           INGRESAR
         </button>
+        <p className="text-center small mb-3">
+          <button
+            type="button"
+            className="btn btn-link text-danger p-0 small fw-bold text-decoration-underline"
+            onClick={() => {
+              const trimmedEmail = email.trim();
+              if (!EMAIL_REGEX.test(trimmedEmail)) {
+                showLoginIssue({
+                  title: "Ingresa tu correo",
+                  message: "Escribe el correo con el que te registraste antes de solicitar la recuperacion."
+                });
+                return;
+              }
+              onForgotPassword(trimmedEmail);
+            }}
+          >
+            Olvide mi contrasena
+          </button>
+        </p>
         <p className="text-center small text-muted">
           No tienes una cuenta? <span className="text-danger cursor-pointer fw-bold text-decoration-underline" style={{cursor: 'pointer'}} onClick={onSwitchToRegister}>Registrate aqui</span>
         </p>
@@ -304,8 +328,108 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
   );
 };
 
+const RecuperarPasswordView = ({ email, onBackToLogin, openConfirm }) => {
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!EMAIL_REGEX.test(email)) {
+      openConfirm({
+        kicker: "Recuperacion de acceso",
+        title: "Correo no disponible",
+        message: "Vuelve al inicio de sesion y escribe el correo con el que te registraste.",
+        confirmText: "Volver al login",
+        onConfirm: onBackToLogin
+      });
+      return;
+    }
+
+    setSending(true);
+    try {
+      await AuthService.solicitarRecuperacionPassword(email);
+      openConfirm({
+        kicker: "Recuperacion de acceso",
+        title: "Revisa tu correo",
+        message: "Si este es el correo registrado en DMI, recibiras un enlace seguro para restablecer tu contrasena.",
+        confirmText: "Volver al login",
+        onConfirm: onBackToLogin
+      });
+    } catch (error) {
+      openConfirm({
+        kicker: "Recuperacion de acceso",
+        title: "No se pudo enviar la solicitud",
+        message: "Revisa tu conexion e intentalo de nuevo.",
+        confirmText: "Entendido"
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+      <h3 className="text-center text-uppercase fw-black mb-3">Recuperar <span className="text-danger">Acceso</span></h3>
+      <p className="text-center text-white-50 small mb-2">Enviaremos un enlace seguro al correo con el que inicias sesion.</p>
+      <p className="text-center text-white fw-bold mb-4">{email || 'Correo no disponible'}</p>
+      <form onSubmit={handleSubmit} noValidate>
+        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3" disabled={sending}>
+          {sending ? 'ENVIANDO...' : 'ENVIAR ENLACE'}
+        </button>
+        <p className="text-center small mb-0"><button type="button" className="btn btn-link text-danger p-0 small fw-bold text-decoration-underline" onClick={onBackToLogin}>Volver al login</button></p>
+      </form>
+    </div>
+  );
+};
+
+const NuevaPasswordView = ({ onBackToLogin, openConfirm }) => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const recoveryParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const accessToken = recoveryParams.get('access_token');
+  const refreshToken = recoveryParams.get('refresh_token');
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!accessToken || !refreshToken) {
+      openConfirm({ kicker: "Recuperacion de acceso", title: "Enlace no valido", message: "Solicita un nuevo enlace de recuperacion.", confirmText: "Ir a recuperacion", onConfirm: onBackToLogin });
+      return;
+    }
+    if (password.length < 8) {
+      openConfirm({ kicker: "Nueva contrasena", title: "Contrasena muy corta", message: "Usa al menos 8 caracteres.", confirmText: "Entendido" });
+      return;
+    }
+    if (password !== confirmPassword) {
+      openConfirm({ kicker: "Nueva contrasena", title: "Las contrasenas no coinciden", message: "Verifica la confirmacion de tu nueva contrasena.", confirmText: "Entendido" });
+      return;
+    }
+    setSaving(true);
+    try {
+      await AuthService.restablecerPassword({ accessToken, refreshToken, password });
+      window.history.replaceState({}, '', '/login');
+      openConfirm({ kicker: "Acceso actualizado", title: "Contrasena actualizada", message: "Ya puedes iniciar sesion con tu nueva contrasena.", confirmText: "Ir al login", onConfirm: onBackToLogin });
+    } catch (error) {
+      openConfirm({ kicker: "Recuperacion de acceso", title: "No se pudo actualizar", message: error.message || "El enlace vencio o ya fue utilizado. Solicita uno nuevo.", confirmText: "Entendido" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+      <h3 className="text-center text-uppercase fw-black mb-3">Nueva <span className="text-danger">Contrasena</span></h3>
+      <p className="text-center text-white-50 small mb-4">Crea una contrasena nueva de al menos 8 caracteres.</p>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="mb-3"><label className="form-label text-white small fw-bold">NUEVA CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={password} onChange={(event) => setPassword(event.target.value)} required /></div>
+        <div className="mb-4"><label className="form-label text-white small fw-bold">CONFIRMAR CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></div>
+        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest" disabled={saving}>{saving ? 'ACTUALIZANDO...' : 'ACTUALIZAR CONTRASENA'}</button>
+      </form>
+    </div>
+  );
+};
+
 // NUEVO COMPONENTE: Vista para Registrar Usuarios Nuevos
-const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
+const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -383,11 +507,11 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
         });
       } else {
         openConfirm({
-          kicker: "Cuenta creada",
-          title: "Registro exitoso",
-          message: "Tu cuenta fue creada correctamente. Ahora puedes iniciar sesion.",
-          confirmText: "Ir al login",
-          onConfirm: onRegisterSuccess
+          kicker: "Confirma tu correo",
+          title: "Te enviamos un codigo",
+          message: "Revisa el correo con el que te registraste e ingresa el codigo de 8 digitos para crear tu cuenta.",
+          confirmText: "Ingresar codigo",
+          onConfirm: () => onVerificationNeeded(email.trim())
         });
       }
     } catch (err) {
@@ -535,6 +659,98 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   );
 };
 
+const VerificarRegistroView = ({ email, onVerified, onBackToRegister, openConfirm }) => {
+  const PIN_LENGTH = 8;
+  const [pinDigits, setPinDigits] = useState(() => Array(PIN_LENGTH).fill(''));
+  const [verifying, setVerifying] = useState(false);
+  const inputRefs = useRef([]);
+
+  const pin = pinDigits.join('');
+
+  const handlePinChange = (index, rawValue) => {
+    const digits = rawValue.replace(/\D/g, '').slice(0, PIN_LENGTH - index);
+    if (!digits && rawValue) return;
+
+    setPinDigits((previous) => {
+      const next = [...previous];
+      if (digits) {
+        digits.split('').forEach((digit, offset) => {
+          next[index + offset] = digit;
+        });
+      } else {
+        next[index] = '';
+      }
+      return next;
+    });
+
+    if (digits) {
+      const nextIndex = Math.min(index + digits.length, PIN_LENGTH - 1);
+      inputRefs.current[nextIndex]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, event) => {
+    if (event.key === 'Backspace' && !pinDigits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+    if (event.key === 'ArrowLeft' && index > 0) inputRefs.current[index - 1]?.focus();
+    if (event.key === 'ArrowRight' && index < PIN_LENGTH - 1) inputRefs.current[index + 1]?.focus();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!/^\d{8}$/.test(pin)) {
+      openConfirm({ kicker: "Confirma tu correo", title: "Codigo incompleto", message: "Ingresa los 8 digitos que recibiste por correo.", confirmText: "Entendido" });
+      return;
+    }
+    setVerifying(true);
+    try {
+      await AuthService.verificarRegistro(email, pin);
+      openConfirm({ kicker: "Cuenta creada", title: "Correo confirmado", message: "Tu cuenta DMI fue creada correctamente. Ya puedes iniciar sesion.", confirmText: "Ir al login", onConfirm: onVerified });
+    } catch (error) {
+      openConfirm({ kicker: "Confirma tu correo", title: "No se pudo confirmar", message: error.message || "El codigo no es valido o ya vencio.", confirmText: "Entendido" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+      <div className="dmi-otp-header text-center mb-4">
+        <div className="dmi-otp-icon" aria-hidden="true">✉</div>
+        <h3 className="text-uppercase fw-black mb-2">Confirma tu <span className="text-danger">Correo</span></h3>
+        <p className="text-white-50 small mb-1">Enviamos un código de 8 dígitos a</p>
+        <p className="text-white fw-bold mb-0 text-break">{email}</p>
+      </div>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="mb-4">
+          <label className="form-label text-white small fw-bold d-block text-center mb-3">CÓDIGO DE CONFIRMACIÓN</label>
+          <div className="dmi-otp-inputs" aria-label="Código de confirmación de 8 dígitos">
+            {pinDigits.map((digit, index) => (
+              <input
+                key={index}
+                ref={(element) => { inputRefs.current[index] = element; }}
+                type="text"
+                inputMode="numeric"
+                autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                maxLength={index === 0 ? PIN_LENGTH : 1}
+                className={`dmi-otp-input ${digit ? 'filled' : ''}`}
+                value={digit}
+                onChange={(event) => handlePinChange(index, event.target.value)}
+                onKeyDown={(event) => handleKeyDown(index, event)}
+                aria-label={`Dígito ${index + 1} de ${PIN_LENGTH}`}
+              />
+            ))}
+          </div>
+          <p className="text-center text-white-50 small mt-3 mb-0">Puedes escribir o pegar el código completo.</p>
+        </div>
+        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3" disabled={verifying}>{verifying ? 'CONFIRMANDO...' : 'CONFIRMAR Y CREAR CUENTA'}</button>
+        <p className="text-center small mb-0"><button type="button" className="btn btn-link text-danger p-0 small fw-bold text-decoration-underline" onClick={onBackToRegister}>Volver al registro</button></p>
+      </form>
+    </div>
+  );
+};
+
 const heroSlides = [
   './assets/images/like.jpg',
   './assets/images/akira.jpg',
@@ -556,8 +772,14 @@ const BackButton = ({ onClick, user }) => (
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminFrameKey, setAdminFrameKey] = useState(0);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [registrationEmail, setRegistrationEmail] = useState('');
   const getInitialView = () => {
     const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('recovery') === '1' || window.location.hash.includes('access_token=')) {
+      return 'nueva-contrasena';
+    }
     const routes = {
       '/login': 'login',
       '/catalogo': 'catalogo',
@@ -941,10 +1163,10 @@ function App() {
 
         {view !== 'inicio' && (
           view !== 'admin-dashboard' && (
-          <section className="container py-5 dmi-view-section">
+          <section className={`container py-5 dmi-view-section ${view === 'catalogo' ? 'dmi-catalog-section' : ''}`}>
             <div className="row justify-content-center">
-              <div className="col-12 col-xl-10 animate-slide-in dmi-view-column">
-                <div className="card bg-dark text-white border-danger border-opacity-50 shadow-lg p-4 p-md-5 dmi-view-card">
+              <div className={`${view === 'catalogo' ? 'col-12' : 'col-12 col-xl-10'} animate-slide-in dmi-view-column`}>
+                <div className={`card bg-dark text-white border-danger border-opacity-50 shadow-lg p-4 p-md-5 dmi-view-card ${view === 'catalogo' ? 'dmi-catalog-card' : ''}`}>
 
                   {view === 'citas' && (
                     <AgendarCita
@@ -972,12 +1194,26 @@ function App() {
                     <LoginView 
                       onLoginSuccess={handleLoginSuccess} 
                       onSwitchToRegister={() => setView('registro-usuario')} 
+                      onForgotPassword={(email) => {
+                        setRecoveryEmail(email);
+                        setView('recuperar-contrasena');
+                      }}
                       openConfirm={openConfirm}
                     />
                   )}
+                  {view === 'recuperar-contrasena' && <RecuperarPasswordView email={recoveryEmail} onBackToLogin={() => setView('login')} openConfirm={openConfirm} />}
+                  {view === 'nueva-contrasena' && <NuevaPasswordView onBackToLogin={() => setView('login')} openConfirm={openConfirm} />}
                   {view === 'registro-usuario' && (
-                    <RegistroUsuarioView onRegisterSuccess={() => setView('login')} openConfirm={openConfirm} />
+                    <RegistroUsuarioView
+                      onRegisterSuccess={() => setView('login')}
+                      onVerificationNeeded={(email) => {
+                        setRegistrationEmail(email);
+                        setView('verificar-registro');
+                      }}
+                      openConfirm={openConfirm}
+                    />
                   )}
+                  {view === 'verificar-registro' && <VerificarRegistroView email={registrationEmail} onVerified={() => setView('login')} onBackToRegister={() => setView('registro-usuario')} openConfirm={openConfirm} />}
 
                   {view === 'user-dashboard' && (
                    <MiCuenta
@@ -1159,6 +1395,3 @@ function App() {
 }
 
 export default App;
-
-
-
