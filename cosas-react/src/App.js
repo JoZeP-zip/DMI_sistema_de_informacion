@@ -1322,6 +1322,26 @@ function App() {
                         imagenes: ['/assets/images/yam1.jpg', '/assets/images/yam2.jpg', '/assets/images/yam3.jpg'], 
                         titulo: 'Unidad de Potencia', 
                         descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      { 
+                        imagenes: ['/assets/images/rap1.jpg', '/assets/images/rap2.jpg', '/assets/images/rap3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      { 
+                        imagenes: ['/assets/images/por1.jpg', '/assets/images/por2.jpg', '/assets/images/por3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      { 
+                        imagenes: ['/assets/images/duc1.jpg', '/assets/images/duc2.jpg', '/assets/images/duc3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
+                      },
+                      { 
+                        imagenes: ['/assets/images/bmw1.jpg', '/assets/images/bmw2.jpg', '/assets/images/bmw3.jpg'], 
+                        titulo: 'Unidad de Potencia', 
+                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
                       }
                     ].map((proyecto, index) => (
                       <div key={index} className="col-6 col-md-4">
