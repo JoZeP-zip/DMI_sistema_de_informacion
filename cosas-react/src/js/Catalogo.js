@@ -511,7 +511,7 @@ function Catalogo({ onNeedLogin } = {}) {
         createPortal(
         <div className="cart-panel">
           <div className="cart-panel-header">
-            <h2>Carrito</h2>
+            <div><span className="cart-panel-kicker">Pedido DMI</span><h2>Carrito</h2></div>
             <button
               className="cart-close-btn"
               aria-label="Cerrar carrito"
@@ -894,7 +894,8 @@ function Catalogo({ onNeedLogin } = {}) {
 
       {/* CARRUSEL */}
       <section className="hero-section">
-        <h2 className="section-title">Repuestos Destacados</h2>
+        <span className="catalog-section-kicker">Selección DMI / Destacados</span>
+        <h2 className="section-title catalog-future-title">Repuestos Destacados</h2>
         <div className="hero-carousel">
           <button className="hero-btn left" onClick={prevSlide}>{"<"}</button>
           <img src={carouselImages[slide]} alt="" className="hero-image" />
@@ -904,10 +905,11 @@ function Catalogo({ onNeedLogin } = {}) {
 
       {/* PRODUCTOS */}
       <section className="products" ref={productsRef}>
-        <h2 className="section-title">
+        <span className="catalog-section-kicker">Inventario digital / DMI</span>
+        <h2 className="section-title catalog-future-title">
           {selectedCategory === "Todos" ? (isAdmin ? "Catalogo de Productos" : "Inventario DMI") : selectedCategory}
         </h2>
-        <p style={{
+        <p className="catalog-product-count" style={{
           textAlign: "center",
           color: "rgba(255,80,80,0.7)",
           fontSize: 13,

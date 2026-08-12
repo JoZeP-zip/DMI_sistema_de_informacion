@@ -176,8 +176,9 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
           X
         </button>
 
-        <p className="checkout-eyebrow">Paso final</p>
+        <p className="checkout-eyebrow">DMI / Paso final</p>
         <h2>Finalizar compra</h2>
+        <p className="checkout-intro">Confirma tus datos y selecciona tu medio de pago.</p>
 
         <form onSubmit={registrarPedido}>
           <div className="form-group">
@@ -266,4 +267,3 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
 }
 
 export default Checkout;
-

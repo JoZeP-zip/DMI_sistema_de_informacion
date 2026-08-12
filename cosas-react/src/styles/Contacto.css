@@ -7,13 +7,13 @@
 .contacto::after { content:'DMI'; position:absolute; right:-18px; top:30px; font:800 clamp(170px,27vw,390px)/.8 'Orbitron',sans-serif; letter-spacing:-.13em; color:rgba(255,49,88,.045); pointer-events:none; }
 
 .section-title,.contact-container,.como-llegar { position:relative; z-index:1; max-width:1140px; margin-left:auto; margin-right:auto; }
-.contact-hero { padding:54px clamp(28px,7vw,86px) 48px; margin-bottom:32px; overflow:hidden; border:1px solid var(--contact-line); background:linear-gradient(100deg,rgba(8,10,14,.97),rgba(18,10,14,.78)); box-shadow:0 22px 55px rgba(0,0,0,.32); text-align:center; }
+.contact-hero { padding:54px clamp(24px,4vw,54px) 48px; margin-bottom:32px; overflow:hidden; border:1px solid var(--contact-line); background:linear-gradient(100deg,rgba(8,10,14,.97),rgba(18,10,14,.78)); box-shadow:0 22px 55px rgba(0,0,0,.32); text-align:center; }
 .contact-hero::after { content:''; position:absolute; width:320px; height:320px; right:-105px; bottom:-210px; border:1px solid rgba(255,49,88,.42); border-radius:50%; }
 .contacto-kicker,.panel-heading span,.form-heading span,.mapa-overlay-kicker { display:block; color:var(--contact-pink); font:700 11px/1 'Orbitron',sans-serif; letter-spacing:3px; text-transform:uppercase; }
 .contacto-kicker::before { content:'//'; margin-right:11px; color:var(--contact-red); }
-.contacto-title { position:relative; z-index:1; max-width:920px; margin:0 auto 20px; font:800 clamp(43px,7vw,94px)/.98 'Orbitron',sans-serif; letter-spacing:-4px; text-transform:uppercase; text-shadow:3px 3px 0 rgba(255,49,88,.72), 0 9px 18px rgba(0,0,0,.5); }
+.contacto-title { position:relative; z-index:1; max-width:100%; margin:0 auto 20px; font:800 clamp(34px,4vw,58px)/1.05 'Orbitron',sans-serif; letter-spacing:-2px; text-transform:uppercase; overflow-wrap:anywhere; text-shadow:3px 3px 0 rgba(255,49,88,.72), 0 9px 18px rgba(0,0,0,.5); }
 .contacto-title span { color:inherit; text-shadow:inherit; }
-.contacto-lead { position:relative; z-index:1; max-width:690px; margin:0 auto; color:var(--contact-muted); font-size:18px; line-height:1.45; }
+.contacto-lead { position:relative; z-index:1; display:block; width:100%; max-width:690px; margin:0 auto; padding:0 8px; box-sizing:border-box; overflow:visible; white-space:normal !important; overflow-wrap:anywhere; word-break:normal; color:var(--contact-muted); font-size:18px; line-height:1.45; }
 .contacto-lead strong { color:#fff; }
 .contact-hero-actions { position:relative; z-index:1; display:flex; justify-content:center; flex-wrap:wrap; gap:12px; margin-top:28px; }
 .contact-hero-button,.btn-whatsapp,.btn-maps { display:inline-flex; justify-content:center; align-items:center; min-height:44px; padding:0 20px; border:1px solid rgba(255,255,255,.24); color:#fff; background:rgba(255,255,255,.03); text-decoration:none; font:700 11px 'Orbitron',sans-serif; letter-spacing:1.2px; text-transform:uppercase; transition:.2s ease; }

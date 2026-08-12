@@ -275,13 +275,17 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
         </div>
       )}
       <section className="section agendar-cita">
-        <div className="section-title">
-          <div className="ac-icon-row">
-            <div className="ac-icon-box">CI</div>
-            <div className="ac-icon-box">DM</div>
+        <div className="ac-hero">
+          <span className="ac-hero-kicker">Reserva en línea / Disol Motors</span>
+          <h2>Agenda tu <span>cita</span></h2>
+          <p>Reserva en pocos pasos el espacio ideal para revisar tu vehículo.</p>
+          <div className="ac-steps" aria-label="Pasos para agendar una cita">
+            <span><b>01</b> Vehículo</span>
+            <i></i>
+            <span><b>02</b> Horario</span>
+            <i></i>
+            <span><b>03</b> Servicio</span>
           </div>
-          <h2>Agendar Cita</h2>
-          <p>Disol Motors - Reserva tu servicio</p>
         </div>
 
         <div className="cita-card">
@@ -321,8 +325,11 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
           ) : (
             <>
               <div className="cita-card-head">
-                <div className="cita-head-icon">DM</div>
-                <p className="cita-head-title">Datos de la cita</p>
+                <div className="cita-head-icon">01</div>
+                <div>
+                  <p className="cita-head-eyebrow">Formulario de reserva</p>
+                  <p className="cita-head-title">Completa los detalles de tu cita</p>
+                </div>
               </div>
 
               {error && (

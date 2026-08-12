@@ -263,7 +263,7 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openC
   };
 
   return (
-    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+    <div className="mx-auto auth-shell auth-login-shell" style={{ maxWidth: '480px' }}>
       <h3 className="text-center text-uppercase fw-black mb-4">
         Control de <span className="text-danger">Acceso</span>
       </h3>
@@ -358,7 +358,7 @@ const RecuperarPasswordView = ({ email, onBackToLogin, openConfirm }) => {
       openConfirm({
         kicker: "Recuperacion de acceso",
         title: "No se pudo enviar la solicitud",
-        message: "Revisa tu conexion e intentalo de nuevo.",
+        message: error.message || "Revisa tu conexion e intentalo de nuevo.",
         confirmText: "Entendido"
       });
     } finally {
@@ -441,11 +441,12 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
   const [tipodedocumento, setTipodedocumento] = useState('CC');
   const [telefono, setTelefono] = useState('');
   const [usuarionombre, setUsuarionombre] = useState('');
+  const [fechadenacimiento, setFechadenacimiento] = useState('');
 
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, email, password, confirmPassword };
+    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, fechadenacimiento, email, password, confirmPassword };
     const missingField = Object.values(requiredFields).some((value) => !String(value).trim());
 
     if (missingField) {
@@ -489,6 +490,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           documento: documento ? Number(documento) : undefined,
           tipodedocumento,
           telefono,
+          fechadenacimiento,
           usuarionombre,
           email,
           password,
@@ -525,7 +527,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
   };
 
   return (
-    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+    <div className="mx-auto auth-shell auth-register-shell" style={{ maxWidth: '720px' }}>
       <h3 className="text-center text-uppercase fw-black mb-4">
         Crear <span className="text-danger">Cuenta</span>
       </h3>
@@ -596,6 +598,17 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
             required 
+          />
+        </div>
+        <div className="mb-3 auth-date-field">
+          <label className="form-label text-white small fw-bold">FECHA DE NACIMIENTO</label>
+          <input
+            type="date"
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={fechadenacimiento}
+            onChange={(e) => setFechadenacimiento(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+            required
           />
         </div>
         <div className="mb-3">
@@ -1289,57 +1302,27 @@ function App() {
                         descripcion: 'Optimizacion de software y diagnostico computarizado para flotas empresariales, se hizo mantenimiento preventivo y cambio de color.' 
                       },
                       { 
-                        imagenes: ['/assets/images/maz1.jpg', '/assets/images/maz2.jpg', '/assets/images/maz3.jpg'], 
-                        titulo: 'mazda', 
+                        imagenes: ['/assets/images/porche.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
+                        titulo: 'Porsche 911 GT3', 
                         descripcion: 'Calibracion avanzada del sistema de inyeccion electronica y pruebas de presion en tiempo real.' 
                       },
                       { 
-                        imagenes: ['/assets/images/her1.jpg', '/assets/images/her2.jpg', '/assets/images/her3.jpg'], 
-                        titulo: 'her', 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/porche.jpg', '/assets/images/lamborghini.jpg'], 
+                        titulo: 'Lamborghini Aventador', 
                         descripcion: 'Mantenimiento de alta precision en el sistema de admision y mapeo de ECU para rendimiento extremo.' 
                       },
                       { 
-                        imagenes: ['/assets/images/mus1.jpg', '/assets/images/mus2.jpg', '/assets/images/mus3.jpg'], 
-                        titulo: 'Mustang', 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
+                        titulo: 'Diagnostico General', 
                         descripcion: 'Escaneo completo de modulos electronicos mediante tecnologia OBD-II de ultima generacion.' 
                       },
                       { 
-                        imagenes: ['/assets/images/nap1.jpg', '/assets/images/nap2.jpg', '/assets/images/nap3.jpg'], 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
                         titulo: 'Proyecto Mel', 
                         descripcion: 'Ajustes personalizados de alto rendimiento y restauracion de componentes criticos del motor.' 
                       },
                       { 
-                        imagenes: ['/assets/images/r61.jpg', '/assets/images/r62.jpg', '/assets/images/r63.jpg'], 
-                        titulo: 'Unidad de Potencia', 
-                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
-                      },
-                      { 
-                        imagenes: ['/assets/images/sai1.jpg', '/assets/images/sai2.jpg', '/assets/images/sai3.jpg'], 
-                        titulo: 'Unidad de Potencia', 
-                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
-                      },
-                      { 
-                        imagenes: ['/assets/images/yam1.jpg', '/assets/images/yam2.jpg', '/assets/images/yam3.jpg'], 
-                        titulo: 'Unidad de Potencia', 
-                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
-                      },
-                      { 
-                        imagenes: ['/assets/images/rap1.jpg', '/assets/images/rap2.jpg', '/assets/images/rap3.jpg'], 
-                        titulo: 'Unidad de Potencia', 
-                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
-                      },
-                      { 
-                        imagenes: ['/assets/images/por1.jpg', '/assets/images/por2.jpg', '/assets/images/por3.jpg'], 
-                        titulo: 'Unidad de Potencia', 
-                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
-                      },
-                      { 
-                        imagenes: ['/assets/images/duc1.jpg', '/assets/images/duc2.jpg', '/assets/images/duc3.jpg'], 
-                        titulo: 'Unidad de Potencia', 
-                        descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
-                      },
-                      { 
-                        imagenes: ['/assets/images/bmw1.jpg', '/assets/images/bmw2.jpg', '/assets/images/bmw3.jpg'], 
+                        imagenes: ['/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg', '/assets/images/lamborghini.jpg'], 
                         titulo: 'Unidad de Potencia', 
                         descripcion: 'Modificacion y ensamble de sistemas de inyeccion a medida para competencia.' 
                       }
