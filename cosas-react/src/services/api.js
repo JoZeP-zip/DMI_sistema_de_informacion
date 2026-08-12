@@ -120,7 +120,9 @@ export const AuthService = {
   solicitarRecuperacionPassword: (email) => request("/password-recovery/request", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    // El enlace debe volver exactamente al sitio donde el usuario abrio DMI.
+    // Asi no se envia a localhost cuando se trabaja desde Codespaces o produccion.
+    body: JSON.stringify({ email, redirect_url: `${window.location.origin}/?recovery=1` }),
   }),
 
   restablecerPassword: ({ accessToken, refreshToken, password }) => request("/password-recovery/reset", {

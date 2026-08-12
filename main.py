@@ -10,6 +10,7 @@ from typing import Optional
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from urllib.parse import quote
+from urllib.parse import urlparse
 from uuid import UUID
 from zoneinfo import ZoneInfo
 import os
@@ -39,6 +40,26 @@ PASSWORD_RECOVERY_REDIRECT_URL = os.getenv(
     "PASSWORD_RECOVERY_REDIRECT_URL",
     "http://localhost:3000/?recovery=1",
 )
+
+
+def obtener_url_recuperacion_segura(candidate_url: str) -> str:
+    """Acepta solo URLs conocidas de la aplicacion, evitando redirecciones externas."""
+    if not candidate_url:
+        return PASSWORD_RECOVERY_REDIRECT_URL
+
+    try:
+        parsed = urlparse(candidate_url)
+        host = (parsed.hostname or "").lower()
+        is_local = host in ("localhost", "127.0.0.1")
+        is_codespaces = host.endswith(".app.github.dev")
+        is_vercel = host.endswith(".vercel.app")
+
+        if parsed.scheme in ("http", "https") and (is_local or is_codespaces or is_vercel):
+            return f"{parsed.scheme}://{parsed.netloc}/?recovery=1"
+    except Exception:
+        pass
+
+    return PASSWORD_RECOVERY_REDIRECT_URL
 
 app = FastAPI()
 
@@ -2161,6 +2182,7 @@ async def verificar_registro_react(request: Request):
     try:
         body = await request.json()
         email = str(body.get("email") or "").strip().lower()
+        redirect_url = obtener_url_recuperacion_segura(str(body.get("redirect_url") or "").strip())
         pin = str(body.get("pin") or "").strip()
 
         if not email or not pin.isdigit() or len(pin) != 8:
@@ -2230,7 +2252,7 @@ async def solicitar_recuperacion_password(request: Request):
 
         supabase.auth.reset_password_email(
             email,
-            {"redirect_to": PASSWORD_RECOVERY_REDIRECT_URL},
+            {"redirect_to": redirect_url},
         )
     except Exception as e:
         # Supabase tambien puede responder igual para cuentas inexistentes. No se
