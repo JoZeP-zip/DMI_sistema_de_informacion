@@ -386,3 +386,13 @@ export const MiCuentaService = {
     credentials: "include",
   }),
 };
+
+// COMPRA / CHECKOUT
+// El pedido se registra en el backend para enlazarlo con el usuario autenticado.
+export const CheckoutService = {
+  registrarPedido: ({ datos, items }) => request("/api/checkout/pedidos", {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ datos, items }),
+  }),
+};

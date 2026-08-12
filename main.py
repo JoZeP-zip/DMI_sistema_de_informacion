@@ -2255,9 +2255,25 @@ async def solicitar_recuperacion_password(request: Request):
             {"redirect_to": redirect_url},
         )
     except Exception as e:
-        # Supabase tambien puede responder igual para cuentas inexistentes. No se
-        # expone ese detalle al navegador, pero queda disponible para diagnostico.
+        # No se revela si una cuenta existe, pero si se informa un problema global
+        # de entrega (por ejemplo, el limite de correos del proyecto).
         print("ERROR password-recovery/request:", e)
+        error_text = str(e).lower()
+        if "rate limit" in error_text or "email rate" in error_text or "too many requests" in error_text:
+            return JSONResponse(
+                {
+                    "error": "Se alcanzo temporalmente el limite de correos de recuperacion. Espera una hora antes de solicitar otro enlace.",
+                    "code": "EMAIL_RATE_LIMIT",
+                },
+                status_code=429,
+            )
+        return JSONResponse(
+            {
+                "error": "No fue posible solicitar el correo de recuperacion. Revisa la configuracion de correo de Supabase e intentalo nuevamente.",
+                "code": "PASSWORD_RECOVERY_UNAVAILABLE",
+            },
+            status_code=502,
+        )
 
     return JSONResponse(generic_response)
 
@@ -4484,19 +4500,26 @@ async def admin_usuario_ficha(usuario_id: int, request: Request, access_token: s
 
             if table_exists(conn, "public", "pedidos"):
                 checkout_columns = table_columns(conn, "public", "pedidos")
-                if "email" in checkout_columns and usuario.get("email"):
+                if ("usuarios_idusuarios" in checkout_columns or "email" in checkout_columns) and (usuario.get("idusuarios") or usuario.get("email")):
                     order_column = "id" if "id" in checkout_columns else "created_at" if "created_at" in checkout_columns else None
                     order_sql = f"ORDER BY {order_column} DESC" if order_column else ""
                     cart_field = next((field for field in ("productos", "items", "carrito", "cart") if field in checkout_columns), None)
+                    checkout_where, checkout_params = [], {}
+                    if "usuarios_idusuarios" in checkout_columns and usuario.get("idusuarios"):
+                        checkout_where.append("usuarios_idusuarios = :usuario_id")
+                        checkout_params["usuario_id"] = usuario.get("idusuarios")
+                    if "email" in checkout_columns and usuario.get("email"):
+                        checkout_where.append("LOWER(email) = LOWER(:email)")
+                        checkout_params["email"] = usuario.get("email")
                     public_pedidos = query_rows(
                         conn,
                         f"""
                         SELECT *
                         FROM public.pedidos
-                        WHERE LOWER(email) = LOWER(:email)
+                        WHERE {' OR '.join(checkout_where)}
                         {order_sql}
                         """,
-                        {"email": usuario.get("email")},
+                        checkout_params,
                     )
                     if cart_field:
                         for pedido in public_pedidos:
@@ -4591,6 +4614,85 @@ async def admin_usuario_ficha(usuario_id: int, request: Request, access_token: s
                 "historial": historial,
                 "notas": notas,
             })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/checkout/pedidos")
+async def registrar_pedido_checkout(request: Request, access_token: str = Cookie(None)):
+    """Guarda la compra en Supabase y la enlaza al usuario autenticado."""
+    usuario_actual = obtener_usuario(access_token, request)
+    if not usuario_actual:
+        return JSONResponse({"error": "Debes iniciar sesion para confirmar una compra"}, status_code=401)
+
+    try:
+        body = await request.json()
+        items = body.get("items") or []
+        datos = body.get("datos") or {}
+        if not isinstance(items, list) or not items:
+            return JSONResponse({"error": "El carrito no tiene productos"}, status_code=400)
+
+        productos, total_calculado = [], 0.0
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            cantidad = int(item.get("quantity") or item.get("cantidad") or 1)
+            precio = float(item.get("precioVenta") or item.get("precio") or item.get("valor") or 0)
+            if cantidad < 1 or precio < 0:
+                return JSONResponse({"error": "Hay un producto con cantidad o precio no valido"}, status_code=400)
+            productos.append({
+                "id": item.get("id"),
+                "codigo": item.get("codigo") or item.get("codigoproductos"),
+                "nombre": item.get("nombre") or item.get("descripcion") or item.get("descripcionproductos") or "Producto DMI",
+                "precio": precio,
+                "cantidad": cantidad,
+            })
+            total_calculado += precio * cantidad
+
+        if not productos:
+            return JSONResponse({"error": "No se encontraron productos validos en el carrito"}, status_code=400)
+
+        with engine.connect() as conn:
+            usuario_cols = table_columns(conn, "dmi", "usuarios")
+            campos_usuario = ["idusuarios", "email"] + [campo for campo in ("activo", "estado") if campo in usuario_cols]
+            usuario = conn.execute(
+                text(f"SELECT {', '.join(campos_usuario)} FROM dmi.usuarios WHERE id::text = :auth_id"),
+                {"auth_id": usuario_actual.get("id")},
+            ).mappings().fetchone()
+            if not usuario:
+                return JSONResponse({"error": "No encontramos tu perfil de cliente"}, status_code=404)
+            if usuario.get("activo") is False or str(usuario.get("estado") or "").lower() in {"desactivado", "inactivo", "inactive"}:
+                return JSONResponse({"error": "Esta cuenta esta desactivada y no puede realizar compras"}, status_code=403)
+            if not table_exists(conn, "public", "pedidos"):
+                return JSONResponse({"error": "No existe la tabla de pedidos para guardar la compra"}, status_code=500)
+
+            # La relacion permite que compras y productos aparezcan en la ficha
+            # administrativa y se inactiven junto con el cliente si es necesario.
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS usuarios_idusuarios integer"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS activo boolean DEFAULT TRUE"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS estado varchar DEFAULT 'pendiente'"))
+            columnas = table_columns(conn, "public", "pedidos")
+            valores = {
+                "nombre": datos.get("nombre"), "telefono": datos.get("telefono"),
+                "email": usuario.get("email") or datos.get("email"), "direccion": datos.get("direccion"),
+                "ciudad": datos.get("ciudad"), "metodo_pago": datos.get("metodoPago") or datos.get("metodo_pago"),
+                "total": total_calculado, "productos": json.dumps(productos),
+                "usuarios_idusuarios": usuario.get("idusuarios"), "activo": True, "estado": "pendiente",
+            }
+            campos = [campo for campo in valores if campo in columnas]
+            if not campos:
+                return JSONResponse({"error": "La tabla de pedidos no tiene campos compatibles"}, status_code=500)
+            id_column = "id" if "id" in columnas else ("idpedido" if "idpedido" in columnas else None)
+            returning = f" RETURNING {id_column}" if id_column else ""
+            resultado = conn.execute(
+                text(f"INSERT INTO public.pedidos ({', '.join(campos)}) VALUES ({', '.join(':' + campo for campo in campos)}){returning}"),
+                {campo: valores[campo] for campo in campos},
+            )
+            pedido_id = resultado.scalar() if id_column else None
+            conn.commit()
+        return JSONResponse({"ok": True, "pedido_id": pedido_id, "total": total_calculado})
+    except (TypeError, ValueError):
+        return JSONResponse({"error": "Revisa las cantidades y precios del carrito"}, status_code=400)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
@@ -5209,6 +5311,106 @@ async def config_eliminar_generico(entity: str, record_id: int, access_token: st
 
     try:
         with engine.connect() as conn:
+            # Un usuario no debe conservar datos operativos disponibles despues de
+            # desactivarse. La informacion se mantiene para auditoria, pero sus
+            # vehiculos, citas, ordenes y compras relacionadas quedan inactivas.
+            if entity == "usuarios":
+                usuario = conn.execute(
+                    text("SELECT idusuarios, id, email, vehiculos_idvehiculo FROM dmi.usuarios WHERE idusuarios = :id"),
+                    {"id": record_id},
+                ).mappings().fetchone()
+                if not usuario:
+                    return config_redirect(entity, "Usuario no encontrado", False)
+
+                usuario = dict(usuario)
+
+                def desactivar_relacion(schema, table, where, params):
+                    if not where or not table_exists(conn, schema, table):
+                        return 0
+                    cols = table_columns(conn, schema, table)
+                    # El estado de una cita/orden suele tener una restriccion
+                    # (pendiente, confirmada, cancelada, etc.). Por eso no se
+                    # reemplaza por "desactivado": se conserva su estado real
+                    # y se crea/usa una marca independiente de actividad.
+                    if "activo" not in cols:
+                        conn.execute(text(
+                            f"ALTER TABLE {schema}.{table} ADD COLUMN IF NOT EXISTS activo boolean DEFAULT TRUE"
+                        ))
+                    result = conn.execute(
+                        text(f"UPDATE {schema}.{table} SET activo = FALSE WHERE {where}"),
+                        params,
+                    )
+                    return result.rowcount or 0
+
+                # Primero se localizan todos los vehiculos y citas, incluso si ya
+                # estaban inactivos, para conservar la relacion historica completa.
+                vehiculo_ids = []
+                if table_exists(conn, "dmi", "vehiculos"):
+                    vehiculo_cols = table_columns(conn, "dmi", "vehiculos")
+                    vehiculo_filtros = []
+                    vehiculo_params = {"usuario_id": record_id, "auth_id": usuario.get("id")}
+                    if "cliente_id" in vehiculo_cols:
+                        vehiculo_filtros.append("cliente_id = :usuario_id")
+                    if "usuarios_idusuarios" in vehiculo_cols:
+                        vehiculo_filtros.append("usuarios_idusuarios = :usuario_id")
+                    if usuario.get("vehiculos_idvehiculo"):
+                        vehiculo_filtros.append("idvehiculo = :vehiculo_principal")
+                        vehiculo_params["vehiculo_principal"] = usuario["vehiculos_idvehiculo"]
+                    if vehiculo_filtros:
+                        vehiculo_ids = [row[0] for row in conn.execute(
+                            text(f"SELECT idvehiculo FROM dmi.vehiculos WHERE {' OR '.join(vehiculo_filtros)}"),
+                            vehiculo_params,
+                        ).fetchall()]
+                        desactivar_relacion("dmi", "vehiculos", "idvehiculo = ANY(:vehiculo_ids)", {"vehiculo_ids": vehiculo_ids}) if vehiculo_ids else None
+
+                cita_ids = []
+                if vehiculo_ids and table_exists(conn, "dmi", "citas"):
+                    cita_cols = table_columns(conn, "dmi", "citas")
+                    if "vehiculos_idvehiculo" in cita_cols:
+                        cita_ids = [row[0] for row in conn.execute(
+                            text("SELECT idcita FROM dmi.citas WHERE vehiculos_idvehiculo = ANY(:vehiculo_ids)"),
+                            {"vehiculo_ids": vehiculo_ids},
+                        ).fetchall()]
+                        desactivar_relacion("dmi", "citas", "vehiculos_idvehiculo = ANY(:vehiculo_ids)", {"vehiculo_ids": vehiculo_ids})
+
+                # Ordenes, cotizaciones, facturas y pedidos se inactivan si su
+                # tabla tiene un campo de estado. No se borran: siguen visibles
+                # en la ficha administrativa como historial del cliente.
+                objetivos = [
+                    ("dmi", "orden_trabajo", [
+                        ("vehiculos_idvehiculo", "vehiculo_ids", vehiculo_ids),
+                        ("citas_idcita", "cita_ids", cita_ids),
+                        ("cita_id", "cita_ids", cita_ids),
+                    ]),
+                    ("dmi", "cotizaciones", [("cliente_id", "usuario_id", record_id)]),
+                    ("dmi", "facturas", [("cliente_id", "usuario_id", record_id)]),
+                    ("dmi", "pedido", [
+                        ("usuarios_idusuarios", "usuario_id", record_id),
+                        ("email", "email", usuario.get("email")),
+                    ]),
+                    ("public", "pedidos", [
+                        ("usuarios_idusuarios", "usuario_id", record_id),
+                        ("email", "email", usuario.get("email")),
+                    ]),
+                ]
+                for schema, table, relaciones in objetivos:
+                    if not table_exists(conn, schema, table):
+                        continue
+                    columnas_relacion = table_columns(conn, schema, table)
+                    filtros, params = [], {}
+                    for columna, parametro, valor in relaciones:
+                        if columna not in columnas_relacion or valor in (None, [], ""):
+                            continue
+                        if isinstance(valor, list):
+                            filtros.append(f"{columna} = ANY(:{parametro})")
+                        elif columna == "email":
+                            filtros.append(f"LOWER({columna}) = LOWER(:{parametro})")
+                        else:
+                            filtros.append(f"{columna} = :{parametro}")
+                        params[parametro] = valor
+                    if filtros:
+                        desactivar_relacion(schema, table, " OR ".join(filtros), params)
+
             columnas = table_columns(conn, "dmi", cfg["table"])
 
             if "activo" in columnas:

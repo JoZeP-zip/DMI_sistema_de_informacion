@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "../styles/Checkout.css";
-import { supabase } from "./supabase";
+import { CheckoutService } from "../services/api";
 import { buildProductInvoice, openInvoiceDocument, saveInvoiceLocally } from "./invoice";
 import { showDmiError, showDmiSuccess } from "./DmiMessages";
 
@@ -107,30 +107,16 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
 
     setLoading(true);
 
-    const pedidoBase = {
-      nombre: formData.nombre,
-      telefono: formData.telefono,
-      email: formData.email,
-      direccion: formData.direccion,
-      ciudad: formData.ciudad,
-      metodo_pago: formData.metodoPago,
-      total,
-    };
-
-    let { error } = await supabase.from("pedidos").insert([{ ...pedidoBase, productos: items }]);
-
-    if (error && String(error.message || "").toLowerCase().includes("productos")) {
-      const retry = await supabase.from("pedidos").insert([pedidoBase]);
-      error = retry.error;
-    }
-
-    setLoading(false);
-
-    if (error) {
+    try {
+      await CheckoutService.registrarPedido({ datos: formData, items });
+    } catch (error) {
       console.error(error);
+      setLoading(false);
       showDmiError("No se pudo registrar", "No se pudo guardar el pedido. Revisa la informacion e intenta nuevamente.");
       return;
     }
+
+    setLoading(false);
 
     const invoice = buildProductInvoice({
       customer: {

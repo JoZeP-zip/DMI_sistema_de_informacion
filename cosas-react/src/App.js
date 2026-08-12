@@ -367,15 +367,14 @@ const RecuperarPasswordView = ({ email, onBackToLogin, openConfirm }) => {
   };
 
   return (
-    <div className="mx-auto" style={{ maxWidth: '400px' }}>
-      <h3 className="text-center text-uppercase fw-black mb-3">Recuperar <span className="text-danger">Acceso</span></h3>
-      <p className="text-center text-white-50 small mb-2">Enviaremos un enlace seguro al correo con el que inicias sesion.</p>
-      <p className="text-center text-white fw-bold mb-4">{email || 'Correo no disponible'}</p>
-      <form onSubmit={handleSubmit} noValidate>
-        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3" disabled={sending}>
+    <div className="mx-auto auth-shell auth-recovery-shell" style={{ maxWidth: '480px' }}>
+      <div className="auth-heading"><span>Recuperación DMI / Acceso seguro</span><h3>Recuperar <em>acceso</em></h3><p>Enviaremos un enlace seguro al correo con el que inicias sesión.</p></div>
+      <p className="auth-email-display">{email || 'Correo no disponible'}</p>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <button type="submit" className="auth-submit mb-3" disabled={sending}>
           {sending ? 'ENVIANDO...' : 'ENVIAR ENLACE'}
         </button>
-        <p className="text-center small mb-0"><button type="button" className="btn btn-link text-danger p-0 small fw-bold text-decoration-underline" onClick={onBackToLogin}>Volver al login</button></p>
+        <p className="auth-switch mb-0"><button type="button" onClick={onBackToLogin}>Volver al login</button></p>
       </form>
     </div>
   );
@@ -416,13 +415,12 @@ const NuevaPasswordView = ({ onBackToLogin, openConfirm }) => {
   };
 
   return (
-    <div className="mx-auto" style={{ maxWidth: '400px' }}>
-      <h3 className="text-center text-uppercase fw-black mb-3">Nueva <span className="text-danger">Contrasena</span></h3>
-      <p className="text-center text-white-50 small mb-4">Crea una contrasena nueva de al menos 8 caracteres.</p>
-      <form onSubmit={handleSubmit} noValidate>
-        <div className="mb-3"><label className="form-label text-white small fw-bold">NUEVA CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={password} onChange={(event) => setPassword(event.target.value)} required /></div>
-        <div className="mb-4"><label className="form-label text-white small fw-bold">CONFIRMAR CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></div>
-        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest" disabled={saving}>{saving ? 'ACTUALIZANDO...' : 'ACTUALIZAR CONTRASENA'}</button>
+    <div className="mx-auto auth-shell auth-recovery-shell" style={{ maxWidth: '480px' }}>
+      <div className="auth-heading"><span>Recuperación DMI / Paso final</span><h3>Nueva <em>contraseña</em></h3><p>Crea una contraseña nueva de al menos 8 caracteres.</p></div>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <div className="mb-3"><label className="form-label">Nueva contraseña</label><input type="password" className="form-control" value={password} onChange={(event) => setPassword(event.target.value)} required /></div>
+        <div className="mb-4"><label className="form-label">Confirmar contraseña</label><input type="password" className="form-control" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></div>
+        <button type="submit" className="auth-submit" disabled={saving}>{saving ? 'ACTUALIZANDO...' : 'ACTUALIZAR CONTRASEÑA'} <span>→</span></button>
       </form>
     </div>
   );

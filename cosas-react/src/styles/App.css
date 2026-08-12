@@ -179,6 +179,31 @@
     text-shadow: none;
 }
 
+.auth-heading {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.auth-heading > span {
+    display: block;
+    color: #ff7590;
+    font: 700 10px 'Orbitron', sans-serif;
+    letter-spacing: 2.7px;
+    text-transform: uppercase;
+}
+
+.auth-heading > span::before { content: '//'; margin-right: 9px; color: #ff3158; }
+.auth-heading h3 { margin: 11px 0 12px !important; }
+.auth-heading h3::before { display: none; }
+.auth-heading h3 em { color: #ff3158; font-style: normal; }
+.auth-heading p { max-width: 370px; margin: 0 auto 23px; color: #aeb3bd; font: 600 17px/1.35 'Rajdhani', sans-serif; }
+.auth-email-display { position: relative; z-index: 1; margin: 0 auto 24px; padding: 12px 15px; overflow-wrap: anywhere; color: #fff; border: 1px solid rgba(255,117,144,.4); background: rgba(255,49,88,.07); font: 700 16px 'Rajdhani', sans-serif; text-align: center; }
+.auth-form { position: relative; z-index: 1; }
+.auth-submit { width: 100%; min-height: 50px; border: 1px solid #ff3158; color: #fff; background: #ff3158; cursor: pointer; font: 700 12px 'Orbitron', sans-serif; letter-spacing: 1.7px; text-transform: uppercase; clip-path: polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%); transition: .2s ease; }
+.auth-submit:hover:not(:disabled) { transform: translateY(-2px); background: #e7274e; box-shadow: 0 9px 22px rgba(255,47,85,.28); }.auth-submit:disabled { opacity:.65; cursor:wait; }
+.auth-switch { color:#b4b8c1; font:600 15px 'Rajdhani',sans-serif; text-align:center; }.auth-switch button { padding:0; border:0; color:#ff7590; background:transparent; cursor:pointer; font:700 15px 'Rajdhani',sans-serif; text-decoration:underline; }
+
 .auth-register-shell h3::before { content: 'REGISTRO DMI / NUEVO CLIENTE'; }
 .auth-shell h3 .text-danger { color: #ff3158 !important; }
 .auth-shell form { position: relative; z-index: 1; }
