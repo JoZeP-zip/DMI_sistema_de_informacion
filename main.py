@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, text
 from supabase import create_client
 from dotenv import load_dotenv
 from typing import Optional
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from urllib.parse import quote
 from uuid import UUID
@@ -359,9 +359,26 @@ def obtener_inventario_catalogo_panel(conn) -> list:
 
 
 
-def obtener_ordenes_panel(conn) -> list:
+def rango_mes(valor_mes: Optional[str]):
+    if not valor_mes:
+        return None
+    try:
+        inicio = datetime.strptime(valor_mes, "%Y-%m").date().replace(day=1)
+        siguiente = (inicio.replace(day=28) + timedelta(days=4)).replace(day=1)
+        return inicio, siguiente
+    except ValueError:
+        return None
+
+
+def obtener_ordenes_panel(conn, mes: Optional[str] = None) -> list:
+    rango = rango_mes(mes)
+    filtro_mes = ""
+    parametros = {}
+    if rango:
+        filtro_mes = "WHERE fecha_apertura >= :inicio_mes AND fecha_apertura < :fin_mes"
+        parametros = {"inicio_mes": rango[0], "fin_mes": rango[1]}
     return [dict(row) for row in conn.execute(
-        text("""
+        text(f"""
             SELECT
                 idorden,
                 codigo_orden,
@@ -382,27 +399,83 @@ def obtener_ordenes_panel(conn) -> list:
                 codigo_oficina,
                 oficina
             FROM dmi.v_ordenes_resumen
+            {filtro_mes}
             ORDER BY fecha_apertura DESC, idorden DESC
-            LIMIT 100
-        """)
+        """), parametros
     ).mappings().fetchall()]
 
 
-def obtener_ordenes_mecanico(conn, empleado_id: int) -> list:
+def obtener_ordenes_mecanico(conn, empleado_id: int, mes: Optional[str] = None) -> list:
     orden_col = empleado_orden_column(conn)
     if not orden_col:
         return []
+    rango = rango_mes(mes)
+    filtro_mes = ""
+    parametros = {"empleado_id": empleado_id}
+    if rango:
+        filtro_mes = "AND r.fecha_apertura >= :inicio_mes AND r.fecha_apertura < :fin_mes"
+        parametros.update({"inicio_mes": rango[0], "fin_mes": rango[1]})
     return [dict(row) for row in conn.execute(
         text(f"""
             SELECT r.*
             FROM dmi.v_ordenes_resumen r
             JOIN dmi.orden_trabajo ot ON ot.idorden = r.idorden
             WHERE ot.{orden_col} = :empleado_id
+            {filtro_mes}
             ORDER BY r.fecha_apertura DESC, r.idorden DESC
-            LIMIT 100
         """),
-        {"empleado_id": empleado_id},
+        parametros,
     ).mappings().fetchall()]
+
+
+def obtener_meses_ordenes(conn, empleado_id: Optional[int] = None) -> list:
+    orden_col = empleado_orden_column(conn)
+    if empleado_id and not orden_col:
+        return []
+    origen = "dmi.v_ordenes_resumen r"
+    join = f"JOIN dmi.orden_trabajo ot ON ot.idorden = r.idorden" if empleado_id else ""
+    where = f"WHERE ot.{orden_col} = :empleado_id" if empleado_id else ""
+    params = {"empleado_id": empleado_id} if empleado_id else {}
+    meses = [dict(row) for row in conn.execute(text(f"""
+        SELECT to_char(r.fecha_apertura, 'YYYY-MM') AS clave,
+               EXTRACT(MONTH FROM r.fecha_apertura)::int AS numero_mes,
+               EXTRACT(YEAR FROM r.fecha_apertura)::int AS anio,
+               COUNT(*) AS total,
+               COUNT(*) FILTER (WHERE r.estado IN ('finalizada', 'facturada', 'pagada', 'entregada')) AS cumplidas
+        FROM {origen}
+        {join}
+        {where}
+        GROUP BY to_char(r.fecha_apertura, 'YYYY-MM'),
+                 EXTRACT(MONTH FROM r.fecha_apertura),
+                 EXTRACT(YEAR FROM r.fecha_apertura)
+        ORDER BY clave DESC
+    """), params).mappings().fetchall()]
+    nombres_meses = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+    for mes in meses:
+        mes["etiqueta"] = f"{nombres_meses[mes['numero_mes'] - 1].capitalize()} {mes['anio']}"
+    return meses
+
+
+def obtener_citas_programadas_hoy(conn, empleado_id: Optional[int] = None) -> list:
+    orden_col = empleado_orden_column(conn)
+    if empleado_id and not orden_col:
+        return []
+    filtro_empleado = f"AND ot.{orden_col} = :empleado_id" if empleado_id else ""
+    params = {"hoy": date.today()}
+    if empleado_id:
+        params["empleado_id"] = empleado_id
+    return [dict(row) for row in conn.execute(text(f"""
+        SELECT c.idcita, c.fecha, c.hora, c.motivo, c.estado,
+               r.idorden, r.codigo_orden, r.cliente, r.placa,
+               COALESCE(r.marca, '') || ' ' || COALESCE(r.modelo, '') AS vehiculo
+        FROM dmi.citas c
+        JOIN dmi.orden_trabajo ot ON ot.cita_id = c.idcita
+        JOIN dmi.v_ordenes_resumen r ON r.idorden = ot.idorden
+        WHERE c.fecha = :hoy
+          AND lower(COALESCE(c.estado, 'pendiente')) NOT IN ('cancelada', 'cancelado', 'completada')
+          {filtro_empleado}
+        ORDER BY c.hora ASC, c.idcita ASC
+    """), params).mappings().fetchall()]
 
 
 def generar_codigo_orden(conn) -> str:
@@ -750,6 +823,74 @@ def actualizar_totales_orden(conn, orden_id: int):
     return total_servicios, total_repuestos, total_orden
 
 
+def obtener_cotizacion_activa(conn, orden_id: int):
+    """Devuelve el último borrador o la última cotización enviada de una orden."""
+    if not table_exists(conn, "dmi", "cotizaciones"):
+        return None
+    return conn.execute(
+        text("""
+            SELECT * FROM dmi.cotizaciones
+            WHERE orden_id = :orden_id
+            ORDER BY idcotizacion DESC
+            LIMIT 1
+        """),
+        {"orden_id": orden_id},
+    ).mappings().fetchone()
+
+
+def obtener_items_cotizacion(conn, cotizacion_id: int) -> list:
+    if not table_exists(conn, "dmi", "cotizacion_detalles"):
+        return []
+    return [dict(row) for row in conn.execute(
+        text("""
+            SELECT * FROM dmi.cotizacion_detalles
+            WHERE cotizacion_id = :cotizacion_id
+            ORDER BY iddetalle_cotizacion
+        """),
+        {"cotizacion_id": cotizacion_id},
+    ).mappings().fetchall()]
+
+
+def actualizar_totales_cotizacion(conn, cotizacion_id: int):
+    total = conn.execute(
+        text("""
+            SELECT COALESCE(SUM(subtotal), 0)
+            FROM dmi.cotizacion_detalles
+            WHERE cotizacion_id = :cotizacion_id
+        """),
+        {"cotizacion_id": cotizacion_id},
+    ).scalar() or 0
+    update_dynamic(conn, "cotizaciones", "idcotizacion", cotizacion_id, {
+        "subtotal": total,
+        "impuestos": 0,
+        "descuento": 0,
+        "total": total,
+    })
+    return float(total)
+
+
+def obtener_o_crear_borrador_cotizacion(conn, orden_id: int, cliente_id: int):
+    cotizacion = obtener_cotizacion_activa(conn, orden_id)
+    if cotizacion and cotizacion.get("estado") == "borrador":
+        return cotizacion
+    codigo = generar_codigo_documento(conn, "cotizaciones", "codigo_cotizacion", "COT")
+    cotizacion_id = insert_dynamic_returning(conn, "cotizaciones", {
+        "cliente_id": cliente_id,
+        "codigo_cotizacion": codigo,
+        "orden_id": orden_id,
+        "fecha_cotizacion": datetime.now(),
+        "subtotal": 0,
+        "impuestos": 0,
+        "descuento": 0,
+        "total": 0,
+        "estado": "borrador",
+    }, returning="idcotizacion")
+    return conn.execute(
+        text("SELECT * FROM dmi.cotizaciones WHERE idcotizacion = :id"),
+        {"id": cotizacion_id},
+    ).mappings().fetchone()
+
+
 
 def registrar_historial_orden(conn, orden_id: int, tipo_evento: str, descripcion: str, costo_total: float = 0, factura_id=None):
     if not table_exists(conn, "dmi", "historial_vehiculo"):
@@ -805,15 +946,26 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
     success_msg = request.query_params.get("success")
     ordenes = []
     empleado = None
+    meses_ordenes = []
+    notificaciones = []
+    citas_hoy_ordenes = []
+    mes_seleccionado = request.query_params.get("mes")
 
     try:
         with engine.connect() as conn:
             if es_admin(usuario):
-                ordenes = obtener_ordenes_panel(conn)
+                meses_ordenes = obtener_meses_ordenes(conn)
+                mes_seleccionado = mes_seleccionado or (meses_ordenes[0]["clave"] if meses_ordenes else None)
+                ordenes = obtener_ordenes_panel(conn, mes_seleccionado)
+                citas_hoy_ordenes = obtener_citas_programadas_hoy(conn)
             else:
                 empleado = obtener_empleado_actual(conn, usuario)
                 if empleado:
-                    ordenes = obtener_ordenes_mecanico(conn, empleado.get("idempleado"))
+                    meses_ordenes = obtener_meses_ordenes(conn, empleado.get("idempleado"))
+                    mes_seleccionado = mes_seleccionado or (meses_ordenes[0]["clave"] if meses_ordenes else None)
+                    ordenes = obtener_ordenes_mecanico(conn, empleado.get("idempleado"), mes_seleccionado)
+                    notificaciones = [orden for orden in obtener_ordenes_mecanico(conn, empleado.get("idempleado")) if orden.get("estado") == "aprobada"]
+                    citas_hoy_ordenes = obtener_citas_programadas_hoy(conn, empleado.get("idempleado"))
                 else:
                     error_msg = "Tu usuario mecanico no esta enlazado a un empleado por correo."
     except Exception as e:
@@ -831,6 +983,10 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
             "total_diagnostico": sum(1 for o in ordenes if o.get("estado") == "diagnostico"),
             "total_reparacion": sum(1 for o in ordenes if o.get("estado") == "en_reparacion"),
             "total_facturadas": sum(1 for o in ordenes if o.get("estado") in {"facturada", "pagada", "entregada"}),
+            "meses_ordenes": meses_ordenes,
+            "mes_seleccionado": mes_seleccionado,
+            "notificaciones": notificaciones,
+            "citas_hoy_ordenes": citas_hoy_ordenes,
             "success_msg": success_msg,
             "error": error_msg,
         },
@@ -861,10 +1017,16 @@ async def admin_ordenes(request: Request, access_token: str = Cookie(None)):
     total_diagnostico = 0
     total_reparacion = 0
     total_facturadas = 0
+    meses_ordenes = []
+    citas_hoy_ordenes = []
+    mes_seleccionado = request.query_params.get("mes")
 
     try:
         with engine.connect() as conn:
-            ordenes = obtener_ordenes_panel(conn)
+            meses_ordenes = obtener_meses_ordenes(conn)
+            mes_seleccionado = mes_seleccionado or (meses_ordenes[0]["clave"] if meses_ordenes else None)
+            ordenes = obtener_ordenes_panel(conn, mes_seleccionado)
+            citas_hoy_ordenes = obtener_citas_programadas_hoy(conn)
             total_diagnostico = conn.execute(
                 text("SELECT COUNT(*) FROM dmi.orden_trabajo WHERE estado = 'diagnostico'")
             ).scalar() or 0
@@ -887,10 +1049,44 @@ async def admin_ordenes(request: Request, access_token: str = Cookie(None)):
             "total_diagnostico": total_diagnostico,
             "total_reparacion": total_reparacion,
             "total_facturadas": total_facturadas,
+            "meses_ordenes": meses_ordenes,
+            "mes_seleccionado": mes_seleccionado,
+            "citas_hoy_ordenes": citas_hoy_ordenes,
             "success_msg": success_msg,
             "error": error_msg,
         },
     )
+
+
+@app.get("/admin/empleados/{empleado_id}/ordenes", response_class=HTMLResponse)
+async def admin_ordenes_empleado(empleado_id: int, request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/")
+    mes_seleccionado = request.query_params.get("mes")
+    try:
+        with engine.connect() as conn:
+            pk = resolve_table_pk(conn, "empleados", "idempleado") or "idempleado"
+            empleado = conn.execute(text(f"SELECT * FROM dmi.empleados WHERE {pk} = :id"), {"id": empleado_id}).mappings().fetchone()
+            if not empleado:
+                return RedirectResponse(url="/configuracion?error=Empleado no encontrado", status_code=302)
+            meses_ordenes = obtener_meses_ordenes(conn, empleado_id)
+            mes_seleccionado = mes_seleccionado or (meses_ordenes[0]["clave"] if meses_ordenes else None)
+            ordenes = obtener_ordenes_mecanico(conn, empleado_id, mes_seleccionado)
+            citas_hoy_ordenes = obtener_citas_programadas_hoy(conn, empleado_id)
+            nombre_empleado = " ".join(filter(None, [empleado.get("nombre") or empleado.get("nombres"), empleado.get("apellido") or empleado.get("apellidos")]))
+        return templates.TemplateResponse(request=request, name="ordenes.html", context={
+            "usuario": usuario, "ordenes": ordenes, "meses_ordenes": meses_ordenes,
+            "mes_seleccionado": mes_seleccionado, "empleado_filtro": nombre_empleado or f"Empleado #{empleado_id}", "empleado_filtro_id": empleado_id,
+            "citas_hoy_ordenes": citas_hoy_ordenes,
+            "total_ordenes": len(ordenes),
+            "total_diagnostico": sum(1 for o in ordenes if o.get("estado") == "diagnostico"),
+            "total_reparacion": sum(1 for o in ordenes if o.get("estado") == "en_reparacion"),
+            "total_facturadas": sum(1 for o in ordenes if o.get("estado") in {"facturada", "pagada", "entregada"}),
+            "success_msg": request.query_params.get("success"), "error": request.query_params.get("error"),
+        })
+    except Exception as e:
+        return RedirectResponse(url=f"/configuracion?error={quote(str(e))}", status_code=302)
 
 
 @app.get("/admin/ordenes/{orden_id}", response_class=HTMLResponse)
@@ -908,6 +1104,8 @@ async def admin_orden_detalle(orden_id: int, request: Request, access_token: str
     repuestos = []
     factura = None
     pagos = []
+    cotizacion = None
+    items_cotizacion = []
     productos_inventario = []
     metodos_pago = []
 
@@ -933,6 +1131,10 @@ async def admin_orden_detalle(orden_id: int, request: Request, access_token: str
                 text("SELECT * FROM dmi.detalle_repuestos WHERE orden_id = :id ORDER BY iddetalle_repuesto"),
                 {"id": orden_id},
             ).mappings().fetchall()]
+            cotizacion = obtener_cotizacion_activa(conn, orden_id)
+            if cotizacion:
+                cotizacion = dict(cotizacion)
+                items_cotizacion = obtener_items_cotizacion(conn, cotizacion["idcotizacion"])
             factura = conn.execute(
                 text("SELECT * FROM dmi.facturas WHERE orden_id = :id ORDER BY fecha_factura DESC LIMIT 1"),
                 {"id": orden_id},
@@ -971,6 +1173,8 @@ async def admin_orden_detalle(orden_id: int, request: Request, access_token: str
             "diagnosticos_orden": diagnosticos,
             "servicios_orden": servicios,
             "repuestos_orden": repuestos,
+            "cotizacion_orden": cotizacion,
+            "items_cotizacion": items_cotizacion,
             "factura_orden": dict(factura) if factura else None,
             "pagos_orden": pagos,
             "productos_inventario": productos_inventario,
@@ -1015,6 +1219,13 @@ async def actualizar_estado_orden(
 
     try:
         with engine.connect() as conn:
+            if estado in {"aprobada", "en_reparacion"}:
+                aceptada = conn.execute(
+                    text("SELECT 1 FROM dmi.cotizaciones WHERE orden_id = :id AND estado = 'aprobada' LIMIT 1"),
+                    {"id": orden_id},
+                ).scalar()
+                if not aceptada:
+                    return redirect_orden(usuario, orden_id, "La reparacion requiere la aceptacion del cliente", False)
             conn.execute(
                 text("UPDATE dmi.orden_trabajo SET estado = :estado WHERE idorden = :id"),
                 {"estado": estado, "id": orden_id},
@@ -1102,7 +1313,7 @@ async def agregar_servicio_orden(
     orden_id: int,
     request: Request,
     access_token: str = Cookie(None),
-    descripcion: str = Form(...),
+    descripcion: Optional[str] = Form(None),
     cantidad: float = Form(1),
     valor_unitario: float = Form(0),
 ):
@@ -1115,6 +1326,9 @@ async def agregar_servicio_orden(
         valor_unitario = float(valor_unitario or 0)
         subtotal = cantidad * valor_unitario
         with engine.connect() as conn:
+            orden = conn.execute(text("SELECT estado FROM dmi.orden_trabajo WHERE idorden = :id"), {"id": orden_id}).mappings().fetchone()
+            if not orden or orden.get("estado") not in {"aprobada", "en_reparacion"}:
+                return redirect_orden(usuario, orden_id, "El cliente debe aprobar la cotizacion antes de registrar la reparacion", False)
             insert_dynamic_returning(conn, "detalle_servicios", {
                 "orden_id": orden_id,
                 "descripcion": descripcion,
@@ -1156,6 +1370,9 @@ async def agregar_repuesto_orden(
         cantidad = float(cantidad or 1)
         valor_unitario = float(valor_unitario or 0)
         with engine.connect() as conn:
+            orden = conn.execute(text("SELECT estado FROM dmi.orden_trabajo WHERE idorden = :id"), {"id": orden_id}).mappings().fetchone()
+            if not orden or orden.get("estado") not in {"aprobada", "en_reparacion"}:
+                return redirect_orden(usuario, orden_id, "El cliente debe aprobar la cotizacion antes de usar repuestos", False)
             if inventario_id and table_exists(conn, "dmi", "inventario_catalogo"):
                 producto = conn.execute(
                     text("SELECT id, nombre, codigo, precio_venta, cantidad FROM dmi.inventario_catalogo WHERE id = :id"),
@@ -1204,7 +1421,7 @@ async def agregar_repuesto_orden(
         return RedirectResponse(url=f"/admin/ordenes/{orden_id}?error={quote(str(e))}", status_code=302)
 
 
-@app.post("/admin/ordenes/{orden_id}/cotizacion")
+@app.post("/admin/ordenes/{orden_id}/cotizacion/legacy")
 async def generar_cotizacion_orden(
     orden_id: int,
     request: Request,
@@ -1288,6 +1505,82 @@ async def generar_cotizacion_orden(
             status_code=302,
         )
 
+@app.post("/admin/ordenes/{orden_id}/cotizacion/item")
+async def agregar_item_cotizacion(
+    orden_id: int,
+    request: Request,
+    access_token: str = Cookie(None),
+    tipo: str = Form(...),
+    descripcion: Optional[str] = Form(None),
+    cantidad: float = Form(1),
+    valor_unitario: float = Form(0),
+    inventario_id: Optional[int] = Form(None),
+):
+    usuario = obtener_usuario(access_token, request)
+    with engine.connect() as permiso_conn:
+        if not usuario_puede_gestionar_orden(permiso_conn, usuario, orden_id):
+            return redirigir_sin_permiso("/")
+    try:
+        with engine.connect() as conn:
+            orden = conn.execute(text("SELECT cliente_id, estado FROM dmi.orden_trabajo WHERE idorden = :id"), {"id": orden_id}).mappings().fetchone()
+            if not orden:
+                return redirect_orden(usuario, orden_id, "La orden no existe", False)
+            if orden.get("estado") not in {"abierta", "diagnostico", "cotizada"}:
+                return redirect_orden(usuario, orden_id, "La cotizacion ya no se puede modificar", False)
+            cotizacion = obtener_o_crear_borrador_cotizacion(conn, orden_id, orden["cliente_id"])
+            cantidad = float(cantidad or 1)
+            valor_unitario = float(valor_unitario or 0)
+            if tipo == "repuesto" and inventario_id:
+                producto = conn.execute(
+                    text("SELECT nombre, codigo, precio_venta FROM dmi.inventario_catalogo WHERE id = :id"),
+                    {"id": inventario_id},
+                ).mappings().fetchone()
+                if producto:
+                    descripcion = descripcion or producto.get("nombre") or producto.get("codigo")
+                    valor_unitario = valor_unitario or float(producto.get("precio_venta") or 0)
+            descripcion = (descripcion or "").strip()
+            if tipo not in {"servicio", "repuesto"} or cantidad <= 0 or valor_unitario < 0:
+                return redirect_orden(usuario, orden_id, "Datos de item no validos", False)
+            if not descripcion:
+                return redirect_orden(usuario, orden_id, "Escribe la descripcion del item", False)
+            insert_dynamic_returning(conn, "cotizacion_detalles", {
+                "cotizacion_id": cotizacion["idcotizacion"], "tipo": tipo, "inventario_id": inventario_id,
+                "descripcion": descripcion, "cantidad": cantidad, "valor_unitario": valor_unitario,
+                "subtotal": cantidad * valor_unitario,
+            })
+            actualizar_totales_cotizacion(conn, cotizacion["idcotizacion"])
+            conn.commit()
+        return redirect_orden(usuario, orden_id, "Item agregado a la cotizacion")
+    except Exception as e:
+        return redirect_orden(usuario, orden_id, str(e), False)
+
+
+@app.post("/admin/ordenes/{orden_id}/cotizacion")
+async def enviar_cotizacion_orden(orden_id: int, request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    with engine.connect() as permiso_conn:
+        if not usuario_puede_gestionar_orden(permiso_conn, usuario, orden_id):
+            return redirigir_sin_permiso("/")
+    try:
+        with engine.connect() as conn:
+            diagnostico = conn.execute(text("SELECT 1 FROM dmi.diagnosticos WHERE orden_id = :id LIMIT 1"), {"id": orden_id}).scalar()
+            cotizacion = obtener_cotizacion_activa(conn, orden_id)
+            if not diagnostico:
+                return redirect_orden(usuario, orden_id, "Registra el diagnostico antes de enviar la cotizacion", False)
+            if not cotizacion or cotizacion.get("estado") != "borrador":
+                return redirect_orden(usuario, orden_id, "Primero crea una cotizacion en borrador", False)
+            if not obtener_items_cotizacion(conn, cotizacion["idcotizacion"]):
+                return redirect_orden(usuario, orden_id, "Agrega al menos un servicio o repuesto", False)
+            total = actualizar_totales_cotizacion(conn, cotizacion["idcotizacion"])
+            update_dynamic(conn, "cotizaciones", "idcotizacion", cotizacion["idcotizacion"], {"estado": "pendiente", "enviado_en": datetime.now()})
+            update_dynamic(conn, "orden_trabajo", "idorden", orden_id, {"estado": "cotizada"})
+            registrar_historial_orden(conn, orden_id, "cotizacion_enviada", f"Cotizacion {cotizacion.get('codigo_cotizacion')} enviada al cliente", total)
+            conn.commit()
+        return redirect_orden(usuario, orden_id, "Cotizacion enviada al cliente")
+    except Exception as e:
+        return redirect_orden(usuario, orden_id, str(e), False)
+
+
 @app.post("/admin/ordenes/{orden_id}/factura")
 async def generar_factura_orden(orden_id: int, request: Request, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token, request)
@@ -1302,6 +1595,8 @@ async def generar_factura_orden(orden_id: int, request: Request, access_token: s
             orden = obtener_resumen_orden(conn, orden_id)
             if not orden:
                 return RedirectResponse(url="/admin/ordenes?error=Orden no encontrada", status_code=302)
+            if orden.get("estado") not in {"finalizada", "en_reparacion"}:
+                return redirect_orden(usuario, orden_id, "La factura solo se puede generar despues de aprobar e iniciar la reparacion", False)
             total_servicios, total_repuestos, total_orden = actualizar_totales_orden(conn, orden_id)
             codigo = generar_codigo_documento(conn, "facturas", "codigo_factura", "FAC")
             insert_dynamic_returning(conn, "facturas", {
@@ -1839,6 +2134,14 @@ async def registro_react(request: Request):
     except Exception as e:
         print("ERROR registro-react:", e)
         error_text = str(e).lower()
+        if "rate limit" in error_text or "email rate limit" in error_text:
+            return JSONResponse(
+                {
+                    "error": "Se alcanzo temporalmente el limite de correos de confirmacion. Espera unos minutos antes de solicitar otro codigo.",
+                    "code": "EMAIL_RATE_LIMIT",
+                },
+                status_code=429,
+            )
         if "usuarios_email" in error_text or ("email" in error_text and "duplicate" in error_text):
             return JSONResponse(
                 {"error": "Este correo ya esta registrado. Inicia sesion o usa otro correo."},
@@ -4270,6 +4573,48 @@ async def admin_usuario_ficha(usuario_id: int, request: Request, access_token: s
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+@app.post("/api/mi-garage/cotizaciones/{cotizacion_id}/respuesta")
+async def responder_cotizacion_cliente(cotizacion_id: int, request: Request, access_token: str = Cookie(None)):
+    usuario_actual = obtener_usuario(access_token, request)
+    if not usuario_actual:
+        return JSONResponse({"error": "Debes iniciar sesion"}, status_code=401)
+    try:
+        body = await request.json()
+        respuesta = str(body.get("respuesta") or "").strip().lower()
+        if respuesta not in {"aceptada", "rechazada"}:
+            return JSONResponse({"error": "Respuesta no valida"}, status_code=400)
+        with engine.connect() as conn:
+            usuario = conn.execute(
+                text("SELECT idusuarios FROM dmi.usuarios WHERE id::text = :auth_id"),
+                {"auth_id": usuario_actual["id"]},
+            ).mappings().fetchone()
+            if not usuario:
+                return JSONResponse({"error": "Usuario no encontrado"}, status_code=404)
+            cotizacion = conn.execute(
+                text("SELECT * FROM dmi.cotizaciones WHERE idcotizacion = :id AND cliente_id = :cliente_id"),
+                {"id": cotizacion_id, "cliente_id": usuario["idusuarios"]},
+            ).mappings().fetchone()
+            if not cotizacion:
+                return JSONResponse({"error": "Cotizacion no encontrada"}, status_code=404)
+            if cotizacion.get("estado") != "pendiente":
+                return JSONResponse({"error": "Esta cotizacion ya fue respondida"}, status_code=409)
+            estado_cotizacion = "aprobada" if respuesta == "aceptada" else "rechazada"
+            update_dynamic(conn, "cotizaciones", "idcotizacion", cotizacion_id, {
+                "estado": estado_cotizacion, "respuesta_cliente": respuesta, "respondido_en": datetime.now(),
+            })
+            nuevo_estado = "aprobada" if respuesta == "aceptada" else "cancelada"
+            update_dynamic(conn, "orden_trabajo", "idorden", cotizacion["orden_id"], {"estado": nuevo_estado})
+            registrar_historial_orden(
+                conn, cotizacion["orden_id"], "cotizacion_" + respuesta,
+                "Cliente " + ("acepto" if respuesta == "aceptada" else "rechazo") + f" la cotizacion {cotizacion.get('codigo_cotizacion')}",
+                float(cotizacion.get("total") or 0),
+            )
+            conn.commit()
+        return JSONResponse({"ok": True, "estado": respuesta})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.get("/api/mi-garage")
 async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
     usuario_actual = obtener_usuario(access_token, request)
@@ -4509,6 +4854,38 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                 {"usuario_id": usuario_id},
             )
 
+            columnas_cotizacion = table_columns(conn, "dmi", "cotizaciones")
+            fecha_cotizacion_col = next(
+                (col for col in ("fecha_cotizacion", "fecha", "created_at", "creado_en") if col in columnas_cotizacion),
+                None,
+            )
+            fecha_cotizacion_select = f"c.{fecha_cotizacion_col} AS fecha_cotizacion" if fecha_cotizacion_col else "NULL::timestamp AS fecha_cotizacion"
+            orden_cotizaciones = f"c.{fecha_cotizacion_col} DESC, c.idcotizacion DESC" if fecha_cotizacion_col else "c.idcotizacion DESC"
+            cotizaciones = query_rows(
+                conn,
+                f"""
+                SELECT c.idcotizacion, c.codigo_cotizacion, c.orden_id, c.fecha_cotizacion,
+                       c.enviado_en, c.respondido_en, c.respuesta_cliente,
+                       c.subtotal, c.impuestos, c.descuento, c.total, c.estado, ot.codigo_orden
+                FROM dmi.cotizaciones c
+                JOIN dmi.orden_trabajo ot ON ot.idorden = c.orden_id
+                WHERE c.cliente_id = :usuario_id AND c.estado <> 'borrador'
+                ORDER BY {orden_cotizaciones}
+                """.replace("c.fecha_cotizacion", fecha_cotizacion_select, 1),
+                {"usuario_id": usuario_id},
+            )
+            cotizacion_detalles = query_rows(
+                conn,
+                """
+                SELECT cd.*
+                FROM dmi.cotizacion_detalles cd
+                JOIN dmi.cotizaciones c ON c.idcotizacion = cd.cotizacion_id
+                WHERE c.cliente_id = :usuario_id AND c.estado <> 'borrador'
+                ORDER BY cd.iddetalle_cotizacion
+                """,
+                {"usuario_id": usuario_id},
+            )
+
             pagos_facturas = query_rows(
                 conn,
                 """
@@ -4613,6 +4990,8 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                 "diagnosticos_orden": diagnosticos_orden,
                 "servicios_orden": servicios_orden,
                 "repuestos_orden": repuestos_orden,
+                "cotizaciones": cotizaciones,
+                "cotizacion_detalles": cotizacion_detalles,
                 "facturas": facturas,
                 "pagos_facturas": pagos_facturas,
                 "historial": historial,
@@ -4850,9 +5229,3 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
-
-
-
-

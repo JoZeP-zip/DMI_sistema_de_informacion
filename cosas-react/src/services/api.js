@@ -377,4 +377,10 @@ export const MiCuentaService = {
     headers: authHeaders(),
     credentials: "include",
   }),
+  responderCotizacion: (cotizacionId, respuesta) => request(`/api/mi-garage/cotizaciones/${cotizacionId}/respuesta`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ respuesta }),
+    credentials: "include",
+  }),
 };

@@ -87,6 +87,8 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const [error, setError] = useState('');
   const [historialActivo, setHistorialActivo] = useState(null);
   const [ordenActiva, setOrdenActiva] = useState(null);
+  const [cotizacionActiva, setCotizacionActiva] = useState(null);
+  const [respondiendoCotizacion, setRespondiendoCotizacion] = useState(false);
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
 
   useEffect(() => {
@@ -142,10 +144,21 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const serviciosVehiculo = useMemo(() => (data?.servicios_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
   const repuestosVehiculo = useMemo(() => (data?.repuestos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
   const facturasVehiculo = useMemo(() => (data?.facturas || []).filter((factura) => ordenIdsVehiculo.has(factura.orden_id)), [data, ordenIdsVehiculo]);
+  const cotizacionesVehiculo = useMemo(() => (data?.cotizaciones || []).filter((cotizacion) => ordenIdsVehiculo.has(cotizacion.orden_id)), [data, ordenIdsVehiculo]);
   const historialVehiculo = useMemo(() => {
     if (!vehiculoIdActual) return data?.historial || [];
     return (data?.historial || []).filter((evento) => String(evento.vehiculo_id) === String(vehiculoIdActual));
   }, [data, vehiculoIdActual]);
+
+  const citaProxima = useMemo(() => {
+    const activas = citasVehiculo.filter((cita) => !['cancelada', 'cancelado', 'completada'].includes(String(cita.estado || '').toLowerCase()));
+    return [...activas].sort((a, b) => `${a.fecha || ''} ${a.hora || ''}`.localeCompare(`${b.fecha || ''} ${b.hora || ''}`))[0];
+  }, [citasVehiculo]);
+
+  const cotizacionPendiente = useMemo(
+    () => cotizacionesVehiculo.find((cotizacion) => String(cotizacion.estado || '').toLowerCase() === 'pendiente'),
+    [cotizacionesVehiculo],
+  );
 
   const ordenesActivas = useMemo(() => {
     return ordenesVehiculo.filter((orden) => {
@@ -159,6 +172,38 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const repuestosPorOrden = (ordenId) => repuestosVehiculo.filter((item) => item.orden_id === ordenId);
   const facturaPorOrden = (ordenId) => facturasVehiculo.find((item) => item.orden_id === ordenId);
   const pagosPorFactura = (facturaId) => (data?.pagos_facturas || []).filter((item) => item.factura_id === facturaId);
+  const itemsPorCotizacion = (cotizacionId) => (data?.cotizacion_detalles || []).filter((item) => item.cotizacion_id === cotizacionId);
+
+  const abrirCotizacion = (cotizacion) => setCotizacionActiva({
+    ...cotizacion,
+    items: itemsPorCotizacion(cotizacion.idcotizacion),
+  });
+
+  const responderCotizacion = async (respuesta) => {
+    if (!cotizacionActiva || respondiendoCotizacion) return;
+    const mensaje = respuesta === 'aceptada'
+      ? '¿Deseas aceptar la cotizacion y autorizar la reparacion?'
+      : '¿Deseas rechazar esta cotizacion? La reparacion no continuara.';
+    if (!window.confirm(mensaje)) return;
+    setRespondiendoCotizacion(true);
+    try {
+      await MiCuentaService.responderCotizacion(cotizacionActiva.idcotizacion, respuesta);
+      setData((actual) => ({
+        ...actual,
+        cotizaciones: (actual?.cotizaciones || []).map((item) => item.idcotizacion === cotizacionActiva.idcotizacion ? { ...item, estado: respuesta === 'aceptada' ? 'aprobada' : 'rechazada', respuesta_cliente: respuesta } : item),
+        ordenes: (actual?.ordenes || []).map((orden) => orden.idorden === cotizacionActiva.orden_id ? {
+          ...orden,
+          estado: respuesta === 'aceptada' ? 'aprobada' : 'cancelada',
+          estado_label: respuesta === 'aceptada' ? 'Cotizacion aprobada' : 'Cotizacion rechazada',
+        } : orden),
+      }));
+      setCotizacionActiva(null);
+    } catch (err) {
+      setError(err.message || 'No se pudo registrar la respuesta a la cotizacion.');
+    } finally {
+      setRespondiendoCotizacion(false);
+    }
+  };
 
   const abrirFactura = (factura) => {
     const servicios = serviciosPorOrden(factura.orden_id);
@@ -221,7 +266,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     const servicios = serviciosPorOrden(evento.orden_id);
     const repuestos = repuestosPorOrden(evento.orden_id);
     const factura = facturasVehiculo.find((item) => item.idfactura === evento.factura_id || item.orden_id === evento.orden_id);
-    setHistorialActivo({ evento, orden, diagnosticos, servicios, repuestos, factura });
+    setHistorialActivo({ evento, orden, diagnosticos, servicios, repuestos, factura, eventos: historialVehiculo });
   };
 
   if (loading) {
@@ -264,71 +309,37 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
         <article><span>Facturas pendientes</span><strong>{resumen.facturas_pendientes || 0}</strong></article>
       </section>
 
-      {ordenesActivas.length > 0 && (
-        <section className="user-account-card wide user-current-work">
-          <div className="user-account-card-head">
-            <h3><i className="bi bi-activity" /> Estado actual del taller</h3>
-          </div>
-          <div className="user-current-work-grid">
-            {ordenesActivas.slice(0, 3).map((orden) => (
-              <article key={orden.idorden}>
-                <strong>{orden.codigo_orden}</strong>
-                <span>{clean(orden.marca, '')} {clean(orden.modelo, '')} - {clean(orden.placa, 'Sin placa')}</span>
-                <div className="user-progress" aria-label={`Progreso ${orden.progreso || 0}%`}>
-                  <span style={{ width: `${orden.progreso || 0}%` }} />
-                </div>
-                <small>{orden.progreso || 0}% completado | {clean(orden.estado_label, orden.estado)}</small>
-                <OrderSteps estado={orden.estado} />
-                <button type="button" onClick={() => abrirOrden(orden)}>Ver detalle</button>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+      <section className="user-priority-grid">
+        <article className="user-priority-card user-vehicle-focus">
+          <div className="user-priority-head"><span><i className="bi bi-car-front-fill" /> Mi vehiculo</span><button type="button" onClick={onAddVehicle}><i className="bi bi-plus-lg" /> Agregar</button></div>
+          {vehiculosCuenta.length ? <>
+            <select aria-label="Elegir vehiculo" value={vehiculoSeleccionadoId} onChange={(event) => setVehiculoSeleccionadoId(event.target.value)}>
+              {vehiculosCuenta.map((vehiculo) => <option key={vehiculo.idvehiculo} value={vehiculo.idvehiculo}>{clean(vehiculo.placa, 'Sin placa')} · {clean(vehiculo.marca, '')} {clean(vehiculo.modelo, '')}</option>)}
+            </select>
+            {vehiculoSeleccionado && <div className="user-vehicle-feature">
+              <div className="user-vehicle-icon"><i className="bi bi-car-front-fill" /></div>
+              <div><strong>{clean(vehiculoSeleccionado.marca)} {clean(vehiculoSeleccionado.modelo, '')}</strong><span className="user-vehicle-plate">{clean(vehiculoSeleccionado.placa)}</span><small>{clean(vehiculoSeleccionado.tipo_vehiculo)} · {clean(vehiculoSeleccionado.kilometraje_actual, 0)} km</small></div>
+            </div>}
+          </> : <EmptyState icon="bi-car-front" text="Aun no tienes vehiculos registrados." />}
+        </article>
+
+        <article className="user-priority-card user-appointment-focus">
+          <div className="user-priority-head"><span><i className="bi bi-calendar2-check-fill" /> Proxima cita</span><button type="button" onClick={onScheduleAppointment}><i className="bi bi-calendar-plus" /> Agendar</button></div>
+          {citaProxima ? <div className="user-appointment-feature"><time>{clean(citaProxima.fecha, 'Fecha pendiente')}<b>{clean(citaProxima.hora, 'Hora por confirmar')}</b></time><div><strong>{clean(citaProxima.motivo, 'Servicio agendado')}</strong><span>{clean(citaProxima.vehiculo, 'Tu vehiculo')}</span><small className={`user-status ${estadoClase(citaProxima.estado)}`}>{clean(citaProxima.estado, 'pendiente')}</small></div></div> : <EmptyState icon="bi-calendar-x" text="No tienes citas activas." />}
+        </article>
+
+        <article className="user-priority-card user-quote-focus">
+          <div className="user-priority-head"><span><i className="bi bi-file-earmark-text-fill" /> Cotizacion</span><i className="bi bi-shield-check" /></div>
+          {cotizacionPendiente ? <div className="user-quote-feature"><strong>{cotizacionPendiente.codigo_cotizacion}</strong><span>Tu taller espera tu respuesta</span><b>{money(cotizacionPendiente.total)}</b><button type="button" onClick={() => abrirCotizacion(cotizacionPendiente)}>Revisar cotizacion <i className="bi bi-arrow-right" /></button></div> : <EmptyState icon="bi-file-earmark-check" text={cotizacionesVehiculo.length ? 'No tienes cotizaciones pendientes.' : 'No tienes cotizaciones enviadas.'} />}
+        </article>
+      </section>
+
+      <section className="user-account-card wide user-quotes-priority">
+        <div className="user-account-card-head"><h3><i className="bi bi-file-earmark-text" /> Mis cotizaciones</h3></div>
+        {cotizacionesVehiculo.length ? <div className="user-account-list">{cotizacionesVehiculo.map((cotizacion) => <div className="user-account-item user-action-item" key={cotizacion.idcotizacion}><strong>{cotizacion.codigo_cotizacion}</strong><span>{money(cotizacion.total)} | Orden {cotizacion.codigo_orden || `#${cotizacion.orden_id}`}</span><small className={`user-status ${estadoClase(cotizacion.estado)}`}>{clean(cotizacion.estado)}</small><button type="button" onClick={() => abrirCotizacion(cotizacion)}>Ver cotizacion</button></div>)}</div> : <EmptyState icon="bi-file-earmark" text="No tienes cotizaciones enviadas." />}
+      </section>
 
       <section className="user-account-grid">
-        <Section title="Vehiculos" icon="bi-car-front-fill">
-          {vehiculosCuenta.length ? (
-            <div className="user-vehicle-panel">
-              <label>Elegir vehiculo</label>
-              <select
-                value={vehiculoSeleccionadoId}
-                onChange={(event) => setVehiculoSeleccionadoId(event.target.value)}
-              >
-                {vehiculosCuenta.map((vehiculo) => (
-                  <option key={vehiculo.idvehiculo} value={vehiculo.idvehiculo}>
-                    {clean(vehiculo.placa, 'Sin placa')} - {clean(vehiculo.marca, '')} {clean(vehiculo.modelo, '')}
-                  </option>
-                ))}
-              </select>
-
-              {vehiculoSeleccionado && (
-                <div className="user-account-item selected">
-                  <strong>{clean(vehiculoSeleccionado.marca)} {clean(vehiculoSeleccionado.modelo, '')}</strong>
-                  <span>Placa {clean(vehiculoSeleccionado.placa)} | Tipo {clean(vehiculoSeleccionado.tipo_vehiculo)}</span>
-                  <small>Motor {clean(vehiculoSeleccionado.motor)} | Capacidad {clean(vehiculoSeleccionado.capacidad, 0)} | Km {clean(vehiculoSeleccionado.kilometraje_actual, 0)}</small>
-                </div>
-              )}
-
-              <small className="user-vehicle-count">{vehiculosCuenta.length} de 10 vehiculos registrados</small>
-            </div>
-          ) : <EmptyState icon="bi-car-front" text="Aun no tienes vehiculos registrados." />}
-        </Section>
-
-        <Section title="Citas" icon="bi-calendar-check-fill">
-          {citasVehiculo.length ? (
-            <div className="user-account-list">
-              {citasVehiculo.slice(0, 6).map((cita) => (
-                <div className="user-account-item" key={cita.idcita}>
-                  <strong>{clean(cita.motivo, 'Servicio agendado')}</strong>
-                  <span>{clean(cita.fecha, '')} {clean(cita.hora, '')} | {clean(cita.vehiculo, 'Vehiculo')}</span>
-                  <small className={`user-status ${estadoClase(cita.estado)}`}>{clean(cita.estado, 'pendiente')}</small>
-                </div>
-              ))}
-            </div>
-          ) : <EmptyState icon="bi-calendar-x" text="No tienes citas registradas." />}
-        </Section>
-
         <Section title="Servicios realizados" icon="bi-tools">
           {serviciosVehiculo.length ? (
             <div className="user-account-list">
@@ -356,6 +367,24 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
           ) : <EmptyState icon="bi-box" text="Todavia no hay repuestos usados en tus ordenes." />}
         </Section>
 
+        {ordenesActivas.length > 0 && (
+          <section className="user-account-card wide user-current-work">
+            <div className="user-account-card-head"><h3><i className="bi bi-activity" /> Estado actual del taller</h3></div>
+            <div className="user-current-work-grid">
+              {ordenesActivas.slice(0, 3).map((orden) => (
+                <article key={orden.idorden}>
+                  <strong>{orden.codigo_orden}</strong>
+                  <span>{clean(orden.marca, '')} {clean(orden.modelo, '')} - {clean(orden.placa, 'Sin placa')}</span>
+                  <div className="user-progress" aria-label={`Progreso ${orden.progreso || 0}%`}><span style={{ width: `${orden.progreso || 0}%` }} /></div>
+                  <small>{orden.progreso || 0}% completado | {clean(orden.estado_label, orden.estado)}</small>
+                  <OrderSteps estado={orden.estado} />
+                  <button type="button" onClick={() => abrirOrden(orden)}>Ver detalle</button>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
         <Section title="Facturas" icon="bi-receipt-cutoff">
           {facturasVehiculo.length ? (
             <div className="user-account-list">
@@ -374,7 +403,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
         <Section title="Historial" icon="bi-clock-history" className="wide">
           {historialVehiculo.length ? (
             <div className="user-history-list">
-              {historialVehiculo.map((evento) => (
+              {historialVehiculo.slice(0, 1).map((evento) => (
                 <div className="user-history-item user-action-item" key={evento.idhistorial}>
                   <strong>{clean(evento.tipo_evento)}</strong>
                   <span>{clean(evento.fecha_evento, '')} | {clean(evento.placa, '')}</span>
@@ -386,6 +415,32 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
           ) : <EmptyState icon="bi-clock" text="Aun no hay historial para tus vehiculos." />}
         </Section>
       </section>
+
+      <DetailModal title={cotizacionActiva ? 'Cotizacion realizada' : ''} onClose={() => setCotizacionActiva(null)}>
+        {cotizacionActiva && (
+          <div className="user-detail-content">
+            <div className="user-detail-grid">
+              <article><span>Cotizacion</span><strong>{cotizacionActiva.codigo_cotizacion}</strong></article>
+              <article><span>Estado</span><strong>{clean(cotizacionActiva.estado)}</strong></article>
+              <article><span>Orden</span><strong>{clean(cotizacionActiva.codigo_orden, `#${cotizacionActiva.orden_id}`)}</strong></article>
+              <article><span>Total</span><strong>{money(cotizacionActiva.total)}</strong></article>
+            </div>
+            <h3>Diagnostico y trabajos propuestos</h3>
+            {cotizacionActiva.items.length ? cotizacionActiva.items.map((item) => (
+              <div className="user-detail-line" key={item.iddetalle_cotizacion}>
+                <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
+              </div>
+            )) : <p className="user-muted">No hay items registrados.</p>}
+            {cotizacionActiva.estado === 'pendiente' && (
+              <div className="user-quote-actions">
+                <button type="button" className="outline" onClick={() => setCotizacionActiva(null)}>Pendiente</button>
+                <button type="button" className="danger" disabled={respondiendoCotizacion} onClick={() => responderCotizacion('rechazada')}>No continuar</button>
+                <button type="button" disabled={respondiendoCotizacion} onClick={() => responderCotizacion('aceptada')}>Aceptar y continuar</button>
+              </div>
+            )}
+          </div>
+        )}
+      </DetailModal>
 
       <DetailModal title={ordenActiva ? 'Detalle de orden' : ''} onClose={() => setOrdenActiva(null)}>
         {ordenActiva && (
@@ -470,12 +525,19 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
                 <button type="button" onClick={() => abrirFactura(historialActivo.factura)}>Ver factura</button>
               </div>
             )}
+            <h3>Todos los movimientos de este vehiculo</h3>
+            <div className="user-history-modal-list">
+              {(historialActivo.eventos || []).map((item) => (
+                <div className="user-history-modal-item" key={item.idhistorial}>
+                  <strong>{clean(item.tipo_evento)}</strong>
+                  <span>{clean(item.fecha_evento, '')}</span>
+                  <p>{clean(item.descripcion, '')}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </DetailModal>
     </main>
   );
 }
-
-
-

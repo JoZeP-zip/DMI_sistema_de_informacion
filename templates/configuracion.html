@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -691,6 +692,7 @@
                                                 <td><span class="badge bg-danger">{{ e.rol or 'Sin rol' }}</span></td>
                                                 <td>{{ e.estado or ('activo' if e.activo != false else 'inactivo') }}</td>
                                                 <td class="cfg-actions-cell">
+                                                    <a class="cfg-row-btn" href="/admin/empleados/{{ e.idempleado }}/ordenes"><i class="bi bi-clipboard2-check"></i> Ver ordenes</a>
                                                     <button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-empleados'), '{{ e.idempleado }}')"><i class="bi bi-pencil-square"></i> Editar</button>
                                                     <button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-empleados'), '{{ e.idempleado }}')"><i class="bi bi-slash-circle"></i> Desactivar</button>
                                                 </td>

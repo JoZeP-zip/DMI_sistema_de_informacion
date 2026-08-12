@@ -870,7 +870,7 @@ body {
    Panel del usuario - Mi Cuenta con ordenes
    ============================================= */
 .user-account-shell {
-    width: min(1120px, calc(100% - 32px));
+    width: min(1560px, calc(100% - 56px));
     margin: 0 auto;
     padding: 38px 0 70px;
     color: #ffffff;
@@ -922,6 +922,93 @@ body {
 .user-account-summary strong {
     color: #ff4057;
 }
+
+/* Zona principal de Mi Cuenta: vehiculo, cita y cotizacion */
+.user-priority-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.user-priority-card {
+    min-width: 0;
+    min-height: 240px;
+    padding: 20px;
+    border: 1px solid rgba(255, 64, 87, .44);
+    background: linear-gradient(145deg, rgba(20, 20, 24, .98), rgba(7, 7, 9, .98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .32);
+}
+
+.user-priority-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.user-priority-head > span {
+    color: rgba(255,255,255,.68);
+    font-size: .7rem;
+    font-weight: 900;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.user-priority-head > span i,
+.user-priority-head > i { color: #ff4057; margin-right: 6px; }
+.user-priority-head > i { margin: 0; font-size: 1.25rem; }
+.user-priority-head button,
+.user-quote-feature button {
+    border: 1px solid rgba(255,64,87,.62);
+    background: transparent;
+    color: #fff;
+    padding: 7px 9px;
+    font-size: .68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+.user-priority-head button:hover,
+.user-quote-feature button:hover { background: #dc3545; border-color: #dc3545; }
+
+.user-vehicle-focus { border-top: 3px solid #ff4057; }
+.user-vehicle-focus select {
+    width: 100%;
+    min-height: 42px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255,64,87,.46);
+    background: #09090b;
+    color: #fff;
+    padding: 0 10px;
+    font-weight: 800;
+}
+.user-vehicle-feature { display: flex; align-items: center; gap: 15px; }
+.user-vehicle-feature > div:last-child { display: grid; gap: 7px; min-width: 0; }
+.user-vehicle-feature strong { color: #fff; font-size: 1.25rem; line-height: 1.1; text-transform: uppercase; }
+.user-vehicle-feature small { color: rgba(255,255,255,.64); font-size: .75rem; }
+.user-vehicle-icon { display: grid; flex: 0 0 64px; place-items: center; width: 64px; height: 64px; border: 1px solid rgba(255,64,87,.64); background: rgba(255,64,87,.11); color: #ff4057; font-size: 2rem; }
+.user-vehicle-plate { width: fit-content; border: 1px solid rgba(255,255,255,.46); background: #16161a; color: #fff; padding: 4px 8px; font-size: .78rem; font-weight: 900; letter-spacing: .08em; }
+
+.user-appointment-focus { border-top: 3px solid #5ea6ff; }
+.user-appointment-focus .user-priority-head > span i { color: #76b4ff; }
+.user-appointment-feature { display: grid; grid-template-columns: 80px 1fr; gap: 14px; align-items: center; }
+.user-appointment-feature time { display: grid; gap: 7px; border-right: 1px solid rgba(118,180,255,.35); color: #b6d8ff; font-size: .73rem; font-weight: 900; line-height: 1.3; }
+.user-appointment-feature time b { color: #fff; font-size: 1rem; }
+.user-appointment-feature > div { display: grid; gap: 7px; min-width: 0; }
+.user-appointment-feature strong { font-size: 1rem; color: #fff; }
+.user-appointment-feature span { color: rgba(255,255,255,.62); font-size: .75rem; }
+
+.user-quote-focus { border-top: 3px solid #7ce5a2; }
+.user-quote-focus .user-priority-head > span i,
+.user-quote-focus .user-priority-head > i { color: #7ce5a2; }
+.user-quote-feature { display: grid; gap: 10px; }
+.user-quote-feature strong { color: #fff; font-size: 1rem; }
+.user-quote-feature span { color: rgba(255,255,255,.64); font-size: .75rem; }
+.user-quote-feature b { color: #7ce5a2; font-size: 1.55rem; }
+.user-quote-feature button { justify-self: start; margin-top: 4px; border-color: rgba(124,229,162,.75); }
+.user-quote-feature button:hover { background: #329a59; border-color: #329a59; }
+.user-priority-card .user-empty-state { min-height: 125px; border: 0; padding: 0; background: transparent; box-shadow: none; }
 
 .user-account-hero p {
     max-width: 720px;
@@ -981,6 +1068,16 @@ body {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
+}
+
+@media (min-width: 1260px) {
+    .user-account-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .user-current-work .user-current-work-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .user-account-card.wide {
@@ -1136,6 +1233,8 @@ body {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .user-priority-grid { grid-template-columns: 1fr; }
+
     .user-account-actions button {
         flex: 1 1 220px;
     }
@@ -1143,7 +1242,7 @@ body {
 
 @media (max-width: 560px) {
     .user-account-shell {
-        width: min(100% - 18px, 1120px);
+        width: min(100% - 18px, 1560px);
     }
 
     .user-account-summary {
@@ -1388,6 +1487,36 @@ body {
     margin-top: 22px;
 }
 
+.user-quote-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.user-quote-actions button {
+    border: 1px solid #ff4057;
+    background: #ff4057;
+    color: #fff;
+    padding: 11px 15px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.user-quote-actions button.outline {
+    background: transparent;
+}
+
+.user-quote-actions button.danger {
+    border-color: #8f2635;
+    background: #8f2635;
+}
+
+.user-quote-actions button:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
 @media (max-width: 920px) {
     .user-current-work-grid {
         grid-template-columns: 1fr;
@@ -1522,6 +1651,55 @@ body {
 .user-detail-note span {
     color: rgba(255, 255, 255, 0.66);
     line-height: 1.5;
+}
+
+/* Correccion visual del estado de taller e historial resumido */
+.user-account-grid .user-current-work {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    margin-top: 0;
+}
+
+.user-current-work .user-current-work-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+}
+
+.user-current-work .user-current-work-grid article,
+.user-current-work .user-current-work-grid article:only-child {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-height: 210px;
+    grid-template-columns: minmax(220px, .8fr) minmax(300px, 1.2fr) minmax(150px, auto) !important;
+}
+
+.user-history-modal-list {
+    display: grid;
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.user-history-modal-item {
+    display: grid;
+    grid-template-columns: minmax(150px, .55fr) 1fr;
+    gap: 6px 16px;
+    padding: 13px;
+    border-left: 3px solid #ff4057;
+    background: rgba(255,255,255,.04);
+}
+
+.user-history-modal-item strong { color: #fff; text-transform: capitalize; }
+.user-history-modal-item span { color: rgba(255,255,255,.55); font-size: .78rem; }
+.user-history-modal-item p { grid-column: 1 / -1; margin: 0; color: rgba(255,255,255,.72); font-size: .83rem; }
+
+@media (max-width: 980px) {
+    .user-current-work .user-current-work-grid article,
+    .user-current-work .user-current-work-grid article:only-child { display: block !important; min-height: 0; }
+    .user-history-modal-item { grid-template-columns: 1fr; }
+    .user-history-modal-item p { grid-column: auto; }
 }
 /* Confirmacion de correo: PIN de un solo uso */
 .dmi-otp-header {

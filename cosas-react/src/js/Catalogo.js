@@ -905,7 +905,7 @@ function Catalogo({ onNeedLogin } = {}) {
       {/* PRODUCTOS */}
       <section className="products" ref={productsRef}>
         <h2 className="section-title">
-          {selectedCategory === "Todos" ? "Catalogo de Productos" : selectedCategory}
+          {selectedCategory === "Todos" ? (isAdmin ? "Catalogo de Productos" : "Inventario DMI") : selectedCategory}
         </h2>
         <p style={{
           textAlign: "center",
@@ -932,7 +932,7 @@ function Catalogo({ onNeedLogin } = {}) {
               <div className="info">
                 <h3>{product.nombre}</h3>
                 <p>Codigo: {product.codigo}</p>
-                <p>Inventario: {product.inventario}</p>
+                <p>{isAdmin ? `Inventario: ${product.inventario}` : "Inventario DMI"}</p>
                 {product.departamento && product.departamento !== "-" && (
                   <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
                     {product.departamento}
@@ -1017,7 +1017,7 @@ function Catalogo({ onNeedLogin } = {}) {
                 <h2>{selectedProduct.nombre}</h2>
                 <div className="product-detail-data">
                   <p><span>Codigo:</span> {selectedProduct.codigo}</p>
-                  <p><span>Inventario:</span> {selectedProduct.inventario}</p>
+                  <p><span>{isAdmin ? "Inventario:" : "Disponibilidad:"}</span> {isAdmin ? selectedProduct.inventario : "Inventario DMI"}</p>
                   <p><span>Departamento:</span> {selectedProduct.departamento || "Sin departamento"}</p>
                 </div>
                 <p className="product-detail-price">

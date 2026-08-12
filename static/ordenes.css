@@ -84,6 +84,62 @@ body {
   background: rgba(255, 47, 85, 0.16);
 }
 
+.ot-notifications {
+  position: relative;
+}
+
+.ot-notifications summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  color: var(--ot-text);
+  cursor: pointer;
+  font-size: .82rem;
+  font-weight: 800;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.ot-notifications summary::-webkit-details-marker { display: none; }
+.ot-notifications[open] summary { border-color: var(--ot-red); background: rgba(255, 47, 85, .16); }
+.ot-notifications b {
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--ot-red);
+  font-size: .67rem;
+}
+
+.ot-notification-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: min(370px, 88vw);
+  padding: 10px;
+  border: 1px solid var(--ot-line);
+  background: #0b0b0d;
+  box-shadow: 0 18px 38px rgba(0,0,0,.55);
+}
+
+.ot-notification-menu a {
+  display: grid;
+  gap: 5px;
+  padding: 13px;
+  color: var(--ot-text);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,47,85,.18);
+}
+.ot-notification-menu a:last-child { border-bottom: 0; }
+.ot-notification-menu a:hover { background: rgba(255,47,85,.1); }
+.ot-notification-menu a strong { color: #71df98; font-size: .78rem; text-transform: uppercase; }
+.ot-notification-menu span, .ot-notification-menu small, .ot-notification-menu p { color: var(--ot-muted); font-size: .7rem; }
+
 .ot-page {
   width: min(1920px, calc(100% - 8px));
   margin: 0 auto;
@@ -254,6 +310,47 @@ body {
   gap: 16px;
   margin-bottom: 18px;
 }
+
+.ot-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+  margin: 0 0 22px;
+}
+
+.ot-month-card {
+  display: grid;
+  gap: 8px;
+  min-height: 112px;
+  padding: 18px;
+  border: 1px solid rgba(255,47,85,.43);
+  background: rgba(255,47,85,.055);
+  color: var(--ot-text);
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.ot-month-card:hover, .ot-month-card.selected {
+  border-color: var(--ot-red);
+  background: rgba(255,47,85,.18);
+}
+
+.ot-month-card.complete {
+  border-color: rgba(93, 208, 128, .8);
+  background: rgba(93, 208, 128, .12);
+}
+
+.ot-month-card strong { font-size: .92rem; }
+.ot-month-card span { color: var(--ot-muted); font-size: .74rem; }
+.ot-month-card small { color: #71df98; font-size: .68rem; font-weight: 800; }
+
+.ot-order-row.ot-state-aprobada { background: rgba(69, 146, 255, .10); }
+.ot-order-row.ot-state-en_reparacion { background: rgba(255, 177, 47, .09); }
+.ot-order-row.ot-state-finalizada,
+.ot-order-row.ot-state-facturada,
+.ot-order-row.ot-state-pagada,
+.ot-order-row.ot-state-entregada { background: rgba(93, 208, 128, .10); }
+.ot-order-row.ot-state-cancelada { opacity: .58; }
 
 .ot-card h2 {
   margin: 0;
@@ -770,4 +867,181 @@ body.ot-table-expanded {
   color: var(--ot-muted);
   font-size: 0.78rem;
   line-height: 1.4;
+}
+
+/* Calendario de ordenes y centro de notificaciones */
+.ot-card .ot-month-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  gap: 16px !important;
+  width: 100% !important;
+  margin: 4px 0 26px !important;
+}
+
+.ot-card .ot-month-card {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  gap: 9px !important;
+  min-height: 145px !important;
+  padding: 22px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 47, 85, .65) !important;
+  background: linear-gradient(145deg, rgba(255,47,85,.16), rgba(20,11,14,.94)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,47,85,.08), 0 10px 24px rgba(0,0,0,.28) !important;
+  color: #fff !important;
+  text-decoration: none !important;
+  text-transform: uppercase !important;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease !important;
+}
+
+.ot-card .ot-month-card::after {
+  content: '\f1ef';
+  position: absolute;
+  right: 14px;
+  bottom: 7px;
+  color: rgba(255,255,255,.09);
+  font-family: 'bootstrap-icons';
+  font-size: 4.6rem;
+}
+
+.ot-card .ot-month-card:hover,
+.ot-card .ot-month-card.selected {
+  transform: translateY(-4px) !important;
+  border-color: #ff6a80 !important;
+  box-shadow: 0 14px 28px rgba(255,47,85,.22) !important;
+}
+
+.ot-card .ot-month-card.selected::before {
+  content: 'Mes seleccionado';
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 6px 10px;
+  background: #ff2f55;
+  color: #fff;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.ot-card .ot-month-card.complete {
+  border-color: #62d889 !important;
+  background: linear-gradient(145deg, rgba(69,173,103,.20), rgba(10,29,17,.96)) !important;
+}
+
+.ot-card .ot-month-card.complete::before {
+  content: 'Mes cumplido';
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 6px 10px;
+  background: #299752;
+  color: #fff;
+  font-size: .58rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.ot-card .ot-month-card strong { color: #fff !important; font-size: 1.05rem !important; z-index: 1; }
+.ot-card .ot-month-card span { color: rgba(255,255,255,.78) !important; font-size: .76rem !important; z-index: 1; }
+.ot-card .ot-month-card small { color: #75e69d !important; font-size: .68rem !important; font-weight: 900 !important; z-index: 1; }
+
+.ot-today-appointments {
+  margin: 0 0 24px;
+  padding: 18px;
+  border: 1px solid rgba(73, 151, 255, .5);
+  background: linear-gradient(135deg, rgba(42,104,180,.15), rgba(8,11,18,.93));
+}
+
+.ot-today-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 14px;
+}
+
+.ot-today-head span {
+  display: block;
+  color: #79b6ff;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.ot-today-head h3 { margin: 6px 0 0; color: #fff; font-size: 1rem; text-transform: uppercase; }
+.ot-today-head > small { padding: 7px 10px; border: 1px solid rgba(121,182,255,.45); color: #acd3ff; font-size: .66rem; text-transform: uppercase; }
+
+.ot-today-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 10px; }
+.ot-today-item {
+  display: grid;
+  grid-template-columns: 76px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(121,182,255,.25);
+  background: rgba(255,255,255,.025);
+  color: #fff;
+  text-decoration: none;
+}
+.ot-today-item:hover { border-color: #79b6ff; background: rgba(121,182,255,.09); }
+.ot-today-item time { color: #8fc4ff; font-size: .82rem; font-weight: 900; }
+.ot-today-item div { display: grid; gap: 4px; min-width: 0; }
+.ot-today-item strong { font-size: .78rem; text-transform: uppercase; }
+.ot-today-item span, .ot-today-item small { color: var(--ot-muted); font-size: .67rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ot-today-item > i { color: #79b6ff; font-size: 1.1rem; }
+.ot-today-empty { margin: 0; color: var(--ot-muted); font-size: .76rem; }
+.ot-today-empty i { color: #79b6ff; margin-right: 7px; }
+
+.ot-topbar .ot-notifications { position: relative !important; flex: 0 0 auto; }
+.ot-topbar .ot-notifications summary {
+  min-height: 42px !important;
+  border: 1px solid rgba(255,47,85,.54) !important;
+  background: rgba(255,47,85,.07) !important;
+  white-space: nowrap !important;
+}
+.ot-topbar .ot-notifications[open] summary { background: rgba(255,47,85,.20) !important; }
+.ot-topbar .ot-notification-menu {
+  position: absolute !important;
+  top: calc(100% + 10px) !important;
+  right: 0 !important;
+  left: auto !important;
+  display: block !important;
+  width: min(390px, calc(100vw - 32px)) !important;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 10px !important;
+  border: 1px solid #ff2f55 !important;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #171016, #080809) !important;
+  box-shadow: 0 20px 48px rgba(0,0,0,.72), 0 0 22px rgba(255,47,85,.18) !important;
+}
+.ot-topbar .ot-notification-menu a {
+  display: grid !important;
+  grid-template-columns: 28px 1fr !important;
+  column-gap: 10px !important;
+  padding: 13px !important;
+  border: 1px solid rgba(255,47,85,.19) !important;
+  background: rgba(255,255,255,.025) !important;
+}
+.ot-topbar .ot-notification-menu a::before {
+  content: '\f18a';
+  grid-row: 1 / span 3;
+  color: #72df99;
+  font-family: 'bootstrap-icons';
+  font-size: 1.2rem;
+}
+.ot-topbar .ot-notification-menu a strong,
+.ot-topbar .ot-notification-menu a span,
+.ot-topbar .ot-notification-menu a small { grid-column: 2; }
+
+@media (max-width: 760px) {
+  .ot-card .ot-month-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .ot-card .ot-month-card { min-height: 125px !important; padding: 16px !important; }
+  .ot-topbar .ot-notification-menu { right: -58px !important; }
+  .ot-today-head { align-items: flex-start; flex-direction: column; }
 }
