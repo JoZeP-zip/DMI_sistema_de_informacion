@@ -129,6 +129,158 @@
 .fw-black { font-weight: 900; }
 
 /* =============================================
+   5.1 ACCESO Y REGISTRO — DMI CONTROL CENTER
+   ============================================= */
+.dmi-view-card:has(.auth-shell) {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 !important;
+    overflow: hidden;
+    border: 1px solid rgba(255, 47, 85, 0.62) !important;
+    background:
+        radial-gradient(circle at 85% 0%, rgba(255, 47, 85, 0.18), transparent 31%),
+        linear-gradient(135deg, rgba(8, 10, 15, 0.98), rgba(27, 33, 42, 0.98)) !important;
+    box-shadow: 0 28px 65px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+.auth-shell {
+    position: relative;
+    padding: 48px clamp(24px, 6vw, 72px) 42px;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.auth-shell::before {
+    content: 'DMI';
+    position: absolute;
+    top: 18px;
+    right: 24px;
+    color: rgba(255, 47, 85, 0.055);
+    font: 800 clamp(92px, 16vw, 184px)/.8 'Orbitron', sans-serif;
+    letter-spacing: -12px;
+    pointer-events: none;
+}
+
+.auth-shell h3 {
+    position: relative;
+    margin: 9px 0 28px !important;
+    color: #fff;
+    font: 800 clamp(27px, 4vw, 42px)/1 'Orbitron', sans-serif;
+    letter-spacing: -1.8px;
+    text-shadow: 2px 2px 0 rgba(255, 47, 85, .72), 0 8px 17px rgba(0,0,0,.5);
+}
+
+.auth-shell h3::before {
+    content: 'ACCESO DMI / CUENTA SEGURA';
+    display: block;
+    margin-bottom: 10px;
+    color: #ff7690;
+    font: 700 10px 'Orbitron', sans-serif;
+    letter-spacing: 2.8px;
+    text-shadow: none;
+}
+
+.auth-heading {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.auth-heading > span {
+    display: block;
+    color: #ff7590;
+    font: 700 10px 'Orbitron', sans-serif;
+    letter-spacing: 2.7px;
+    text-transform: uppercase;
+}
+
+.auth-heading > span::before { content: '//'; margin-right: 9px; color: #ff3158; }
+.auth-heading h3 { margin: 11px 0 12px !important; }
+.auth-heading h3::before { display: none; }
+.auth-heading h3 em { color: #ff3158; font-style: normal; }
+.auth-heading p { max-width: 370px; margin: 0 auto 23px; color: #aeb3bd; font: 600 17px/1.35 'Rajdhani', sans-serif; }
+.auth-email-display { position: relative; z-index: 1; margin: 0 auto 24px; padding: 12px 15px; overflow-wrap: anywhere; color: #fff; border: 1px solid rgba(255,117,144,.4); background: rgba(255,49,88,.07); font: 700 16px 'Rajdhani', sans-serif; text-align: center; }
+.auth-form { position: relative; z-index: 1; }
+.auth-submit { width: 100%; min-height: 50px; border: 1px solid #ff3158; color: #fff; background: #ff3158; cursor: pointer; font: 700 12px 'Orbitron', sans-serif; letter-spacing: 1.7px; text-transform: uppercase; clip-path: polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%); transition: .2s ease; }
+.auth-submit:hover:not(:disabled) { transform: translateY(-2px); background: #e7274e; box-shadow: 0 9px 22px rgba(255,47,85,.28); }.auth-submit:disabled { opacity:.65; cursor:wait; }
+.auth-switch { color:#b4b8c1; font:600 15px 'Rajdhani',sans-serif; text-align:center; }.auth-switch button { padding:0; border:0; color:#ff7590; background:transparent; cursor:pointer; font:700 15px 'Rajdhani',sans-serif; text-decoration:underline; }
+
+.auth-register-shell h3::before { content: 'REGISTRO DMI / NUEVO CLIENTE'; }
+.auth-shell h3 .text-danger { color: #ff3158 !important; }
+.auth-shell form { position: relative; z-index: 1; }
+.auth-shell .form-label {
+    margin-bottom: 7px;
+    color: #e9ebef !important;
+    font: 700 10px 'Orbitron', sans-serif !important;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.auth-shell .form-control,
+.auth-shell .form-select {
+    min-height: 48px;
+    border: 1px solid rgba(255,255,255,.22) !important;
+    border-radius: 0 !important;
+    color: #fff !important;
+    background-color: rgba(2,4,8,.58) !important;
+    box-shadow: none !important;
+    font: 600 17px 'Rajdhani', sans-serif;
+    transition: .2s ease;
+}
+
+.auth-shell .form-control:focus,
+.auth-shell .form-select:focus {
+    border-color: #ff7590 !important;
+    background-color: rgba(255,47,85,.06) !important;
+    box-shadow: 0 0 0 3px rgba(255,47,85,.12) !important;
+}
+
+.auth-shell .form-select option { background: #11151d; }
+.auth-shell .position-relative .btn { z-index: 3; }
+.auth-shell .btn-danger {
+    min-height: 50px;
+    border: 1px solid #ff3158 !important;
+    border-radius: 0 !important;
+    background: #ff3158 !important;
+    font: 700 12px 'Orbitron', sans-serif !important;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    clip-path: polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);
+    transition: .2s ease;
+}
+
+.auth-shell .btn-danger:hover { transform: translateY(-2px); background: #e7274e !important; box-shadow: 0 9px 22px rgba(255,47,85,.28); }
+.auth-shell .btn-link { color: #ff7590 !important; font: 700 14px 'Rajdhani', sans-serif !important; }
+.auth-shell .text-muted { color: #b4b8c1 !important; font: 600 15px 'Rajdhani', sans-serif; }
+.auth-shell .text-danger { color: #ff7590 !important; }
+
+.auth-register-shell form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 18px;
+}
+
+.auth-register-shell form > .mb-3,
+.auth-register-shell form > .mb-4 { margin-bottom: 18px !important; }
+.auth-register-shell form > button,
+.auth-register-shell form > p { grid-column: 1 / -1; }
+.auth-register-shell form > button { width: min(100%, 420px); justify-self: center; }
+.auth-register-shell .auth-date-field input[type="date"] { color-scheme: dark; cursor: pointer; }
+.auth-register-shell .auth-date-field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(68%) sepia(49%) saturate(2654%) hue-rotate(311deg); cursor: pointer; opacity: 1; }
+
+/* El regreso se mantiene dentro del panel, con aire suficiente respecto al borde. */
+.dmi-view-card:has(.auth-shell) .auth-shell + .text-center.mt-5 {
+    margin-top: 0 !important;
+    padding: 10px 0 72px;
+}
+
+@media (max-width: 620px) {
+    .auth-shell { padding: 38px 21px 34px; }
+    .auth-shell h3 { letter-spacing: -1px; }
+    .auth-register-shell form { grid-template-columns: 1fr; gap: 0; }
+    .auth-register-shell form > button { width: 100%; }
+}
+
+/* =============================================
    6. NAVBAR RESPONSIVO
    ============================================= */
 .dmi-navbar {
@@ -870,7 +1022,7 @@ body {
    Panel del usuario - Mi Cuenta con ordenes
    ============================================= */
 .user-account-shell {
-    width: min(1120px, calc(100% - 32px));
+    width: min(1560px, calc(100% - 56px));
     margin: 0 auto;
     padding: 38px 0 70px;
     color: #ffffff;
@@ -922,6 +1074,93 @@ body {
 .user-account-summary strong {
     color: #ff4057;
 }
+
+/* Zona principal de Mi Cuenta: vehiculo, cita y cotizacion */
+.user-priority-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.user-priority-card {
+    min-width: 0;
+    min-height: 240px;
+    padding: 20px;
+    border: 1px solid rgba(255, 64, 87, .44);
+    background: linear-gradient(145deg, rgba(20, 20, 24, .98), rgba(7, 7, 9, .98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .32);
+}
+
+.user-priority-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.user-priority-head > span {
+    color: rgba(255,255,255,.68);
+    font-size: .7rem;
+    font-weight: 900;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.user-priority-head > span i,
+.user-priority-head > i { color: #ff4057; margin-right: 6px; }
+.user-priority-head > i { margin: 0; font-size: 1.25rem; }
+.user-priority-head button,
+.user-quote-feature button {
+    border: 1px solid rgba(255,64,87,.62);
+    background: transparent;
+    color: #fff;
+    padding: 7px 9px;
+    font-size: .68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+.user-priority-head button:hover,
+.user-quote-feature button:hover { background: #dc3545; border-color: #dc3545; }
+
+.user-vehicle-focus { border-top: 3px solid #ff4057; }
+.user-vehicle-focus select {
+    width: 100%;
+    min-height: 42px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255,64,87,.46);
+    background: #09090b;
+    color: #fff;
+    padding: 0 10px;
+    font-weight: 800;
+}
+.user-vehicle-feature { display: flex; align-items: center; gap: 15px; }
+.user-vehicle-feature > div:last-child { display: grid; gap: 7px; min-width: 0; }
+.user-vehicle-feature strong { color: #fff; font-size: 1.25rem; line-height: 1.1; text-transform: uppercase; }
+.user-vehicle-feature small { color: rgba(255,255,255,.64); font-size: .75rem; }
+.user-vehicle-icon { display: grid; flex: 0 0 64px; place-items: center; width: 64px; height: 64px; border: 1px solid rgba(255,64,87,.64); background: rgba(255,64,87,.11); color: #ff4057; font-size: 2rem; }
+.user-vehicle-plate { width: fit-content; border: 1px solid rgba(255,255,255,.46); background: #16161a; color: #fff; padding: 4px 8px; font-size: .78rem; font-weight: 900; letter-spacing: .08em; }
+
+.user-appointment-focus { border-top: 3px solid #5ea6ff; }
+.user-appointment-focus .user-priority-head > span i { color: #76b4ff; }
+.user-appointment-feature { display: grid; grid-template-columns: 80px 1fr; gap: 14px; align-items: center; }
+.user-appointment-feature time { display: grid; gap: 7px; border-right: 1px solid rgba(118,180,255,.35); color: #b6d8ff; font-size: .73rem; font-weight: 900; line-height: 1.3; }
+.user-appointment-feature time b { color: #fff; font-size: 1rem; }
+.user-appointment-feature > div { display: grid; gap: 7px; min-width: 0; }
+.user-appointment-feature strong { font-size: 1rem; color: #fff; }
+.user-appointment-feature span { color: rgba(255,255,255,.62); font-size: .75rem; }
+
+.user-quote-focus { border-top: 3px solid #7ce5a2; }
+.user-quote-focus .user-priority-head > span i,
+.user-quote-focus .user-priority-head > i { color: #7ce5a2; }
+.user-quote-feature { display: grid; gap: 10px; }
+.user-quote-feature strong { color: #fff; font-size: 1rem; }
+.user-quote-feature span { color: rgba(255,255,255,.64); font-size: .75rem; }
+.user-quote-feature b { color: #7ce5a2; font-size: 1.55rem; }
+.user-quote-feature button { justify-self: start; margin-top: 4px; border-color: rgba(124,229,162,.75); }
+.user-quote-feature button:hover { background: #329a59; border-color: #329a59; }
+.user-priority-card .user-empty-state { min-height: 125px; border: 0; padding: 0; background: transparent; box-shadow: none; }
 
 .user-account-hero p {
     max-width: 720px;
@@ -981,6 +1220,16 @@ body {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
+}
+
+@media (min-width: 1260px) {
+    .user-account-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .user-current-work .user-current-work-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .user-account-card.wide {
@@ -1136,6 +1385,8 @@ body {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .user-priority-grid { grid-template-columns: 1fr; }
+
     .user-account-actions button {
         flex: 1 1 220px;
     }
@@ -1143,7 +1394,7 @@ body {
 
 @media (max-width: 560px) {
     .user-account-shell {
-        width: min(100% - 18px, 1120px);
+        width: min(100% - 18px, 1560px);
     }
 
     .user-account-summary {
@@ -1388,6 +1639,36 @@ body {
     margin-top: 22px;
 }
 
+.user-quote-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.user-quote-actions button {
+    border: 1px solid #ff4057;
+    background: #ff4057;
+    color: #fff;
+    padding: 11px 15px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.user-quote-actions button.outline {
+    background: transparent;
+}
+
+.user-quote-actions button.danger {
+    border-color: #8f2635;
+    background: #8f2635;
+}
+
+.user-quote-actions button:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
 @media (max-width: 920px) {
     .user-current-work-grid {
         grid-template-columns: 1fr;
@@ -1522,4 +1803,134 @@ body {
 .user-detail-note span {
     color: rgba(255, 255, 255, 0.66);
     line-height: 1.5;
+}
+
+/* Correccion visual del estado de taller e historial resumido */
+.user-account-grid .user-current-work {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    margin-top: 0;
+}
+
+.user-current-work .user-current-work-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+}
+
+.user-current-work .user-current-work-grid article,
+.user-current-work .user-current-work-grid article:only-child {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-height: 210px;
+    grid-template-columns: minmax(220px, .8fr) minmax(300px, 1.2fr) minmax(150px, auto) !important;
+}
+
+.user-history-modal-list {
+    display: grid;
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.user-history-modal-item {
+    display: grid;
+    grid-template-columns: minmax(150px, .55fr) 1fr;
+    gap: 6px 16px;
+    padding: 13px;
+    border-left: 3px solid #ff4057;
+    background: rgba(255,255,255,.04);
+}
+
+.user-history-modal-item strong { color: #fff; text-transform: capitalize; }
+.user-history-modal-item span { color: rgba(255,255,255,.55); font-size: .78rem; }
+.user-history-modal-item p { grid-column: 1 / -1; margin: 0; color: rgba(255,255,255,.72); font-size: .83rem; }
+
+@media (max-width: 980px) {
+    .user-current-work .user-current-work-grid article,
+    .user-current-work .user-current-work-grid article:only-child { display: block !important; min-height: 0; }
+    .user-history-modal-item { grid-template-columns: 1fr; }
+    .user-history-modal-item p { grid-column: auto; }
+}
+/* Confirmacion de correo: PIN de un solo uso */
+.dmi-otp-header {
+  border-bottom: 1px solid rgba(255, 47, 85, 0.28);
+  padding-bottom: 1.5rem;
+}
+
+.dmi-otp-icon {
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  border: 1px solid #ff2f55;
+  border-radius: 50%;
+  color: #ff2f55;
+  background: rgba(255, 47, 85, 0.08);
+  font-size: 1.35rem;
+  box-shadow: 0 0 22px rgba(255, 47, 85, 0.18);
+}
+
+.dmi-otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.dmi-otp-input {
+  width: clamp(34px, 8vw, 43px);
+  height: 54px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: #09090b;
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.dmi-otp-input:focus {
+  border-color: #ff2f55;
+  box-shadow: 0 0 0 3px rgba(255, 47, 85, 0.16);
+  transform: translateY(-2px);
+}
+
+.dmi-otp-input.filled {
+  border-color: rgba(255, 47, 85, 0.75);
+  background: rgba(255, 47, 85, 0.08);
+}
+
+@media (max-width: 380px) {
+  .dmi-otp-inputs { gap: 0.28rem; }
+  .dmi-otp-input { height: 48px; }
+}
+.dmi-catalog-section {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dmi-catalog-section > .row {
+  margin: 0 !important;
+}
+
+.dmi-catalog-section .dmi-view-column {
+  padding: 0 !important;
+}
+
+/* El catalogo tiene sus propios paneles y fondo. La tarjeta generica de las
+   demas vistas lo hacia parecer una ficha gris gigante detras del contenido. */
+.dmi-view-card.dmi-catalog-card {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }

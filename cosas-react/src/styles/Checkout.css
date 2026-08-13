@@ -515,3 +515,68 @@
   max-height: calc(100dvh - 40px) !important;
   overflow-y: auto !important;
 }
+
+/* =============================================
+   PULIDO VISUAL DMI — checkout
+   Conserva la distribución y el flujo de pago.
+   ============================================= */
+.checkout-overlay {
+  background: radial-gradient(circle at 50% 20%, rgba(255,49,88,.13), transparent 34%), rgba(0,0,0,.9) !important;
+  backdrop-filter: blur(5px);
+}
+
+.checkout-container {
+  border-top: 3px solid #ff7590 !important;
+  background: linear-gradient(145deg, rgba(27,7,13,.98), rgba(7,9,13,.99)) !important;
+}
+
+.checkout-container::before {
+  content: 'DMI';
+  position: absolute;
+  top: 16px;
+  right: 34px;
+  color: rgba(255,49,88,.055);
+  font: 800 82px/.8 'Orbitron', 'Rajdhani', sans-serif;
+  letter-spacing: -8px;
+  pointer-events: none;
+}
+
+.checkout-container h2,
+.checkout-eyebrow,
+.checkout-container form { position: relative; z-index: 1; }
+
+.checkout-intro {
+  position: relative;
+  z-index: 1;
+  max-width: 330px;
+  margin: -20px auto 28px;
+  color: rgba(255,255,255,.66);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.checkout-eyebrow { letter-spacing: 2.5px !important; }
+.checkout-container h2 { letter-spacing: -1px; }
+
+.checkout-container .form-label,
+.payment-methods h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkout-container .form-label::before,
+.payment-methods h3::before {
+  content: '';
+  width: 20px;
+  height: 2px;
+  background: #ff3158;
+}
+
+.payment-option { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.payment-option:hover { transform: translateY(-2px); }
+.checkout-total { box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+.checkout-submit { letter-spacing: 1.7px !important; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.checkout-submit:hover:not(:disabled) { transform: translateY(-2px); }

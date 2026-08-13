@@ -4466,7 +4466,7 @@ img{
    CARRITO: encoge el catalogo en vez de taparlo (estilo Mercado Libre)
 ========================= */
 .main-container.cart-open {
-  padding-right: 428px !important;
+  padding-right: 410px !important;
 }
 
 .main-container.compras-open {
@@ -4482,4 +4482,249 @@ img{
 
 .mis-compras-panel {
   animation: cartSlideIn 0.3s ease;
+}
+
+/* El panel lateral reduce el area del catalogo. Estos ajustes evitan que los
+   titulos grandes se salgan de ese espacio y mantienen la grilla legible. */
+.main-container.cart-open .hero-section,
+.main-container.cart-open .products,
+.main-container.compras-open .hero-section,
+.main-container.compras-open .products {
+  min-width: 0;
+}
+
+.main-container.cart-open .section-title,
+.main-container.compras-open .section-title {
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+  font-size: clamp(2.15rem, 3.7vw, 3.8rem) !important;
+  line-height: 1.14;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.main-container.cart-open .grid,
+.main-container.compras-open .grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+}
+
+@media (max-width: 1200px) {
+  .main-container.cart-open .section-title,
+  .main-container.compras-open .section-title {
+    font-size: clamp(2rem, 5vw, 3rem) !important;
+  }
+}
+
+/* En escritorio hay espacio real junto al panel lateral: en vez de recortar
+   el catalogo desde la derecha, se desplaza hacia la izquierda y ocupa todo
+   el ancho disponible. En pantallas menores se conserva el modo comprimido. */
+@media (min-width: 1100px) {
+  body:has(.main-container) .main-container.cart-open,
+  body:has(.main-container) .main-container.compras-open {
+    /* Cerrado: el catalogo conserva su maximo normal (1500px). Abierto: se
+       convierte en una columna real a la izquierda, sin quedar bajo el panel. */
+    width: min(1200px, calc(100vw - 470px)) !important;
+    max-width: calc(100vw - 470px) !important;
+    margin-left: clamp(24px, 3vw, 52px) !important;
+    margin-right: auto !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Distribucion final de dos columnas. Se aplica antes del modo movil y no
+   depende de la escala del navegador: el catalogo nunca conserva ancho por
+   debajo de un carrito abierto. */
+@media (min-width: 901px) {
+  .main-container.cart-open,
+  .main-container.compras-open,
+  body:has(.main-container) .main-container.cart-open,
+  body:has(.main-container) .main-container.compras-open {
+    width: calc(100vw - 470px) !important;
+    max-width: calc(100vw - 470px) !important;
+    margin-left: max(20px, 2vw) !important;
+    margin-right: auto !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Identidad visual DMI visible para las secciones existentes del catálogo. */
+.main-container .hero-section,
+.main-container .products {
+  position: relative;
+}
+
+.main-container .catalog-section-kicker {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 10px;
+  color: #ff7590;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.main-container .catalog-section-kicker::before {
+  content: '//';
+  margin-right: 9px;
+  color: #ff3158;
+}
+
+.main-container .catalog-future-title {
+  position: relative;
+  margin-bottom: 18px !important;
+  color: #f9f9fc !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -1.8px !important;
+  text-shadow: 3px 3px 0 rgba(255,49,88,.68), 0 10px 24px rgba(0,0,0,.46) !important;
+}
+
+.main-container .catalog-future-title::after {
+  content: '';
+  display: block;
+  width: min(115px, 28vw);
+  height: 2px;
+  margin: 16px auto 0;
+  background: linear-gradient(90deg, transparent, #ff3158 25%, #ff7590 75%, transparent);
+  box-shadow: 0 0 15px rgba(255,49,88,.6);
+}
+
+.main-container .catalog-product-count {
+  width: fit-content;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 7px 13px;
+  border: 1px solid rgba(255,49,88,.34);
+  background: rgba(255,49,88,.06);
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 1.2px !important;
+}
+
+.main-container .hero-carousel {
+  border-color: rgba(255,49,88,.55) !important;
+  box-shadow: 0 18px 35px rgba(0,0,0,.35), 0 0 25px rgba(255,49,88,.16) !important;
+}
+
+.main-container .hero-carousel::after {
+  content: 'DMI PERFORMANCE PARTS';
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  z-index: 3;
+  padding: 8px 11px;
+  color: #fff;
+  border-left: 2px solid #ff3158;
+  background: rgba(5,6,10,.75);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 1.6px;
+}
+
+.cart-panel-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: #ff7590;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.cart-panel-header h2 {
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  text-shadow: 2px 2px 0 rgba(255,49,88,.55);
+}
+
+/* =============================================
+   PULIDO VISUAL DMI — catálogo y carrito
+   No modifica estructura, tamaños ni ubicación.
+   ============================================= */
+.main-container .top-bar {
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28), inset 0 -1px 0 rgba(255, 49, 88, .18);
+}
+
+.main-container .header-search,
+.main-container .categories-toggle,
+.main-container .mis-compras-btn {
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease, transform .2s ease;
+}
+
+.main-container .header-search:focus,
+.main-container .categories-toggle:hover,
+.main-container .mis-compras-btn:hover {
+  border-color: #ff7590 !important;
+  box-shadow: 0 0 0 3px rgba(255, 49, 88, .1), 0 0 17px rgba(255, 49, 88, .16);
+}
+
+.main-container .product-card {
+  overflow: hidden;
+  border-color: rgba(255, 49, 88, .42) !important;
+  background: linear-gradient(145deg, rgba(24, 8, 13, .96), rgba(10, 12, 17, .98)) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255,255,255,.05);
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+.main-container .product-card:hover {
+  transform: translateY(-5px) !important;
+  border-color: #ff5d7d !important;
+  box-shadow: 0 18px 30px rgba(0,0,0,.3), 0 0 23px rgba(255,49,88,.18);
+}
+
+.main-container .product-card > img {
+  transition: transform .35s ease, filter .35s ease;
+}
+
+.main-container .product-card:hover > img {
+  transform: scale(1.035);
+  filter: saturate(1.1) contrast(1.04);
+}
+
+.main-container .product-card .info h3 {
+  text-shadow: 0 2px 12px rgba(0,0,0,.55);
+}
+
+.main-container .product-card-actions button,
+.main-container .cart-add-btn {
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.main-container .product-card-actions button:hover,
+.main-container .cart-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 16px rgba(255,49,88,.25);
+}
+
+.cart-panel,
+.mis-compras-panel {
+  border-left: 1px solid rgba(255, 117, 144, .68) !important;
+  box-shadow: -18px 0 46px rgba(0,0,0,.48), -1px 0 22px rgba(255,49,88,.14) !important;
+}
+
+.cart-panel-header,
+.mis-compras-header {
+  background: linear-gradient(90deg, rgba(33,5,12,.98), rgba(8,10,14,.97)) !important;
+  border-bottom-color: rgba(255, 117, 144, .38) !important;
+}
+
+.cart-item {
+  transition: border-color .2s ease, background .2s ease, transform .2s ease;
+}
+
+.cart-item:hover {
+  transform: translateX(-2px);
+  border-color: rgba(255,117,144,.65) !important;
+  background: rgba(255,49,88,.07) !important;
+}
+
+.cart-total {
+  background: linear-gradient(90deg, rgba(255,49,88,.13), rgba(255,49,88,.02)) !important;
 }

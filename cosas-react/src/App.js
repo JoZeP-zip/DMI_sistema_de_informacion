@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AuthService } from './services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import './styles/App.css';
+import NightSky from './components/NightSky';
 
 import RegistroVehiculo from './js/RegistrarUnidad.js';
 import Contacto from './js/Contacto.js';
@@ -20,6 +21,11 @@ const getApiBaseUrl = () => {
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
     return "http://localhost:8000";
+  }
+
+  const isLocalNetworkHost = /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(hostname);
+  if (isLocalNetworkHost) {
+    return `http://${hostname}:8000`;
   }
 
   if (hostname.includes("app.github.dev")) {
@@ -169,7 +175,7 @@ const DmiToast = ({ toast, onClose }) => {
 // Componente para Iniciar Sesion
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
+const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -261,7 +267,7 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
   };
 
   return (
-    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+    <div className="mx-auto auth-shell auth-login-shell" style={{ maxWidth: '480px' }}>
       <h3 className="text-center text-uppercase fw-black mb-4">
         Control de <span className="text-danger">Acceso</span>
       </h3>
@@ -299,6 +305,25 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
         <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3">
           INGRESAR
         </button>
+        <p className="text-center small mb-3">
+          <button
+            type="button"
+            className="btn btn-link text-danger p-0 small fw-bold text-decoration-underline"
+            onClick={() => {
+              const trimmedEmail = email.trim();
+              if (!EMAIL_REGEX.test(trimmedEmail)) {
+                showLoginIssue({
+                  title: "Ingresa tu correo",
+                  message: "Escribe el correo con el que te registraste antes de solicitar la recuperacion."
+                });
+                return;
+              }
+              onForgotPassword(trimmedEmail);
+            }}
+          >
+            Olvide mi contrasena
+          </button>
+        </p>
         <p className="text-center small text-muted">
           No tienes una cuenta? <span className="text-danger cursor-pointer fw-bold text-decoration-underline" style={{cursor: 'pointer'}} onClick={onSwitchToRegister}>Registrate aqui</span>
         </p>
@@ -319,11 +344,12 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   const [tipodedocumento, setTipodedocumento] = useState('CC');
   const [telefono, setTelefono] = useState('');
   const [usuarionombre, setUsuarionombre] = useState('');
+  const [fechadenacimiento, setFechadenacimiento] = useState('');
 
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, email, password, confirmPassword };
+    const requiredFields = { nombre, apellidos, usuarionombre, documento, telefono, fechadenacimiento, email, password, confirmPassword };
     const missingField = Object.values(requiredFields).some((value) => !String(value).trim());
 
     if (missingField) {
@@ -367,6 +393,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
           documento: documento ? Number(documento) : undefined,
           tipodedocumento,
           telefono,
+          fechadenacimiento,
           usuarionombre,
           email,
           password,
@@ -385,11 +412,11 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
         });
       } else {
         openConfirm({
-          kicker: "Cuenta creada",
-          title: "Registro exitoso",
-          message: "Tu cuenta fue creada correctamente. Ahora puedes iniciar sesion.",
-          confirmText: "Ir al login",
-          onConfirm: onRegisterSuccess
+          kicker: "Confirma tu correo",
+          title: "Te enviamos un codigo",
+          message: "Revisa el correo con el que te registraste e ingresa el codigo de 8 digitos para crear tu cuenta.",
+          confirmText: "Ingresar codigo",
+          onConfirm: () => onVerificationNeeded(email.trim())
         });
       }
     } catch (err) {
@@ -403,7 +430,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   };
 
   return (
-    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+    <div className="mx-auto auth-shell auth-register-shell" style={{ maxWidth: '720px' }}>
       <h3 className="text-center text-uppercase fw-black mb-4">
         Crear <span className="text-danger">Cuenta</span>
       </h3>
@@ -476,6 +503,17 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
             required 
           />
         </div>
+        <div className="mb-3 auth-date-field">
+          <label className="form-label text-white small fw-bold">FECHA DE NACIMIENTO</label>
+          <input
+            type="date"
+            className="form-control bg-black text-white border-secondary rounded-0 focus-red"
+            value={fechadenacimiento}
+            onChange={(e) => setFechadenacimiento(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+            required
+          />
+        </div>
         <div className="mb-3">
           <label className="form-label text-white small fw-bold">CORREO ELECTRONICO</label>
           <input 
@@ -537,6 +575,98 @@ const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   );
 };
 
+const VerificarRegistroView = ({ email, onVerified, onBackToRegister, openConfirm }) => {
+  const PIN_LENGTH = 8;
+  const [pinDigits, setPinDigits] = useState(() => Array(PIN_LENGTH).fill(''));
+  const [verifying, setVerifying] = useState(false);
+  const inputRefs = useRef([]);
+
+  const pin = pinDigits.join('');
+
+  const handlePinChange = (index, rawValue) => {
+    const digits = rawValue.replace(/\D/g, '').slice(0, PIN_LENGTH - index);
+    if (!digits && rawValue) return;
+
+    setPinDigits((previous) => {
+      const next = [...previous];
+      if (digits) {
+        digits.split('').forEach((digit, offset) => {
+          next[index + offset] = digit;
+        });
+      } else {
+        next[index] = '';
+      }
+      return next;
+    });
+
+    if (digits) {
+      const nextIndex = Math.min(index + digits.length, PIN_LENGTH - 1);
+      inputRefs.current[nextIndex]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, event) => {
+    if (event.key === 'Backspace' && !pinDigits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+    if (event.key === 'ArrowLeft' && index > 0) inputRefs.current[index - 1]?.focus();
+    if (event.key === 'ArrowRight' && index < PIN_LENGTH - 1) inputRefs.current[index + 1]?.focus();
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!/^\d{8}$/.test(pin)) {
+      openConfirm({ kicker: "Confirma tu correo", title: "Codigo incompleto", message: "Ingresa los 8 digitos que recibiste por correo.", confirmText: "Entendido" });
+      return;
+    }
+    setVerifying(true);
+    try {
+      await AuthService.verificarRegistro(email, pin);
+      openConfirm({ kicker: "Cuenta creada", title: "Correo confirmado", message: "Tu cuenta DMI fue creada correctamente. Ya puedes iniciar sesion.", confirmText: "Ir al login", onConfirm: onVerified });
+    } catch (error) {
+      openConfirm({ kicker: "Confirma tu correo", title: "No se pudo confirmar", message: error.message || "El codigo no es valido o ya vencio.", confirmText: "Entendido" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto" style={{ maxWidth: '400px' }}>
+      <div className="dmi-otp-header text-center mb-4">
+        <div className="dmi-otp-icon" aria-hidden="true">✉</div>
+        <h3 className="text-uppercase fw-black mb-2">Confirma tu <span className="text-danger">Correo</span></h3>
+        <p className="text-white-50 small mb-1">Enviamos un código de 8 dígitos a</p>
+        <p className="text-white fw-bold mb-0 text-break">{email}</p>
+      </div>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="mb-4">
+          <label className="form-label text-white small fw-bold d-block text-center mb-3">CÓDIGO DE CONFIRMACIÓN</label>
+          <div className="dmi-otp-inputs" aria-label="Código de confirmación de 8 dígitos">
+            {pinDigits.map((digit, index) => (
+              <input
+                key={index}
+                ref={(element) => { inputRefs.current[index] = element; }}
+                type="text"
+                inputMode="numeric"
+                autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                maxLength={index === 0 ? PIN_LENGTH : 1}
+                className={`dmi-otp-input ${digit ? 'filled' : ''}`}
+                value={digit}
+                onChange={(event) => handlePinChange(index, event.target.value)}
+                onKeyDown={(event) => handleKeyDown(index, event)}
+                aria-label={`Dígito ${index + 1} de ${PIN_LENGTH}`}
+              />
+            ))}
+          </div>
+          <p className="text-center text-white-50 small mt-3 mb-0">Puedes escribir o pegar el código completo.</p>
+        </div>
+        <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3" disabled={verifying}>{verifying ? 'CONFIRMANDO...' : 'CONFIRMAR Y CREAR CUENTA'}</button>
+        <p className="text-center small mb-0"><button type="button" className="btn btn-link text-danger p-0 small fw-bold text-decoration-underline" onClick={onBackToRegister}>Volver al registro</button></p>
+      </form>
+    </div>
+  );
+};
+
 const heroSlides = [
   './assets/images/like.jpg',
   './assets/images/akira.jpg',
@@ -558,8 +688,14 @@ const BackButton = ({ onClick, user }) => (
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminFrameKey, setAdminFrameKey] = useState(0);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [registrationEmail, setRegistrationEmail] = useState('');
   const getInitialView = () => {
     const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('recovery') === '1' || window.location.hash.includes('access_token=')) {
+      return 'nueva-contrasena';
+    }
     const routes = {
       '/login': 'login',
       '/catalogo': 'catalogo',
@@ -795,6 +931,8 @@ function App() {
   return (
     <div className="bg-black text-white min-vh-100 d-flex flex-column">
 
+        <NightSky />
+
       {/* NAVBAR */}
       <nav className="navbar navbar-expand-lg navbar-dark bg-black sticky-top border-bottom border-danger py-3 dmi-navbar">
         <div className="container dmi-navbar-container">
@@ -941,10 +1079,10 @@ function App() {
 
         {view !== 'inicio' && (
           view !== 'admin-dashboard' && (
-          <section className="container py-5 dmi-view-section">
+          <section className={`container py-5 dmi-view-section ${view === 'catalogo' ? 'dmi-catalog-section' : ''}`}>
             <div className="row justify-content-center">
-              <div className="col-12 col-xl-10 animate-slide-in dmi-view-column">
-                <div className="card bg-dark text-white border-danger border-opacity-50 shadow-lg p-4 p-md-5 dmi-view-card">
+              <div className={`${view === 'catalogo' ? 'col-12' : 'col-12 col-xl-10'} animate-slide-in dmi-view-column`}>
+                <div className={`card bg-dark text-white border-danger border-opacity-50 shadow-lg p-4 p-md-5 dmi-view-card ${view === 'catalogo' ? 'dmi-catalog-card' : ''}`}>
 
                   {view === 'citas' && (
                     <AgendarCita
@@ -972,12 +1110,26 @@ function App() {
                     <LoginView 
                       onLoginSuccess={handleLoginSuccess} 
                       onSwitchToRegister={() => setView('registro-usuario')} 
+                      onForgotPassword={(email) => {
+                        setRecoveryEmail(email);
+                        setView('recuperar-contrasena');
+                      }}
                       openConfirm={openConfirm}
                     />
                   )}
+                  {view === 'recuperar-contrasena' && <RecuperarPasswordView email={recoveryEmail} onBackToLogin={() => setView('login')} openConfirm={openConfirm} />}
+                  {view === 'nueva-contrasena' && <NuevaPasswordView onBackToLogin={() => setView('login')} openConfirm={openConfirm} />}
                   {view === 'registro-usuario' && (
-                    <RegistroUsuarioView onRegisterSuccess={() => setView('login')} openConfirm={openConfirm} />
+                    <RegistroUsuarioView
+                      onRegisterSuccess={() => setView('login')}
+                      onVerificationNeeded={(email) => {
+                        setRegistrationEmail(email);
+                        setView('verificar-registro');
+                      }}
+                      openConfirm={openConfirm}
+                    />
                   )}
+                  {view === 'verificar-registro' && <VerificarRegistroView email={registrationEmail} onVerified={() => setView('login')} onBackToRegister={() => setView('registro-usuario')} openConfirm={openConfirm} />}
 
                   {view === 'user-dashboard' && (
                    <MiCuenta
@@ -1159,6 +1311,3 @@ function App() {
 }
 
 export default App;
-
-
-
