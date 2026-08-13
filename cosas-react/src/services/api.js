@@ -33,6 +33,7 @@ const getApiBaseUrl = () => {
 };
 
 const BASE_URL = getApiBaseUrl();
+const PASSWORD_RECOVERY_PUBLIC_URL = "https://dmi-sistema-de-informacion.vercel.app/?recovery=1";
 
 const authHeaders = () => {
   const token = localStorage.getItem("token");
@@ -120,9 +121,8 @@ export const AuthService = {
   solicitarRecuperacionPassword: (email) => request("/password-recovery/request", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // El enlace debe volver exactamente al sitio donde el usuario abrio DMI.
-    // Asi no se envia a localhost cuando se trabaja desde Codespaces o produccion.
-    body: JSON.stringify({ email, redirect_url: `${window.location.origin}/?recovery=1` }),
+    // Vercel es la URL publica: asi el enlace funciona tambien desde celulares.
+    body: JSON.stringify({ email, redirect_url: PASSWORD_RECOVERY_PUBLIC_URL }),
   }),
 
   restablecerPassword: ({ accessToken, refreshToken, password }) => request("/password-recovery/reset", {

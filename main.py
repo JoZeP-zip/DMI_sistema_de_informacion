@@ -38,7 +38,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # En produccion se debe definir PASSWORD_RECOVERY_REDIRECT_URL en el archivo .env.
 PASSWORD_RECOVERY_REDIRECT_URL = os.getenv(
     "PASSWORD_RECOVERY_REDIRECT_URL",
-    "http://localhost:3000/?recovery=1",
+    "https://dmi-sistema-de-informacion.vercel.app/?recovery=1",
 )
 
 
@@ -50,11 +50,13 @@ def obtener_url_recuperacion_segura(candidate_url: str) -> str:
     try:
         parsed = urlparse(candidate_url)
         host = (parsed.hostname or "").lower()
-        is_local = host in ("localhost", "127.0.0.1")
         is_codespaces = host.endswith(".app.github.dev")
         is_vercel = host.endswith(".vercel.app")
 
-        if parsed.scheme in ("http", "https") and (is_local or is_codespaces or is_vercel):
+        # localhost sirve solo en el computador donde corre el proyecto y no
+        # funciona desde correos abiertos en un celular. Se usa Vercel como
+        # respaldo publico y se aceptan URLs publicas de Codespaces/Vercel.
+        if parsed.scheme == "https" and (is_codespaces or is_vercel):
             return f"{parsed.scheme}://{parsed.netloc}/?recovery=1"
     except Exception:
         pass
@@ -2244,6 +2246,9 @@ async def solicitar_recuperacion_password(request: Request):
     try:
         body = await request.json()
         email = str(body.get("email") or "").strip().lower()
+        redirect_url = obtener_url_recuperacion_segura(
+            str(body.get("redirect_url") or "").strip()
+        )
 
         # La misma respuesta para correos invalidos, inexistentes o validos evita
         # que este endpoint se use para enumerar cuentas registradas.
