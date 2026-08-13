@@ -9,6 +9,10 @@ import '../styles/RegistrarUnidad.css';
 import { showDmiError, showDmiSuccess } from './DmiMessages';
 
 const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
   const { protocol, hostname } = window.location;
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
