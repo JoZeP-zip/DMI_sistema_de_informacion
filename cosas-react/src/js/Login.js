@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-function Login() {
+function Login({ setView }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [notice, setNotice] = useState(null); // { title, message }
-  const navigate = useNavigate();
+  const [notice, setNotice] = useState(null); 
 
   const getApiBaseUrl = () => {
     const { protocol, hostname } = window.location;
@@ -80,11 +78,11 @@ function Login() {
       guardarSesion(token, role, correoLimpio);
 
       if (role === 'admin') {
-        navigate('/dashboard-admin');
+        setView('dashboard-admin');
       } else if (role === 'mecanico' || role === 'mecanico_taller') {
-        navigate('/home');
+        setView('home');
       } else {
-        navigate('/home');
+        setView('home');
       }
 
     } catch (error) {

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 
 const getApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL) {
@@ -18,9 +18,23 @@ const getApiBaseUrl = () => {
   return '';
 };
 
-const DashboardAdmin = () => {
+const DashboardAdmin = ({ onLogout }) => {
   const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
   const frameUrl = `${apiBaseUrl}/?admin_section=panel`;
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+
+
+      if (event.data?.type === 'DMI_LOGOUT') {
+
+        if (onLogout) onLogout();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onLogout, apiBaseUrl]);
 
   return (
     <div className="react-admin-embed">
