@@ -12,6 +12,10 @@ import DashboardAdmin from './js/DashboardAdmin.js';
 import MiCuenta from './js/MiCuenta';
 
 const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
   const { protocol, hostname } = window.location;
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -303,7 +307,6 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, openConfirm }) => {
   );
 };
 
-// NUEVO COMPONENTE: Vista para Registrar Usuarios Nuevos
 const RegistroUsuarioView = ({ onRegisterSuccess, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
