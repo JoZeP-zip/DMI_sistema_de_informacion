@@ -1,5 +1,4 @@
 import React, { useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const getApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL) {
@@ -19,10 +18,9 @@ const getApiBaseUrl = () => {
   return '';
 };
 
-const DashboardAdmin = () => {
+const DashboardAdmin = ({ onLogout }) => {
   const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
   const frameUrl = `${apiBaseUrl}/?admin_section=panel`;
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -30,17 +28,13 @@ const DashboardAdmin = () => {
 
       if (event.data?.type === 'DMI_LOGOUT') {
 
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
-        sessionStorage.clear();
-
-        navigate('/login');
+        if (onLogout) onLogout();
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [navigate, apiBaseUrl]);
+  }, [onLogout, apiBaseUrl]);
 
   return (
     <div className="react-admin-embed">
