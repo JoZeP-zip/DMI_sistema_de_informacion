@@ -2149,28 +2149,29 @@
   if (activeLink) activeLink.classList.add("active");
 })();
 </script>
+<script>
+(function () {
+  const logoutForm = document.querySelector('.admin-topbar form[action="/logout"]');
+  if (!logoutForm) return;
+
+  logoutForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    fetch('/logout', {
+      method: 'POST',
+      credentials: 'include'
+    }).finally(function () {
+      try {
+        window.parent.postMessage({ type: 'DMI_LOGOUT' }, '*');
+      } catch (e) {
+        console.warn('No se pudo notificar el cierre de sesion al sitio principal', e);
+      }
+    });
+  });
+})();
+</script>
   <script src="/static/dmi-messages.js?v=20260728"></script>
-  <script>
-    (function () {
-      const logoutForm = document.querySelector('.admin-topbar form[action="/logout"]');
-      if (!logoutForm) return;
-
-      logoutForm.addEventListener('submit', function (event) {
-        event.preventDefault();
-
-        fetch('/logout', {
-          method: 'POST',
-          credentials: 'include'
-        }).finally(function () {
-          try {
-            window.parent.postMessage({ type: 'DMI_LOGOUT' }, '*');
-          } catch (e) {
-            console.warn('No se pudo notificar el cierre de sesion al sitio principal', e);
-          }
-        });
-      });
-    })();
-  </script>
+  
 </body>
 </html>
 
