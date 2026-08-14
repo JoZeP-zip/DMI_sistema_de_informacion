@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Form, Request, Cookie, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
@@ -895,7 +894,9 @@ def actualizar_totales_cotizacion(conn, cotizacion_id: int):
 
 def obtener_o_crear_borrador_cotizacion(conn, orden_id: int, cliente_id: int):
     cotizacion = obtener_cotizacion_activa(conn, orden_id)
-    if cotizacion and cotizacion.get("estado") == "borrador":
+    # La restriccion de Supabase solo acepta estados como pendiente, aprobada o
+    # rechazada. Una pendiente sin fecha de envio se usa como borrador interno.
+    if cotizacion and cotizacion.get("estado") == "pendiente" and not cotizacion.get("enviado_en"):
         return cotizacion
     codigo = generar_codigo_documento(conn, "cotizaciones", "codigo_cotizacion", "COT")
     cotizacion_id = insert_dynamic_returning(conn, "cotizaciones", {
@@ -907,7 +908,7 @@ def obtener_o_crear_borrador_cotizacion(conn, orden_id: int, cliente_id: int):
         "impuestos": 0,
         "descuento": 0,
         "total": 0,
-        "estado": "borrador",
+        "estado": "pendiente",
     }, returning="idcotizacion")
     return conn.execute(
         text("SELECT * FROM dmi.cotizaciones WHERE idcotizacion = :id"),
@@ -1549,7 +1550,7 @@ async def agregar_item_cotizacion(
             orden = conn.execute(text("SELECT cliente_id, estado FROM dmi.orden_trabajo WHERE idorden = :id"), {"id": orden_id}).mappings().fetchone()
             if not orden:
                 return redirect_orden(usuario, orden_id, "La orden no existe", False)
-            if orden.get("estado") not in {"abierta", "diagnostico", "cotizada"}:
+            if orden.get("estado") not in {"abierta", "diagnostico"}:
                 return redirect_orden(usuario, orden_id, "La cotizacion ya no se puede modificar", False)
             cotizacion = obtener_o_crear_borrador_cotizacion(conn, orden_id, orden["cliente_id"])
             cantidad = float(cantidad or 1)
@@ -1591,8 +1592,8 @@ async def enviar_cotizacion_orden(orden_id: int, request: Request, access_token:
             cotizacion = obtener_cotizacion_activa(conn, orden_id)
             if not diagnostico:
                 return redirect_orden(usuario, orden_id, "Registra el diagnostico antes de enviar la cotizacion", False)
-            if not cotizacion or cotizacion.get("estado") != "borrador":
-                return redirect_orden(usuario, orden_id, "Primero crea una cotizacion en borrador", False)
+            if not cotizacion or cotizacion.get("estado") != "pendiente" or cotizacion.get("enviado_en"):
+                return redirect_orden(usuario, orden_id, "Primero crea una cotizacion antes de enviarla", False)
             if not obtener_items_cotizacion(conn, cotizacion["idcotizacion"]):
                 return redirect_orden(usuario, orden_id, "Agrega al menos un servicio o repuesto", False)
             total = actualizar_totales_cotizacion(conn, cotizacion["idcotizacion"])
@@ -1619,9 +1620,29 @@ async def generar_factura_orden(orden_id: int, request: Request, access_token: s
             orden = obtener_resumen_orden(conn, orden_id)
             if not orden:
                 return RedirectResponse(url="/admin/ordenes?error=Orden no encontrada", status_code=302)
-            if orden.get("estado") not in {"finalizada", "en_reparacion"}:
-                return redirect_orden(usuario, orden_id, "La factura solo se puede generar despues de aprobar e iniciar la reparacion", False)
+            cotizacion_aprobada = conn.execute(
+                text("SELECT idcotizacion, total FROM dmi.cotizaciones WHERE orden_id = :id AND estado = 'aprobada' ORDER BY idcotizacion DESC LIMIT 1"),
+                {"id": orden_id},
+            ).mappings().fetchone()
+            trabajos_reparacion = (
+                conn.execute(text("SELECT COUNT(*) FROM dmi.detalle_servicios WHERE orden_id = :id"), {"id": orden_id}).scalar() or 0
+            ) + (
+                conn.execute(text("SELECT COUNT(*) FROM dmi.detalle_repuestos WHERE orden_id = :id"), {"id": orden_id}).scalar() or 0
+            )
+            items_cotizados = 0
+            if cotizacion_aprobada:
+                items_cotizados = conn.execute(
+                    text("SELECT COUNT(*) FROM dmi.cotizacion_detalles WHERE cotizacion_id = :id"),
+                    {"id": cotizacion_aprobada["idcotizacion"]},
+                ).scalar() or 0
+            # Los items aprobados de la cotizacion tambien son facturables, aun
+            # cuando el mecanico no los haya repetido en detalle_servicios o
+            # detalle_repuestos durante la reparacion.
+            if not cotizacion_aprobada or not (trabajos_reparacion or items_cotizados):
+                return redirect_orden(usuario, orden_id, "Para facturar primero debe existir una cotizacion aprobada con servicios o repuestos", False)
             total_servicios, total_repuestos, total_orden = actualizar_totales_orden(conn, orden_id)
+            if total_orden <= 0 and cotizacion_aprobada:
+                total_orden = float(cotizacion_aprobada.get("total") or 0)
             codigo = generar_codigo_documento(conn, "facturas", "codigo_factura", "FAC")
             insert_dynamic_returning(conn, "facturas", {
                 "codigo_factura": codigo,
@@ -2553,6 +2574,39 @@ async def crear_vehiculo(
             vehiculo_cols = table_columns(conn, "dmi", "vehiculos")
             usuario_id = usuario.get("idusuarios")
 
+            # La placa es unica en Supabase. Si el usuario vuelve a enviar el
+            # formulario por una recarga o doble clic, se reutiliza su vehiculo
+            # existente y no se intenta crear un duplicado.
+            placa_normalizada = (placa or "").strip().upper()
+            existente = conn.execute(
+                text("SELECT idvehiculo, cliente_id FROM dmi.vehiculos WHERE UPPER(placa) = :placa LIMIT 1"),
+                {"placa": placa_normalizada},
+            ).mappings().fetchone()
+            if existente:
+                pertenece_al_usuario = (
+                    "cliente_id" not in vehiculo_cols
+                    or existente.get("cliente_id") in (None, usuario_id)
+                )
+                if pertenece_al_usuario:
+                    if "cliente_id" in vehiculo_cols and usuario_id and existente.get("cliente_id") is None:
+                        conn.execute(
+                            text("UPDATE dmi.vehiculos SET cliente_id = :cliente_id WHERE idvehiculo = :id"),
+                            {"cliente_id": usuario_id, "id": existente["idvehiculo"]},
+                        )
+                    conn.execute(
+                        text("UPDATE dmi.usuarios SET vehiculos_idvehiculo = COALESCE(vehiculos_idvehiculo, :vid) WHERE id = :uid"),
+                        {"vid": existente["idvehiculo"], "uid": usuario["id"]},
+                    )
+                    conn.commit()
+                    if quiere_json(request):
+                        return JSONResponse({"success": True, "message": "Este vehiculo ya estaba registrado en tu cuenta.", "idvehiculo": existente["idvehiculo"]})
+                    return RedirectResponse(url="/?success=Este vehiculo ya estaba registrado en tu cuenta", status_code=302)
+
+                mensaje = "La placa ingresada ya esta registrada para otro usuario."
+                if quiere_json(request):
+                    return JSONResponse({"error": mensaje}, status_code=409)
+                return RedirectResponse(url=f"/?error={quote(mensaje)}", status_code=302)
+
             if "cliente_id" in vehiculo_cols and usuario_id:
                 total_vehiculos = conn.execute(
                     text("SELECT COUNT(*) FROM dmi.vehiculos WHERE cliente_id = :cliente_id"),
@@ -2569,7 +2623,7 @@ async def crear_vehiculo(
                 "descripcionvehiculo": descripcionvehiculo,
                 "motor": motor,
                 "cantidad_asientos": cantidad_asientos,
-                "placa": placa,
+                "placa": placa_normalizada,
                 "capacidad": capacidad,
                 "marca": marca,
                 "tipovehiculos_idtipovehiculos": tipovehiculos_idtipovehiculos,
@@ -2604,7 +2658,7 @@ async def crear_vehiculo(
     except Exception as e:
         print("ERROR VEHICULO:", str(e))
         if quiere_json(request):
-            return JSONResponse({"error": str(e)}, status_code=500)
+            return JSONResponse({"error": "No fue posible guardar el vehiculo. Revisa la placa e intentalo nuevamente."}, status_code=500)
         return RedirectResponse(url=f"/?error={str(e)}", status_code=302)
 
 
@@ -2881,23 +2935,44 @@ async def crear_cita(
                         status_code=403,
                     )
 
-            if not vehiculo_id and usuario_id and "cliente_id" in vehiculo_cols:
-                total_vehiculos = conn.execute(
-                    text("SELECT COUNT(*) FROM dmi.vehiculos WHERE cliente_id = :cliente_id"),
-                    {"cliente_id": usuario_id},
-                ).scalar() or 0
-                if total_vehiculos > 0:
+            if not vehiculo_id and usuario_id:
+                # Si la pantalla se acaba de actualizar despues de registrar un
+                # vehiculo, el selector puede llegar sin id. Recuperamos el
+                # vehiculo ya asociado al cliente y evitamos crear un duplicado.
+                filtros_vehiculo = []
+                parametros_vehiculo = {"usuario_id": usuario_id}
+                if "cliente_id" in vehiculo_cols:
+                    filtros_vehiculo.append("v.cliente_id = :usuario_id")
+                filtros_vehiculo.append("u.idusuarios = :usuario_id")
+                activos_sql = " AND COALESCE(v.activo, TRUE) = TRUE" if "activo" in vehiculo_cols else ""
+                vehiculos_cliente = conn.execute(
+                    text(f"""
+                        SELECT DISTINCT v.idvehiculo
+                        FROM dmi.vehiculos v
+                        LEFT JOIN dmi.usuarios u ON u.vehiculos_idvehiculo = v.idvehiculo
+                        WHERE ({' OR '.join(filtros_vehiculo)}){activos_sql}
+                        ORDER BY v.idvehiculo
+                    """),
+                    parametros_vehiculo,
+                ).fetchall()
+
+                if len(vehiculos_cliente) == 1:
+                    vehiculo_id = vehiculos_cliente[0][0]
+                elif len(vehiculos_cliente) > 1:
                     return JSONResponse(
                         {"error": "Selecciona uno de tus vehiculos registrados antes de agendar la cita."},
                         status_code=400,
                     )
-                if total_vehiculos >= 10:
-                    return JSONResponse(
-                        {"error": "Solo puedes registrar hasta 10 vehiculos en tu cuenta."},
-                        status_code=400,
-                    )
 
             if not vehiculo_id:
+                # Las citas de un usuario siempre deben usar un vehiculo de su
+                # garaje. No se crean vehiculos automaticos para evitar placas
+                # repetidas y registros sin propietario.
+                if usuario_id:
+                    return JSONResponse(
+                        {"error": "No encontramos el vehiculo seleccionado. Actualiza la pagina y selecciona tu vehiculo nuevamente."},
+                        status_code=400,
+                    )
                 tipo_row = conn.execute(
                     text(
                         "SELECT idtipovehiculos "
@@ -4745,6 +4820,60 @@ async def responder_cotizacion_cliente(cotizacion_id: int, request: Request, acc
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+@app.post("/api/mi-garage/facturas/{factura_id}/pago")
+async def preparar_pago_factura_cliente(factura_id: int, request: Request, access_token: str = Cookie(None)):
+    """Valida una factura del cliente y prepara los datos que usara Wompi.
+
+    No cambia saldo ni estado: esos valores solo se actualizaran desde el
+    webhook verificado de Wompi cuando el pago sea realmente aprobado.
+    """
+    usuario_actual = obtener_usuario(access_token, request)
+    if not usuario_actual:
+        return JSONResponse({"error": "Debes iniciar sesion para pagar una factura"}, status_code=401)
+
+    try:
+        body = await request.json()
+        metodo_pago = str(body.get("metodo_pago") or "Wompi").strip()[:60]
+        with engine.connect() as conn:
+            usuario = conn.execute(
+                text("SELECT idusuarios FROM dmi.usuarios WHERE id::text = :auth_id"),
+                {"auth_id": usuario_actual["id"]},
+            ).mappings().fetchone()
+            if not usuario:
+                return JSONResponse({"error": "Usuario no encontrado"}, status_code=404)
+
+            factura = conn.execute(
+                text("""
+                    SELECT idfactura, codigo_factura, total, saldo, estado
+                    FROM dmi.facturas
+                    WHERE idfactura = :factura_id AND cliente_id = :cliente_id
+                """),
+                {"factura_id": factura_id, "cliente_id": usuario["idusuarios"]},
+            ).mappings().fetchone()
+            if not factura:
+                return JSONResponse({"error": "Factura no encontrada"}, status_code=404)
+
+            saldo = float(factura.get("saldo") if factura.get("saldo") is not None else factura.get("total") or 0)
+            estado = str(factura.get("estado") or "").lower()
+            if estado in {"pagada", "cancelada"} or saldo <= 0:
+                return JSONResponse({"error": "Esta factura no tiene un saldo pendiente"}, status_code=409)
+
+        referencia = f"DMI-{factura.get('codigo_factura')}-{factura_id}"
+        return JSONResponse({
+            "ok": True,
+            "payment_intent": {
+                "referencia": referencia,
+                "monto_en_centavos": int(round(saldo * 100)),
+                "moneda": "COP",
+                "metodo_seleccionado": metodo_pago,
+                "factura": factura.get("codigo_factura"),
+            },
+            "estado": "pendiente_wompi",
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.get("/api/mi-garage")
 async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
     usuario_actual = obtener_usuario(access_token, request)
@@ -4999,7 +5128,7 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                        c.subtotal, c.impuestos, c.descuento, c.total, c.estado, ot.codigo_orden
                 FROM dmi.cotizaciones c
                 JOIN dmi.orden_trabajo ot ON ot.idorden = c.orden_id
-                WHERE c.cliente_id = :usuario_id AND c.estado <> 'borrador'
+                WHERE c.cliente_id = :usuario_id AND c.enviado_en IS NOT NULL
                 ORDER BY {orden_cotizaciones}
                 """.replace("c.fecha_cotizacion", fecha_cotizacion_select, 1),
                 {"usuario_id": usuario_id},
@@ -5010,7 +5139,7 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                 SELECT cd.*
                 FROM dmi.cotizacion_detalles cd
                 JOIN dmi.cotizaciones c ON c.idcotizacion = cd.cotizacion_id
-                WHERE c.cliente_id = :usuario_id AND c.estado <> 'borrador'
+                WHERE c.cliente_id = :usuario_id AND c.enviado_en IS NOT NULL
                 ORDER BY cd.iddetalle_cotizacion
                 """,
                 {"usuario_id": usuario_id},

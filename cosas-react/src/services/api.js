@@ -385,6 +385,12 @@ export const MiCuentaService = {
     body: JSON.stringify({ respuesta }),
     credentials: "include",
   }),
+  prepararPagoFactura: (facturaId, metodoPago) => request(`/api/mi-garage/facturas/${facturaId}/pago`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ metodo_pago: metodoPago }),
+    credentials: "include",
+  }),
 };
 
 // COMPRA / CHECKOUT

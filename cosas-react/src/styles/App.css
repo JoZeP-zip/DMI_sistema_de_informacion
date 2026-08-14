@@ -1430,6 +1430,23 @@ body {
     filter: brightness(1.08);
 }
 
+.user-action-item .user-pay-invoice {
+    margin-left: 8px;
+    border-color: #ff7590;
+    background: linear-gradient(135deg, #b40f32, #ff3158);
+    box-shadow: 0 0 18px rgba(255, 49, 88, 0.22);
+}
+
+.user-action-item .user-pay-invoice i {
+    margin-right: 7px;
+}
+
+@media (max-width: 520px) {
+    .user-action-item .user-pay-invoice {
+        margin-left: 0;
+    }
+}
+
 .user-detail-overlay {
     position: fixed;
     inset: 0;

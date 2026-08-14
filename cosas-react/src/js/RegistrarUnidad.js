@@ -9,10 +9,6 @@ import '../styles/RegistrarUnidad.css';
 import { showDmiError, showDmiSuccess } from './DmiMessages';
 
 const getApiBaseUrl = () => {
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-
   const { protocol, hostname } = window.location;
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -27,7 +23,7 @@ const getApiBaseUrl = () => {
 };
 
 const BASE_URL = getApiBaseUrl();
-const STEPS          = ['Cliente', 'VehÃ­culo'];
+const STEPS          = ['Cliente', 'Vehi­culo'];
 const tiposDocumento = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI'];
 
 const initialCliente = {
@@ -57,7 +53,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
   const [, setError]                = useState('');
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
 
-  // â”€â”€ Cargar tipos de vehÃ­culo desde la BD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€ Cargar tipos de Vehi­culo desde la BD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     fetch(`${BASE_URL}/api/tipovehiculos`)
       .then(res => {
@@ -97,7 +93,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
     setStep(1);
   };
 
-  // â”€â”€ Submit final: registro usuario + vehÃ­culo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€ Submit final: registro usuario + Vehi­culo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -133,7 +129,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
       const regData = await regRes.json();
       if (!regRes.ok || regData.error) throw new Error(regData.error || regData.message || 'No se pudo registrar el usuario.');
 
-      // PASO 2: Login automÃ¡tico para obtener cookie de sesiÃ³n
+      // PASO 2: Login automÃ¡tico para obtener cookie de sesion
       const loginRes = await fetch(`${BASE_URL}/login-react`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,7 +147,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
       localStorage.setItem('nombre', loginData.nombre);
       }
 
-      // PASO 3: Registrar vehÃ­culo vÃ­a /vehiculo/nuevo (usa cookie de sesiÃ³n)
+      // PASO 3: Registrar Vehi­culo vÃ­a /vehiculo/nuevo (usa cookie de sesion)
       // Como FastAPI lee la cookie httponly, necesitamos hacer login tradicional
       // para que la cookie quede seteada correctamente.
       // Usamos el token JWT como header Authorization en su lugar:
@@ -184,7 +180,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
       // Nota: /vehiculo/nuevo lee la cookie access_token.
       // Como el registro es nuevo, la cookie no estÃ¡ seteada aÃºn en el browser.
-      // SoluciÃ³n: llamar al endpoint /login estÃ¡ndar para que FastAPI setee la cookie.
+      // Solucion: llamar al endpoint /login estÃ¡ndar para que FastAPI setee la cookie.
       if (!isExistingUser) {
       await fetch(`${BASE_URL}/login`, {
         method: 'POST',
@@ -251,7 +247,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
             <p className="ru-success-text">
               El cliente{' '}
               <strong className="ru-highlight">{isExistingUser ? existingName : `${cliente.nombre} ${cliente.apellido}`}</strong>{' '}
-              y el vehÃ­culo con placa{' '}
+              y el Vehi­culo con placa{' '}
               <strong className="ru-highlight">{vehiculo.placa}</strong>{' '}
               han sido registrados exitosamente en Disol Motors.
             </p>
@@ -274,7 +270,8 @@ export default function RegistrarUnidad({ onComplete } = {}) {
             <div className="ru-icon-box"><FontAwesomeIcon icon={faKey} /></div>
             <div className="ru-icon-box"><FontAwesomeIcon icon={faCar} /></div>
           </div>
-          <h1 className="ru-title">{isExistingUser ? 'Registrar Vehiculo' : 'Asistente de Cuenta y Vehiculo'}</h1>
+          <p className="ru-kicker">DMI / MI GARAJE</p>
+          <h1 className="ru-title">{isExistingUser ? <>Registra tu <em>vehiculo</em></> : <>Crea tu cuenta y <em>vehiculo</em></>}</h1>
           <p className="ru-subtitle">
             {isExistingUser
               ? 'Agrega un vehiculo a tu cuenta para continuar con tus citas.'
@@ -308,7 +305,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
             <div className="ru-card">
               <div className="ru-card-head cliente">
                 <div className="ru-head-icon"><FontAwesomeIcon icon={faUserCheck} /></div>
-                <h5 className="ru-head-title">InformaciÃ³n del Cliente</h5>
+                <h5 className="ru-head-title">Informacion del Cliente</h5>
               </div>
 
               <div className="ru-body">
@@ -321,7 +318,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                       placeholder="juanperez92" required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Correo electrÃ³nico <span className="ru-req">*</span></label>
+                    <label className="ru-label">Correo electronico <span className="ru-req">*</span></label>
                     <input className="ru-input" type="email" name="email"
                       value={cliente.email} onChange={onCliente}
                       placeholder="juan@email.com" required />
@@ -414,7 +411,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
             <div className="ru-btn-row">
               <button type="submit" className="ru-btn-primary">
-                Siguiente: VehÃ­culo <FontAwesomeIcon icon={faChevronRight} />
+                Siguiente: Vehi­culo <FontAwesomeIcon icon={faChevronRight} />
               </button>
             </div>
           </form>
@@ -426,14 +423,14 @@ export default function RegistrarUnidad({ onComplete } = {}) {
             <div className="ru-card">
               <div className="ru-card-head vehiculo">
                 <div className="ru-head-icon"><FontAwesomeIcon icon={faShield} /></div>
-                <h5 className="ru-head-title">Detalles del VehÃ­culo</h5>
+                <h5 className="ru-head-title">Detalles del Vehi­culo</h5>
               </div>
 
               <div className="ru-body">
-                <p className="ru-section">IdentificaciÃ³n</p>
+                <p className="ru-section">Identificacion</p>
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">CÃ³digo <span className="ru-req">*</span></label>
+                    <label className="ru-label">Codigo <span className="ru-req">*</span></label>
                     <input className="ru-input" type="text" name="codigo"
                       value={vehiculo.codigo} onChange={onVehiculo}
                       placeholder="VEH-001" required />
@@ -454,7 +451,7 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                       placeholder="Nissan" required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Tipo de vehÃ­culo <span className="ru-req">*</span></label>
+                    <label className="ru-label">Tipo de Vehi­culo <span className="ru-req">*</span></label>
                     <select className="ru-select" name="tipoVehiculo"
                       value={vehiculo.tipoVehiculo} onChange={onVehiculo} required>
                       <option value="">Seleccionar</option>
@@ -511,10 +508,10 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                 </div>
 
                 <div className="ru-field">
-                  <label className="ru-label">DescripciÃ³n</label>
+                  <label className="ru-label">Descripcion</label>
                   <textarea className="ru-textarea" name="descripcion"
                     value={vehiculo.descripcion} onChange={onVehiculo}
-                    placeholder="DescripciÃ³n general del vehÃ­culo..." />
+                    placeholder="Descripcion general del Vehi­culo..." />
                 </div>
               </div>
             </div>
@@ -548,5 +545,4 @@ export default function RegistrarUnidad({ onComplete } = {}) {
     </div>
   );
 }
-
 

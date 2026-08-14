@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { MiCuentaService } from '../services/api';
 import { openInvoiceDocument } from './invoice';
+import Checkout from './Checkout';
 
 const money = (value) => {
   const number = Number(value || 0);
@@ -90,6 +91,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const [cotizacionActiva, setCotizacionActiva] = useState(null);
   const [respondiendoCotizacion, setRespondiendoCotizacion] = useState(false);
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
+  const [facturaAPagar, setFacturaAPagar] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -394,6 +396,11 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
                   <span>{money(factura.total)} | Saldo {money(factura.saldo)}</span>
                   <small className={`user-status ${estadoClase(factura.estado)}`}>{clean(factura.estado)}</small>
                   <button type="button" onClick={() => abrirFactura(factura)}>Ver factura</button>
+                  {Number(factura.saldo ?? factura.total ?? 0) > 0 && !['pagada', 'cancelada'].includes(String(factura.estado || '').toLowerCase()) && (
+                    <button type="button" className="user-pay-invoice" onClick={() => setFacturaAPagar(factura)}>
+                      <i className="bi bi-credit-card-2-front" /> Pagar factura
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -538,6 +545,15 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
           </div>
         )}
       </DetailModal>
+
+      {facturaAPagar && (
+        <Checkout
+          factura={facturaAPagar}
+          total={Number(facturaAPagar.saldo ?? facturaAPagar.total ?? 0)}
+          onClose={() => setFacturaAPagar(null)}
+          onInvoicePaymentRequested={() => setFacturaAPagar(null)}
+        />
+      )}
     </main>
   );
 }

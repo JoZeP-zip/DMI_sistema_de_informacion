@@ -557,6 +557,38 @@
   text-align: center;
 }
 
+/* Resumen usado cuando el checkout se abre desde una factura del taller. */
+.checkout-invoice-summary {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 7px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 49, 88, .42);
+  border-left: 3px solid #ff3158;
+  background: linear-gradient(90deg, rgba(255, 49, 88, .13), rgba(255,255,255,.025));
+}
+
+.checkout-invoice-summary span {
+  color: rgba(255,255,255,.58);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.checkout-invoice-summary strong {
+  color: #fff;
+  font-size: 17px;
+  letter-spacing: .5px;
+}
+
+.checkout-invoice-summary small {
+  color: #ff8298;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+}
+
 .checkout-eyebrow { letter-spacing: 2.5px !important; }
 .checkout-container h2 { letter-spacing: -1px; }
 

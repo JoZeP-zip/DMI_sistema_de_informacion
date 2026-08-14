@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "../styles/Checkout.css";
-import { CheckoutService } from "../services/api";
+import { CheckoutService, MiCuentaService } from "../services/api";
 import { buildProductInvoice, openInvoiceDocument, saveInvoiceLocally } from "./invoice";
 import { showDmiError, showDmiSuccess } from "./DmiMessages";
 
@@ -72,7 +72,8 @@ const PAYMENT_METHODS = [
   },
 ];
 
-function Checkout({ total = 0, items = [], onClose, onPaid }) {
+function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onInvoicePaymentRequested }) {
+  const esPagoFactura = Boolean(factura);
   const [formData, setFormData] = useState({
     nombre: "",
     telefono: "",
@@ -93,6 +94,28 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
 
   const registrarPedido = async (e) => {
     e.preventDefault();
+
+    // Una factura no se marca pagada desde el navegador. Cuando Wompi este
+    // conectado, este mismo punto abrira su pasarela y el webhook confirmara
+    // el pago de forma segura en el servidor.
+    if (esPagoFactura) {
+      setLoading(true);
+      try {
+        const intent = await MiCuentaService.prepararPagoFactura(factura.idfactura, formData.metodoPago);
+        onInvoicePaymentRequested?.(intent);
+      } catch (error) {
+        setLoading(false);
+        showDmiError("No se pudo preparar el pago", error.message || "Verifica la factura e intentalo nuevamente.");
+        return;
+      }
+      setLoading(false);
+      showDmiSuccess(
+        "Pago listo para continuar",
+        "Seleccionaste " + formData.metodoPago + ". La factura conserva su estado pendiente hasta que Wompi confirme el pago.",
+      );
+      onClose?.();
+      return;
+    }
 
     if (
       !formData.nombre ||
@@ -162,57 +185,41 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
           X
         </button>
 
-        <p className="checkout-eyebrow">DMI / Paso final</p>
-        <h2>Finalizar compra</h2>
-        <p className="checkout-intro">Confirma tus datos y selecciona tu medio de pago.</p>
+        <p className="checkout-eyebrow">DMI / {esPagoFactura ? "Pago de factura" : "Paso final"}</p>
+        <h2>{esPagoFactura ? "Pagar factura" : "Finalizar compra"}</h2>
+        <p className="checkout-intro">
+          {esPagoFactura
+            ? "Selecciona el medio con el que deseas pagar tu servicio. El pago sera confirmado de forma segura por Wompi."
+            : "Confirma tus datos y selecciona tu medio de pago."}
+        </p>
 
         <form onSubmit={registrarPedido}>
-          <div className="form-group">
-            <label className="form-label">Datos de contacto</label>
-            <div className="form-row">
-              <input
-                type="text"
-                name="nombre"
-                placeholder="Nombre completo"
-                value={formData.nombre}
-                onChange={handleChange}
-              />
-              <input
-                type="text"
-                name="telefono"
-                placeholder="Telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-              />
+          {esPagoFactura ? (
+            <div className="checkout-invoice-summary">
+              <span>Factura de servicio</span>
+              <strong>{factura.codigo_factura}</strong>
+              <small>Saldo pendiente: ${Number(factura.saldo ?? factura.total ?? total).toLocaleString("es-CO")}</small>
             </div>
-            <input
-              type="email"
-              name="email"
-              placeholder="Correo electronico"
-              value={formData.email}
-              onChange={handleChange}
-            />
-          </div>
+          ) : (
+            <>
+              <div className="form-group">
+                <label className="form-label">Datos de contacto</label>
+                <div className="form-row">
+                  <input type="text" name="nombre" placeholder="Nombre completo" value={formData.nombre} onChange={handleChange} />
+                  <input type="text" name="telefono" placeholder="Telefono" value={formData.telefono} onChange={handleChange} />
+                </div>
+                <input type="email" name="email" placeholder="Correo electronico" value={formData.email} onChange={handleChange} />
+              </div>
 
-          <div className="form-group">
-            <label className="form-label">Direccion de entrega</label>
-            <div className="form-row">
-              <input
-                type="text"
-                name="direccion"
-                placeholder="Direccion"
-                value={formData.direccion}
-                onChange={handleChange}
-              />
-              <input
-                type="text"
-                name="ciudad"
-                placeholder="Ciudad"
-                value={formData.ciudad}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+              <div className="form-group">
+                <label className="form-label">Direccion de entrega</label>
+                <div className="form-row">
+                  <input type="text" name="direccion" placeholder="Direccion" value={formData.direccion} onChange={handleChange} />
+                  <input type="text" name="ciudad" placeholder="Ciudad" value={formData.ciudad} onChange={handleChange} />
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="payment-methods">
             <h3>Metodo de pago</h3>
@@ -239,12 +246,12 @@ function Checkout({ total = 0, items = [], onClose, onPaid }) {
           </div>
 
           <div className="checkout-total">
-            <span>{items.length} producto{items.length === 1 ? "" : "s"} facturado{items.length === 1 ? "" : "s"}</span>
-            <span className="checkout-total-value">${Number(total).toLocaleString("es-CO")}</span>
+            <span>{esPagoFactura ? "Saldo de la factura" : `${items.length} producto${items.length === 1 ? "" : "s"} facturado${items.length === 1 ? "" : "s"}`}</span>
+            <span className="checkout-total-value">${Number(esPagoFactura ? (factura.saldo ?? factura.total ?? total) : total).toLocaleString("es-CO")}</span>
           </div>
 
           <button type="submit" className="checkout-submit" disabled={loading}>
-            {loading ? "GUARDANDO..." : "CONFIRMAR COMPRA"}
+            {loading ? "PREPARANDO..." : esPagoFactura ? "CONTINUAR AL PAGO" : "CONFIRMAR COMPRA"}
           </button>
         </form>
       </div>
