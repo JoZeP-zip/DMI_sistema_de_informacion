@@ -72,6 +72,12 @@ const PAYMENT_METHODS = [
   },
 ];
 
+const ORDER_PAYMENT_OPTIONS = [
+  { value: "contra_entrega", label: "Pago contra entrega", detail: "Paga al recibir tu pedido", icon: "bi-box-seam" },
+  { value: "transferencia", label: "Transferencia", detail: "Tu pedido queda pendiente de validacion", icon: "bi-bank" },
+  { value: "wompi", label: "Pagar con Wompi", detail: "Pago seguro en linea", icon: "bi-shield-lock" },
+];
+
 function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onInvoicePaymentRequested }) {
   const esPagoFactura = Boolean(factura);
   const [formData, setFormData] = useState({
@@ -81,6 +87,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
     direccion: "",
     ciudad: "",
     metodoPago: "Nequi",
+    tipoPago: "contra_entrega",
   });
 
   const [loading, setLoading] = useState(false);
@@ -137,11 +144,18 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
     setLoading(true);
 
     try {
-      await CheckoutService.registrarPedido({ datos: formData, items });
+      const pedido = await CheckoutService.registrarPedido({ datos: formData, items });
+      if (formData.tipoPago === "wompi" && pedido?.checkout_url) {
+        window.location.assign(pedido.checkout_url);
+        return;
+      }
     } catch (error) {
       console.error(error);
       setLoading(false);
-      showDmiError("No se pudo registrar", "No se pudo guardar el pedido. Revisa la informacion e intenta nuevamente.");
+      showDmiError(
+        "No se pudo registrar",
+        error?.message || "No se pudo guardar el pedido. Revisa la informacion e intenta nuevamente.",
+      );
       return;
     }
 
@@ -164,7 +178,10 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
     saveInvoiceLocally(invoice, formData.email);
     openInvoiceDocument(invoice);
 
-    showDmiSuccess("Pedido registrado", "Tu pedido fue guardado correctamente. La factura se abrio en una nueva ventana para descargarla en PDF.");
+    const mensajePedido = formData.tipoPago === "contra_entrega"
+      ? "Tu pedido fue aceptado con pago contra entrega. Puedes consultar su avance en Mi Cuenta > Mis pedidos de catalogo."
+      : "Tu pedido quedo pendiente de validar la transferencia. Puedes consultar su avance en Mi Cuenta > Mis pedidos de catalogo.";
+    showDmiSuccess("Pedido registrado", mensajePedido + " La factura se abrio en una nueva ventana para descargarla en PDF.");
 
     setFormData({
       nombre: "",
@@ -173,6 +190,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
       direccion: "",
       ciudad: "",
       metodoPago: "Nequi",
+      tipoPago: "contra_entrega",
     });
 
     if (onPaid) {
@@ -224,10 +242,23 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
                   <input type="text" name="ciudad" placeholder="Ciudad" value={formData.ciudad} onChange={handleChange} />
                 </div>
               </div>
+
+              <div className="payment-methods checkout-order-payment">
+                <h3>Como quieres pagar tu pedido</h3>
+                <div className="payment-grid checkout-order-payment-grid">
+                  {ORDER_PAYMENT_OPTIONS.map((option) => (
+                    <label key={option.value} className={`payment-option ${formData.tipoPago === option.value ? "selected" : ""}`} style={{ "--accent": "#ff3158" }}>
+                      <input type="radio" name="tipoPago" value={option.value} checked={formData.tipoPago === option.value} onChange={handleChange} />
+                      <span className="payment-icon"><i className={`bi ${option.icon}`} /></span>
+                      <span className="payment-label"><b>{option.label}</b><small>{option.detail}</small></span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </>
           )}
 
-          <div className="payment-methods">
+          {esPagoFactura && <div className="payment-methods">
             <h3>Metodo de pago</h3>
 
             <div className="payment-grid">
@@ -249,7 +280,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
                 </label>
               ))}
             </div>
-          </div>
+          </div>}
 
           <div className="checkout-total">
             <span>{esPagoFactura ? "Saldo de la factura" : `${items.length} producto${items.length === 1 ? "" : "s"} facturado${items.length === 1 ? "" : "s"}`}</span>
@@ -257,7 +288,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
           </div>
 
           <button type="submit" className="checkout-submit" disabled={loading}>
-            {loading ? "PREPARANDO..." : esPagoFactura ? "CONTINUAR AL PAGO" : "CONFIRMAR COMPRA"}
+            {loading ? "PREPARANDO..." : esPagoFactura ? "CONTINUAR AL PAGO" : formData.tipoPago === "wompi" ? "IR A PAGAR CON WOMPI" : "CONFIRMAR PEDIDO"}
           </button>
         </form>
       </div>

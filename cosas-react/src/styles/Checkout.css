@@ -214,6 +214,31 @@
   color:rgba(255,255,255,0.85);
 }
 
+.checkout-order-payment-grid .payment-option {
+  min-height: 82px;
+}
+
+.checkout-order-payment-grid .payment-icon {
+  color: #ff6680;
+  font-size: 22px;
+}
+
+.checkout-order-payment-grid .payment-label {
+  display: grid;
+  gap: 3px;
+}
+
+.checkout-order-payment-grid .payment-label b {
+  font-size: 11px;
+}
+
+.checkout-order-payment-grid .payment-label small {
+  color: rgba(255,255,255,.55);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  line-height: 1.1;
+}
+
 .payment-option.selected .payment-label{
   color:white;
   font-weight:600;

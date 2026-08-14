@@ -3466,6 +3466,35 @@ async def api_citas():
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+@app.post("/admin/pedidos-catalogo/{pedido_id}/actualizar")
+async def actualizar_pedido_catalogo(pedido_id: int, request: Request, access_token: str = Cookie(None)):
+    """El administrador gestiona el avance y las novedades de pedidos web."""
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/configuracion")
+
+    form = await request.form()
+    estado = str(form.get("estado") or "").strip().lower()
+    novedad = str(form.get("novedad") or "").strip()[:1000]
+    estados_permitidos = {"pedido_aceptado", "enviado", "en_camino", "entregado", "pendiente_transferencia", "pendiente_pago_wompi", "cancelado"}
+    if estado not in estados_permitidos:
+        return RedirectResponse(url="/configuracion?error=Estado+de+pedido+no+valido#pedidos", status_code=303)
+    try:
+        with engine.connect() as conn:
+            if not table_exists(conn, "public", "pedidos"):
+                return RedirectResponse(url="/configuracion?error=No+hay+pedidos+de+catalogo#pedidos", status_code=303)
+            resultado = conn.execute(
+                text("UPDATE public.pedidos SET estado = :estado, novedad = :novedad WHERE id = :id"),
+                {"estado": estado, "novedad": novedad or None, "id": pedido_id},
+            )
+            if resultado.rowcount == 0:
+                return RedirectResponse(url="/configuracion?error=Pedido+no+encontrado#pedidos", status_code=303)
+            conn.commit()
+        return RedirectResponse(url="/configuracion?success=Pedido+actualizado#pedidos", status_code=303)
+    except Exception as e:
+        return RedirectResponse(url="/configuracion?error=" + quote(str(e)) + "#pedidos", status_code=303)
+
+
 #  GET /configuracion 
 @app.get("/configuracion", response_class=HTMLResponse)
 async def configuracion(request: Request, access_token: str = Cookie(None)):
@@ -3490,6 +3519,7 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
         "servicios":        [],
         "tiporeparacion":   [],
         "pedidos":          [],
+        "pedidos_catalogo": [],
         "productos":        [],
         "movimientos":      [],
         "usuarios_desactivados": [],
@@ -3577,6 +3607,14 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
                 ORDER BY tr.idtiporeparacion
             """, "tipos reparacion")
             ctx["pedidos"]          = fetch("SELECT * FROM dmi.pedido ORDER BY idpedido DESC LIMIT 50", "pedidos")
+            if table_exists(conn, "public", "pedidos"):
+                ctx["pedidos_catalogo"] = fetch("""
+                    SELECT p.*, u.nombre AS cliente_nombre
+                    FROM public.pedidos p
+                    LEFT JOIN dmi.usuarios u ON u.idusuarios = p.usuarios_idusuarios
+                    ORDER BY p.created_at DESC, p.id DESC
+                    LIMIT 100
+                """, "pedidos de catalogo")
             ctx["productos"]        = fetch("""
                 SELECT
                     id AS idproductos,
@@ -4749,21 +4787,56 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
                 return JSONResponse({"error": "No encontramos tu perfil de cliente"}, status_code=404)
             if usuario.get("activo") is False or str(usuario.get("estado") or "").lower() in {"desactivado", "inactivo", "inactive"}:
                 return JSONResponse({"error": "Esta cuenta esta desactivada y no puede realizar compras"}, status_code=403)
+            # Algunas instalaciones antiguas de DMI no tenian esta tabla.
+            # Se crea de manera compatible antes de registrar la primera compra.
             if not table_exists(conn, "public", "pedidos"):
-                return JSONResponse({"error": "No existe la tabla de pedidos para guardar la compra"}, status_code=500)
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS public.pedidos (
+                        id BIGSERIAL PRIMARY KEY,
+                        nombre TEXT,
+                        telefono TEXT,
+                        email TEXT,
+                        direccion TEXT,
+                        ciudad TEXT,
+                        metodo_pago TEXT,
+                        total NUMERIC(14,2) NOT NULL DEFAULT 0,
+                        productos JSONB NOT NULL DEFAULT '[]'::jsonb,
+                        usuarios_idusuarios INTEGER,
+                        activo BOOLEAN NOT NULL DEFAULT TRUE,
+                        estado VARCHAR(30) NOT NULL DEFAULT 'pendiente',
+                        codigo_pedido VARCHAR(50),
+                        tipo_pago VARCHAR(40) NOT NULL DEFAULT 'contra_entrega',
+                        novedad TEXT,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                """))
 
             # La relacion permite que compras y productos aparezcan en la ficha
             # administrativa y se inactiven junto con el cliente si es necesario.
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS usuarios_idusuarios integer"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS activo boolean DEFAULT TRUE"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS estado varchar DEFAULT 'pendiente'"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS codigo_pedido varchar(50)"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS tipo_pago varchar(40) DEFAULT 'contra_entrega'"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS novedad text"))
             columnas = table_columns(conn, "public", "pedidos")
+            tipo_pago = str(datos.get("tipoPago") or datos.get("tipo_pago") or "contra_entrega").strip().lower()
+            if tipo_pago not in {"contra_entrega", "transferencia", "wompi"}:
+                return JSONResponse({"error": "Selecciona una forma de pago valida"}, status_code=400)
+            estado_pedido = {
+                "contra_entrega": "pedido_aceptado",
+                "transferencia": "pendiente_transferencia",
+                "wompi": "pendiente_pago_wompi",
+            }[tipo_pago]
+            codigo_pedido = f"PED-{datetime.now().strftime('%Y%m%d')}-{int(datetime.now().timestamp() * 1000) % 1000000:06d}"
             valores = {
                 "nombre": datos.get("nombre"), "telefono": datos.get("telefono"),
                 "email": usuario.get("email") or datos.get("email"), "direccion": datos.get("direccion"),
                 "ciudad": datos.get("ciudad"), "metodo_pago": datos.get("metodoPago") or datos.get("metodo_pago"),
                 "total": total_calculado, "productos": json.dumps(productos),
-                "usuarios_idusuarios": usuario.get("idusuarios"), "activo": True, "estado": "pendiente",
+                "usuarios_idusuarios": usuario.get("idusuarios"), "activo": True, "estado": estado_pedido,
+                "codigo_pedido": codigo_pedido, "tipo_pago": tipo_pago,
+                "novedad": "Pedido recibido. Estamos validando la disponibilidad de los productos.",
             }
             campos = [campo for campo in valores if campo in columnas]
             if not campos:
@@ -4776,7 +4849,15 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
             )
             pedido_id = resultado.scalar() if id_column else None
             conn.commit()
-        return JSONResponse({"ok": True, "pedido_id": pedido_id, "total": total_calculado})
+        return JSONResponse({
+            "ok": True,
+            "pedido_id": pedido_id,
+            "codigo_pedido": codigo_pedido,
+            "total": total_calculado,
+            "estado": estado_pedido,
+            # Enlace temporal hasta terminar el Checkout dinamico por pedido.
+            "checkout_url": WOMPI_PAYMENT_LINK if tipo_pago == "wompi" else None,
+        })
     except (TypeError, ValueError):
         return JSONResponse({"error": "Revisa las cantidades y precios del carrito"}, status_code=400)
     except Exception as e:

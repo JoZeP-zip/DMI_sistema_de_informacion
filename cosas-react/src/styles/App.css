@@ -1441,6 +1441,29 @@ body {
     margin-right: 7px;
 }
 
+.user-catalog-order {
+    border-left: 3px solid #ff3158;
+    background: linear-gradient(90deg, rgba(255, 49, 88, 0.08), rgba(255,255,255,0.025));
+}
+
+.user-catalog-order-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.user-catalog-order p {
+    margin: 10px 0 0;
+    color: rgba(255,255,255,.68);
+    font-size: .93rem;
+}
+
+.user-catalog-order p i {
+    color: #ff7590;
+    margin-right: 6px;
+}
+
 @media (max-width: 520px) {
     .user-action-item .user-pay-invoice {
         margin-left: 0;

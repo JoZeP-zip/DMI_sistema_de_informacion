@@ -151,6 +151,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     if (!vehiculoIdActual) return data?.historial || [];
     return (data?.historial || []).filter((evento) => String(evento.vehiculo_id) === String(vehiculoIdActual));
   }, [data, vehiculoIdActual]);
+  const pedidosCatalogo = useMemo(() => (data?.pedidos || []).filter((pedido) => pedido.productos || pedido.tipo_pago || pedido.metodo_pago), [data]);
 
   const citaProxima = useMemo(() => {
     const activas = citasVehiculo.filter((cita) => !['cancelada', 'cancelado', 'completada'].includes(String(cita.estado || '').toLowerCase()));
@@ -405,6 +406,23 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
               ))}
             </div>
           ) : <EmptyState icon="bi-receipt" text="No tienes facturas generadas." />}
+        </Section>
+
+        <Section title="Mis pedidos de catalogo" icon="bi-bag-check-fill" className="wide user-catalog-orders">
+          {pedidosCatalogo.length ? (
+            <div className="user-account-list">
+              {pedidosCatalogo.map((pedido) => (
+                <div className="user-account-item user-catalog-order" key={pedido.id || pedido.idpedido || pedido.codigo_pedido}>
+                  <div className="user-catalog-order-head">
+                    <strong>{pedido.codigo_pedido || pedido.codigopedido || `Pedido #${pedido.id || pedido.idpedido}`}</strong>
+                    <small className={`user-status ${estadoClase(pedido.estado)}`}>{clean(pedido.estado, 'pedido_aceptado').replaceAll('_', ' ')}</small>
+                  </div>
+                  <span>Total {money(pedido.total)} | {clean(pedido.tipo_pago || pedido.metodo_pago, 'contra entrega').replaceAll('_', ' ')}</span>
+                  <p><i className="bi bi-info-circle" /> {clean(pedido.novedad, 'Sin novedades. Te avisaremos cuando cambie el estado de tu pedido.')}</p>
+                </div>
+              ))}
+            </div>
+          ) : <EmptyState icon="bi-bag-x" text="Aun no tienes pedidos del catalogo." />}
         </Section>
 
         <Section title="Historial" icon="bi-clock-history" className="wide">
