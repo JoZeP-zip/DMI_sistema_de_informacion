@@ -103,6 +103,12 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
       try {
         const intent = await MiCuentaService.prepararPagoFactura(factura.idfactura, formData.metodoPago);
         onInvoicePaymentRequested?.(intent);
+        if (intent?.checkout_url) {
+          // El enlace de Wompi es el checkout real. Wompi volvera al sitio
+          // cuando configures una URL de redireccion en su panel.
+          window.location.assign(intent.checkout_url);
+          return;
+        }
       } catch (error) {
         setLoading(false);
         showDmiError("No se pudo preparar el pago", error.message || "Verifica la factura e intentalo nuevamente.");

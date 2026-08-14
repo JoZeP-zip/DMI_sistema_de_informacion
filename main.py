@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 import os
 import jwt
 import json
+import hashlib
 from sqlalchemy import text
 from datetime import datetime
 
@@ -26,6 +27,10 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres.pjgldixdkavafmxo
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://pjgldixdkavafmxowujt.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqZ2xkaXhka2F2YWZteG93dWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDMxOTAsImV4cCI6MjA4NzE3OTE5MH0.VsdOpz44v2pVYb94ESnw-nmLe7OmaXsm_mMfU-FEKAA")
 ADMIN_SECRET  = os.getenv("ADMIN_SECRET", "lolcito")  
+# Enlace de pago hospedado creado en el panel de Wompi. Es publico, pero se
+# puede cambiar desde Vercel con la variable WOMPI_PAYMENT_LINK sin editar codigo.
+WOMPI_PAYMENT_LINK = os.getenv("WOMPI_PAYMENT_LINK", "https://checkout.wompi.co/l/VPOS_OEmmOs")
+WOMPI_EVENTS_SECRET = os.getenv("WOMPI_EVENTS_SECRET", "")
 
 # Forzamos a SQLAlchemy a buscar directamente en el esquema dmi
 engine = create_engine(
@@ -4858,9 +4863,13 @@ async def preparar_pago_factura_cliente(factura_id: int, request: Request, acces
             if estado in {"pagada", "cancelada"} or saldo <= 0:
                 return JSONResponse({"error": "Esta factura no tiene un saldo pendiente"}, status_code=409)
 
-        referencia = f"DMI-{factura.get('codigo_factura')}-{factura_id}"
+        # Esta referencia se utilizara en el Checkout Web dinamico de Wompi.
+        # Un link fijo de Wompi genera su propia referencia y no puede asociarse
+        # de forma segura a una factura concreta.
+        referencia = f"DMI-FACTURA-{factura_id}-{int(datetime.now().timestamp())}"
         return JSONResponse({
             "ok": True,
+            "checkout_url": WOMPI_PAYMENT_LINK,
             "payment_intent": {
                 "referencia": referencia,
                 "monto_en_centavos": int(round(saldo * 100)),
@@ -4870,6 +4879,94 @@ async def preparar_pago_factura_cliente(factura_id: int, request: Request, acces
             },
             "estado": "pendiente_wompi",
         })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+def wompi_propiedad(data: dict, ruta: str):
+    """Obtiene una propiedad anidada que Wompi indique en signature.properties."""
+    valor = data
+    partes = str(ruta or "").split(".")
+    if partes and partes[0] == "data":
+        partes = partes[1:]
+    for parte in partes:
+        if not isinstance(valor, dict):
+            return ""
+        valor = valor.get(parte)
+    return "" if valor is None else str(valor)
+
+
+@app.post("/api/wompi/webhook")
+async def recibir_evento_wompi(request: Request):
+    """Confirma pagos de Wompi solo despues de validar su firma criptografica."""
+    if not WOMPI_EVENTS_SECRET:
+        return JSONResponse({"error": "Falta configurar WOMPI_EVENTS_SECRET"}, status_code=503)
+
+    try:
+        evento = await request.json()
+        firma = evento.get("signature") or {}
+        propiedades = firma.get("properties") or []
+        checksum_recibido = request.headers.get("X-Event-Checksum") or firma.get("checksum")
+        texto_firma = "".join(wompi_propiedad(evento.get("data") or {}, campo) for campo in propiedades)
+        texto_firma += str(evento.get("timestamp") or "") + WOMPI_EVENTS_SECRET
+        checksum_esperado = hashlib.sha256(texto_firma.encode("utf-8")).hexdigest()
+        if not checksum_recibido or checksum_esperado.lower() != str(checksum_recibido).lower():
+            return JSONResponse({"error": "Firma de Wompi invalida"}, status_code=401)
+
+        if evento.get("event") != "transaction.updated":
+            return JSONResponse({"ok": True, "ignored": True})
+
+        datos = evento.get("data") or {}
+        transaccion = datos.get("transaction") or datos
+        if str(transaccion.get("status") or "").upper() != "APPROVED":
+            return JSONResponse({"ok": True, "estado": transaccion.get("status")})
+
+        referencia = str(transaccion.get("reference") or "")
+        partes = referencia.split("-")
+        if len(partes) < 4 or partes[0] != "DMI" or partes[1] != "FACTURA":
+            # Los links fijos tienen una referencia propia de Wompi. No se les
+            # asigna una factura para impedir acreditar un pago equivocado.
+            return JSONResponse({"ok": True, "ignored": True, "reason": "Referencia no asociada a DMI"})
+
+        factura_id = int(partes[2])
+        valor_pagado = float(transaccion.get("amount_in_cents") or 0) / 100
+        if valor_pagado <= 0:
+            return JSONResponse({"error": "Monto de transaccion invalido"}, status_code=400)
+
+        with engine.connect() as conn:
+            factura = conn.execute(text("SELECT * FROM dmi.facturas WHERE idfactura = :id"), {"id": factura_id}).mappings().fetchone()
+            if not factura:
+                return JSONResponse({"error": "Factura no encontrada"}, status_code=404)
+
+            transaccion_id = str(transaccion.get("id") or referencia)
+            ya_registrado = conn.execute(text("SELECT 1 FROM dmi.pagos WHERE referencia = :referencia LIMIT 1"), {"referencia": transaccion_id}).fetchone()
+            if ya_registrado:
+                return JSONResponse({"ok": True, "duplicado": True})
+
+            saldo = float(factura.get("saldo") if factura.get("saldo") is not None else factura.get("total") or 0)
+            nuevo_saldo = max(0, saldo - valor_pagado)
+            estado_factura = "pagada" if nuevo_saldo == 0 else "parcial"
+            metodo = str(transaccion.get("payment_method_type") or "Wompi")
+            metodo_row = conn.execute(text("SELECT idmetodopago FROM dmi.metodopago WHERE LOWER(descripcionmpago) = LOWER(:metodo) LIMIT 1"), {"metodo": metodo}).mappings().fetchone()
+            pago_data = {
+                "codigo_pago": generar_codigo_documento(conn, "pagos", "codigo_pago", "PAG"),
+                "factura_id": factura_id,
+                "fecha_pago": datetime.now(),
+                "valor": valor_pagado,
+                "referencia": transaccion_id,
+                "estado": "confirmado",
+            }
+            if metodo_row:
+                pago_data["metodopago_id"] = metodo_row["idmetodopago"]
+            insert_dynamic_returning(conn, "pagos", pago_data, "idpago")
+            update_dynamic(conn, "facturas", "idfactura", factura_id, {"saldo": nuevo_saldo, "estado": estado_factura})
+            if estado_factura == "pagada" and factura.get("orden_id"):
+                update_dynamic(conn, "orden_trabajo", "idorden", factura["orden_id"], {"estado": "pagada"})
+                registrar_historial_orden(conn, factura["orden_id"], "pago_confirmado", f"Pago Wompi aprobado para la factura {factura.get('codigo_factura')}", valor_pagado, factura_id)
+            conn.commit()
+        return JSONResponse({"ok": True, "factura_id": factura_id, "estado_factura": estado_factura})
+    except ValueError:
+        return JSONResponse({"error": "Referencia de factura invalida"}, status_code=400)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
