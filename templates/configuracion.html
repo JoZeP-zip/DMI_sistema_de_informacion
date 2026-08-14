@@ -393,20 +393,10 @@
             </section>
 
             <div id="panel-pedidos" class="cfg-panel active">
-                <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Pedido</h5>
-                <form action="/config/pedidos/nuevo" method="POST">
-                    <div class="mb-3"><label class="form-label">Fecha (Texto)</label><input type="text" class="form-control" name="fecha" required></div>
-                    <div class="mb-3"><label class="form-label">Codigo Pedido</label><input type="text" class="form-control" name="codigopedido" required></div>
-                    <div class="mb-3"><label class="form-label">Metodo Pago ID</label><input type="number" class="form-control" name="metodopago_idmetodopago" required></div>
-                    <div class="mb-3"><label class="form-label">Fecha Cita (TZ)</label><input type="datetime-local" class="form-control" name="fecha_cita" required></div>
-                    <div class="mb-3"><label class="form-label">Estado</label><input type="text" class="form-control" name="estado" value="pendiente" required></div>
-                    <div class="mb-3"><label class="form-label">Descripcion</label><textarea class="form-control" name="Descripcion"></textarea></div>
-                    <div class="mb-3"><label class="form-label">Oficina ID</label><input type="number" class="form-control" name="oficinas_idoficinas"></div>
-                    <button type="submit" class="btn btn-primary w-100">Registrar Pedido</button>
-                </form></div></div></div>
-                <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Pedidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Fecha Cita</th><th>Estado</th><th>Oficina</th><th>Acciones</th></tr></thead><tbody>
-                {% for p in pedidos %}<tr><td>{{p.idpedido}}</td><td>{{p.codigopedido}}</td><td>{{p.fecha_cita}}</td><td><span class="badge bg-warning text-dark">{{p.estado}}</span></td><td>{{p.oficinas_idoficinas}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-pedidos'), '{{ p.idpedido }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-pedidos'), '{{ p.idpedido }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
-                </tbody></table></div></div></div></div></div>
+                <section class="cfg-catalog-orders-head mb-4">
+                    <div><span>OperaciÃ³n de ventas / DMI</span><h2>GestiÃ³n de pedidos</h2></div>
+                    <p>Los pedidos se crean automÃ¡ticamente cuando el cliente finaliza una compra en el catÃ¡logo. Desde esta secciÃ³n puedes asignar el repartidor, actualizar el estado y comunicar novedades.</p>
+                </section>
                 <section class="cfg-catalog-orders">
                     <header class="cfg-catalog-orders-head">
                         <div><span>Ventas en línea / Catálogo DMI</span><h2>Pedidos del catálogo</h2></div>
