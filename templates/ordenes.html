@@ -16,6 +16,167 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/static/ordenes.css?v=agenda-espanol-20260812-3">
+
+<style id="dmi-client-report-style">
+/* ===== INFORMACION DEL CLIENTE - DMI ===== */
+.ot-client-report {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  margin: 22px 0 !important;
+  padding: 24px !important;
+  border: 1px solid rgba(255, 47, 85, .65) !important;
+  background: linear-gradient(145deg, #190d12 0%, #0c0b0d 55%, #050506 100%) !important;
+  box-shadow: 0 18px 45px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,47,85,.04) !important;
+  overflow: hidden !important;
+  font-family: 'Orbitron', Arial, sans-serif !important;
+}
+
+.ot-client-report::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 95px !important;
+  height: 4px !important;
+  background: #ff2f55 !important;
+  box-shadow: 0 0 18px rgba(255,47,85,.75) !important;
+}
+
+.ot-client-report-head {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+  margin: 0 0 20px !important;
+  padding: 0 0 17px !important;
+  border-bottom: 1px solid rgba(255,47,85,.25) !important;
+}
+
+.ot-client-report-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 0 8px !important;
+  color: #ff2f55 !important;
+  font-size: .68rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+}
+
+.ot-client-report-head h3 {
+  margin: 0 !important;
+  color: #fff !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  letter-spacing: .04em !important;
+  text-transform: uppercase !important;
+}
+
+.ot-client-report-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 54px !important;
+  height: 54px !important;
+  flex: 0 0 54px !important;
+  border: 1px solid #ff2f55 !important;
+  background: rgba(255,47,85,.12) !important;
+  color: #ff2f55 !important;
+  font-size: 1.35rem !important;
+}
+
+.ot-client-report-grid {
+  position: relative !important;
+  z-index: 2 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+.ot-client-report-grid article {
+  position: relative !important;
+  display: block !important;
+  min-height: 145px !important;
+  padding: 20px 20px 20px 24px !important;
+  border: 1px solid rgba(255,47,85,.48) !important;
+  background: linear-gradient(145deg, rgba(255,47,85,.10), rgba(5,5,6,.92)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,47,85,.025), 0 10px 24px rgba(0,0,0,.3) !important;
+}
+
+.ot-client-report-grid article::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 4px !important;
+  background: #ff2f55 !important;
+}
+
+.ot-client-report-grid article > span {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 0 15px !important;
+  color: #ff2f55 !important;
+  font-size: .72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .11em !important;
+  text-transform: uppercase !important;
+}
+
+.ot-client-report-grid article > span i {
+  color: #ff2f55 !important;
+}
+
+.ot-client-report-grid p {
+  margin: 0 !important;
+  color: rgba(255,255,255,.92) !important;
+  font-size: .82rem !important;
+  line-height: 1.8 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+
+.ot-client-report-note {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  gap: 7px !important;
+  margin: 15px 0 0 !important;
+  padding: 13px 0 0 !important;
+  border-top: 1px solid rgba(255,47,85,.18) !important;
+  color: rgba(255,255,255,.55) !important;
+  font-size: .64rem !important;
+  line-height: 1.55 !important;
+}
+
+.ot-client-report-note i {
+  color: #ff2f55 !important;
+  flex: 0 0 auto !important;
+}
+
+@media (max-width: 760px) {
+  .ot-client-report {
+    padding: 18px !important;
+  }
+  .ot-client-report-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ot-client-report-head {
+    align-items: flex-start !important;
+  }
+  .ot-client-report-icon {
+    width: 46px !important;
+    height: 46px !important;
+    flex-basis: 46px !important;
+  }
+}
+</style>
+
 </head>
 <body>
   <header class="ot-topbar">
@@ -108,6 +269,35 @@
           <article><span>Fecha apertura</span><strong>{{ orden_detalle.fecha_apertura }}</strong></article>
           <article><span>Total</span><strong>${{ orden_detalle.total_orden or 0 }}</strong></article>
         </div>
+
+        <section class="ot-client-report" aria-label="Informacion reportada por el cliente">
+          <div class="ot-client-report-head">
+            <div>
+              <span class="ot-client-report-label">
+                <i class="bi bi-chat-left-text-fill"></i> Informacion del cliente
+              </span>
+              <h3>Motivo y observaciones de ingreso</h3>
+            </div>
+            <i class="bi bi-person-lines-fill ot-client-report-icon"></i>
+          </div>
+
+          <div class="ot-client-report-grid">
+            <article class="ot-client-report-item ot-client-reason">
+              <span><i class="bi bi-exclamation-circle-fill"></i> Motivo de ingreso</span>
+              <p>{{ orden_detalle.motivo_ingreso or 'El cliente no registro un motivo de ingreso.' }}</p>
+            </article>
+
+            <article class="ot-client-report-item ot-client-observation">
+              <span><i class="bi bi-chat-square-text-fill"></i> Observacion del cliente</span>
+              <p>{{ orden_detalle.observaciones_cliente or 'El cliente no registro observaciones adicionales.' }}</p>
+            </article>
+          </div>
+
+          <small class="ot-client-report-note">
+            <i class="bi bi-info-circle"></i>
+            Esta informacion corresponde a lo indicado por el cliente al solicitar la cita y debe servir como referencia para el diagnostico tecnico.
+          </small>
+        </section>
 
         <div class="ot-subsections">
           <article>
@@ -479,7 +669,6 @@ actualizar();
   </script>
 </body>
 </html>
-
 
 
 
