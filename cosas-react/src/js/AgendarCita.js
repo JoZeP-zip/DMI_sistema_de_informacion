@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import '../styles/AgendarCita.css';
 
 const getApiBaseUrl = () => {
+  // En Vercel el frontend y el backend pueden estar en dominios distintos.
+  // Esta variable se configura en Vercel y evita que /api responda el index.html.
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL.replace(/\/$/, '');
+  }
+
   const { protocol, hostname } = window.location;
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -120,6 +126,13 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include',
       });
+      if (!serviciosRes.ok) {
+        throw new Error(`El servidor no pudo cargar los servicios (${serviciosRes.status}).`);
+      }
+      const contentType = serviciosRes.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('La aplicación no pudo conectarse al backend de DMI. Revisa REACT_APP_API_URL en Vercel.');
+      }
       const serviciosData = await serviciosRes.json();
       const serviciosValidos = Array.isArray(serviciosData)
         ? serviciosData.filter((servicio) => obtenerNombreServicio(servicio))
