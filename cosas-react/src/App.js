@@ -175,6 +175,25 @@ const DmiToast = ({ toast, onClose }) => {
 // Componente para Iniciar Sesion
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Regla de seguridad para todas las contrasenas del sistema.
+// Debe tener entre 8 y 20 caracteres y al menos un simbolo.
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 20;
+const PASSWORD_SYMBOL_REGEX = /[^A-Za-z0-9\s]/;
+
+const validarPassword = (password) => {
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return `La contrasena debe tener minimo ${PASSWORD_MIN_LENGTH} caracteres.`;
+  }
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return `La contrasena debe tener maximo ${PASSWORD_MAX_LENGTH} caracteres.`;
+  }
+  if (!PASSWORD_SYMBOL_REGEX.test(password)) {
+    return 'La contrasena debe contener minimo un simbolo, por ejemplo: @, #, $, ! o %.';
+  }
+  return '';
+};
+
 const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openConfirm }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -198,6 +217,15 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openC
       showLoginIssue({
         title: "Completa tus datos",
         message: "Completa tu correo y contraseña."
+      });
+      return;
+    }
+
+    const passwordError = validarPassword(password);
+    if (passwordError) {
+      showLoginIssue({
+        title: "Contrasena no valida",
+        message: passwordError
       });
       return;
     }
@@ -289,7 +317,8 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openC
               type={showPassword ? "text" : "password"} 
               className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH))}
+              maxLength={PASSWORD_MAX_LENGTH}
               required 
             />
             <button
@@ -301,6 +330,7 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openC
               {showPassword ? "Ocultar" : "Ver"}
             </button>
           </div>
+          <small className="text-muted d-block mt-2">8-20 caracteres y minimo 1 simbolo.</small>
         </div>
         <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest mb-3">
           INGRESAR
@@ -357,6 +387,17 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
         kicker: "Acceso requerido",
         title: "Completa tus datos",
         message: "Completa todos los campos del formulario para registrarte.",
+        confirmText: "Entendido"
+      });
+      return;
+    }
+
+    const passwordError = validarPassword(password);
+    if (passwordError) {
+      openConfirm({
+        kicker: "Seguridad de la cuenta",
+        title: "Contrasena no valida",
+        message: passwordError,
         confirmText: "Entendido"
       });
       return;
@@ -531,7 +572,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
               type={showPassword ? "text" : "password"} 
               className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH))}
+              maxLength={PASSWORD_MAX_LENGTH}
               required 
             />
             <button
@@ -543,6 +585,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
               {showPassword ? "Ocultar" : "Ver"}
             </button>
           </div>
+          <small className="text-muted d-block mt-2">8-20 caracteres y minimo 1 simbolo.</small>
         </div>
         <div className="mb-4">
           <label className="form-label text-white small fw-bold">CONFIRMAR contraseña</label>
@@ -551,7 +594,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
               type={showConfirmPassword ? "text" : "password"} 
               className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => setConfirmPassword(e.target.value.slice(0, PASSWORD_MAX_LENGTH))}
+              maxLength={PASSWORD_MAX_LENGTH}
               required 
             />
             <button
@@ -734,8 +778,9 @@ const NuevaPasswordView = ({ onBackToLogin, openConfirm }) => {
       openConfirm({ kicker: "Recuperacion de acceso", title: "Enlace no valido", message: "Solicita un nuevo enlace de recuperacion.", confirmText: "Ir a recuperacion", onConfirm: onBackToLogin });
       return;
     }
-    if (password.length < 8) {
-      openConfirm({ kicker: "Nueva contrasena", title: "Contrasena muy corta", message: "Usa al menos 8 caracteres.", confirmText: "Entendido" });
+    const passwordError = validarPassword(password);
+    if (passwordError) {
+      openConfirm({ kicker: "Nueva contrasena", title: "Contrasena no valida", message: passwordError, confirmText: "Entendido" });
       return;
     }
     if (password !== confirmPassword) {
@@ -757,10 +802,10 @@ const NuevaPasswordView = ({ onBackToLogin, openConfirm }) => {
   return (
     <div className="mx-auto" style={{ maxWidth: '400px' }}>
       <h3 className="text-center text-uppercase fw-black mb-3">Nueva <span className="text-danger">Contrasena</span></h3>
-      <p className="text-center text-white-50 small mb-4">Crea una contrasena nueva de al menos 8 caracteres.</p>
+      <p className="text-center text-white-50 small mb-4">Crea una contrasena de 8 a 20 caracteres con minimo un simbolo.</p>
       <form onSubmit={handleSubmit} noValidate>
-        <div className="mb-3"><label className="form-label text-white small fw-bold">NUEVA CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={password} onChange={(event) => setPassword(event.target.value)} required /></div>
-        <div className="mb-4"><label className="form-label text-white small fw-bold">CONFIRMAR CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></div>
+        <div className="mb-3"><label className="form-label text-white small fw-bold">NUEVA CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={password} onChange={(event) => setPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))} maxLength={PASSWORD_MAX_LENGTH} required /></div>
+        <div className="mb-4"><label className="form-label text-white small fw-bold">CONFIRMAR CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))} maxLength={PASSWORD_MAX_LENGTH} required /></div>
         <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest" disabled={saving}>{saving ? 'ACTUALIZANDO...' : 'ACTUALIZAR CONTRASENA'}</button>
       </form>
     </div>
