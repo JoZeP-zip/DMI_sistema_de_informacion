@@ -27,8 +27,9 @@ const DashboardAdmin = ({ onLogout }) => {
 
 
       if (event.data?.type === 'DMI_LOGOUT') {
-
-        if (onLogout) onLogout();
+        // El panel embebido ya eliminó la cookie del backend. Cerramos
+        // también el estado React y volvemos directamente al inicio.
+        if (onLogout) onLogout(true);
       }
     };
 
@@ -41,15 +42,19 @@ const DashboardAdmin = ({ onLogout }) => {
       <style>{`
         .react-admin-embed {
           min-height: calc(100vh - 84px);
-          background: #050506;
+          background:
+            radial-gradient(circle at 12% 16%, rgba(255, 47, 85, .14), transparent 24%),
+            radial-gradient(circle at 78% 2%, rgba(255, 47, 85, .08), transparent 28%),
+            linear-gradient(180deg, #030304, #080509 52%, #030304);
           color: #fff;
           display: block;
-          border-top: 1px solid rgba(255, 64, 87, 0.35);
+          border-top: 1px solid rgba(255, 64, 87, 0.55);
         }
 
         .react-admin-frame-wrap {
           min-width: 0;
-          background: #050506;
+          padding: 0;
+          background: transparent;
         }
 
         .react-admin-frame {
@@ -57,7 +62,7 @@ const DashboardAdmin = ({ onLogout }) => {
           width: 100%;
           height: calc(100vh - 84px);
           border: 0;
-          background: #050506;
+          background: transparent;
         }
 
         @media (max-width: 900px) {

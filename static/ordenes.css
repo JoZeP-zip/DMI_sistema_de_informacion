@@ -9,6 +9,31 @@
   --ot-muted: rgba(255, 255, 255, 0.62);
 }
 
+/* Capa visual compartida para panel administrador, registros, citas y vehículos. */
+body {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 14% 20%, rgba(255, 47, 85, .16), transparent 24%),
+    radial-gradient(circle at 78% 0%, rgba(255, 47, 85, .1), transparent 28%),
+    linear-gradient(135deg, #030304 0%, #0a070a 48%, #030304 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .48;
+  background-image:
+    radial-gradient(circle at 12% 26%, rgba(255,255,255,.72) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 82% 32%, rgba(255,255,255,.55) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 57% 78%, rgba(255,255,255,.6) 0 1px, transparent 1.7px),
+    radial-gradient(circle at 31% 62%, rgba(255,47,85,.8) 0 1px, transparent 1.8px);
+  background-size: 180px 180px, 230px 230px, 290px 290px, 340px 340px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -32,6 +57,7 @@ body {
   padding: 18px clamp(18px, 4vw, 58px);
   background: rgba(0, 0, 0, 0.92);
   border-bottom: 1px solid var(--ot-line);
+  box-shadow: 0 10px 36px rgba(0,0,0,.52), 0 1px 0 rgba(255,47,85,.12) inset;
 }
 
 .ot-logo,
@@ -156,6 +182,8 @@ body {
 }
 
 .ot-hero {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -163,6 +191,21 @@ body {
   padding: clamp(24px, 4vw, 44px);
   margin-bottom: 24px;
 }
+
+.ot-hero::after {
+  content: "DMI";
+  position: absolute;
+  right: clamp(18px, 5vw, 80px);
+  bottom: -34px;
+  color: rgba(255,47,85,.08);
+  font-size: clamp(5rem, 13vw, 12rem);
+  font-weight: 900;
+  letter-spacing: -.09em;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.ot-hero > * { position: relative; z-index: 1; }
 
 .ot-hero p,
 .ot-card-head p,
@@ -585,6 +628,14 @@ body {
   .ot-state-form button {
     width: 100%;
   }
+}
+
+/* Fondo final: se declara al cierre para prevalecer sobre estilos previos. */
+body {
+  background:
+    radial-gradient(circle at 14% 20%, rgba(255, 47, 85, .16), transparent 24%),
+    radial-gradient(circle at 78% 0%, rgba(255, 47, 85, .1), transparent 28%),
+    linear-gradient(135deg, #030304 0%, #0a070a 48%, #030304 100%) !important;
 }
 
 .ot-workflow-actions {
@@ -1044,208 +1095,4 @@ body.ot-table-expanded {
   .ot-card .ot-month-card { min-height: 125px !important; padding: 16px !important; }
   .ot-topbar .ot-notification-menu { right: -58px !important; }
   .ot-today-head { align-items: flex-start; flex-direction: column; }
-}
-
-
-/* =========================================================
-   INFORMACION REPORTADA POR EL CLIENTE - ESTILO DMI
-   ========================================================= */
-
-.ot-client-report {
-  position: relative;
-  margin: 22px 0;
-  padding: 24px;
-  border: 1px solid rgba(255, 47, 85, 0.55);
-  background:
-    linear-gradient(145deg, rgba(28, 12, 17, 0.98), rgba(7, 7, 9, 0.99));
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 47, 85, 0.06),
-    0 18px 42px rgba(0, 0, 0, 0.42);
-  overflow: hidden;
-}
-
-.ot-client-report::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 82px;
-  height: 3px;
-  background: var(--ot-red);
-  box-shadow: 0 0 18px rgba(255, 47, 85, 0.55);
-}
-
-.ot-client-report::after {
-  content: "";
-  position: absolute;
-  right: -55px;
-  top: -70px;
-  width: 190px;
-  height: 190px;
-  border: 1px solid rgba(255, 47, 85, 0.12);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 24px rgba(255, 47, 85, 0.025),
-    0 0 0 48px rgba(255, 47, 85, 0.018);
-  pointer-events: none;
-}
-
-.ot-client-report-head {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding-bottom: 18px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid rgba(255, 47, 85, 0.22);
-}
-
-.ot-client-report-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  color: var(--ot-red);
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.ot-client-report-label i {
-  font-size: 0.9rem;
-}
-
-.ot-client-report-head h3 {
-  margin: 0;
-  color: #fff;
-  font-size: clamp(1.05rem, 2vw, 1.35rem);
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.ot-client-report-icon {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 54px;
-  height: 54px;
-  flex: 0 0 54px;
-  border: 1px solid rgba(255, 47, 85, 0.65);
-  background: linear-gradient(145deg, rgba(255, 47, 85, 0.22), rgba(55, 7, 16, 0.55));
-  color: var(--ot-red);
-  font-size: 1.35rem;
-  box-shadow: 0 0 20px rgba(255, 47, 85, 0.08);
-}
-
-.ot-client-report-grid {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.ot-client-report-grid article {
-  position: relative;
-  min-height: 145px;
-  padding: 20px;
-  border: 1px solid rgba(255, 47, 85, 0.38);
-  background:
-    linear-gradient(145deg, rgba(20, 12, 15, 0.96), rgba(7, 7, 9, 0.98));
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 47, 85, 0.035),
-    0 10px 25px rgba(0, 0, 0, 0.25);
-  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
-}
-
-.ot-client-report-grid article:hover {
-  border-color: rgba(255, 47, 85, 0.8);
-  transform: translateY(-2px);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 47, 85, 0.07),
-    0 14px 30px rgba(0, 0, 0, 0.34),
-    0 0 20px rgba(255, 47, 85, 0.07);
-}
-
-.ot-client-report-grid article::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 4px;
-  height: 100%;
-  background: var(--ot-red);
-}
-
-.ot-client-report-grid article > span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  color: var(--ot-red);
-  font-size: 0.7rem;
-  font-weight: 900;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.ot-client-report-grid article > span i {
-  font-size: 0.95rem;
-}
-
-.ot-client-report-grid p {
-  margin: 0;
-  padding-left: 2px;
-  color: rgba(255, 255, 255, 0.92);
-  font-family: 'Orbitron', Arial, sans-serif;
-  font-size: 0.82rem;
-  line-height: 1.8;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.ot-client-report-note {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  margin-top: 15px;
-  padding-top: 13px;
-  border-top: 1px solid rgba(255, 47, 85, 0.16);
-  color: rgba(255, 255, 255, 0.52);
-  font-size: 0.64rem;
-  line-height: 1.55;
-}
-
-.ot-client-report-note i {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: var(--ot-red);
-  font-size: 0.78rem;
-}
-
-@media (max-width: 760px) {
-  .ot-client-report {
-    padding: 18px;
-  }
-
-  .ot-client-report-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ot-client-report-head {
-    align-items: flex-start;
-  }
-
-  .ot-client-report-icon {
-    width: 46px;
-    height: 46px;
-    flex-basis: 46px;
-  }
 }

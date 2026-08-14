@@ -86,6 +86,10 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
     email: "",
     direccion: "",
     ciudad: "",
+    departamento: "",
+    barrio: "",
+    codigoPostal: "",
+    referenciaEnvio: "",
     metodoPago: "Nequi",
     tipoPago: "contra_entrega",
   });
@@ -135,7 +139,9 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
       !formData.telefono ||
       !formData.email ||
       !formData.direccion ||
-      !formData.ciudad
+      !formData.ciudad ||
+      !formData.departamento ||
+      !formData.barrio
     ) {
       showDmiError("Informacion incompleta", "Completa todos los campos para poder registrar tu pedido.");
       return;
@@ -189,6 +195,10 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
       email: "",
       direccion: "",
       ciudad: "",
+      departamento: "",
+      barrio: "",
+      codigoPostal: "",
+      referenciaEnvio: "",
       metodoPago: "Nequi",
       tipoPago: "contra_entrega",
     });
@@ -240,6 +250,14 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
                 <div className="form-row">
                   <input type="text" name="direccion" placeholder="Direccion" value={formData.direccion} onChange={handleChange} />
                   <input type="text" name="ciudad" placeholder="Ciudad" value={formData.ciudad} onChange={handleChange} />
+                </div>
+                <div className="form-row">
+                  <input type="text" name="departamento" placeholder="Departamento" value={formData.departamento} onChange={handleChange} />
+                  <input type="text" name="barrio" placeholder="Barrio" value={formData.barrio} onChange={handleChange} />
+                </div>
+                <div className="form-row">
+                  <input type="text" name="codigoPostal" placeholder="Codigo postal (opcional)" value={formData.codigoPostal} onChange={handleChange} />
+                  <input type="text" name="referenciaEnvio" placeholder="Apartamento, torre o referencia (opcional)" value={formData.referenciaEnvio} onChange={handleChange} />
                 </div>
               </div>
 

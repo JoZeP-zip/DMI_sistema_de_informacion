@@ -9,11 +9,12 @@ from dotenv import load_dotenv
 from typing import Optional
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus
 from urllib.parse import urlparse
-from uuid import UUID
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 import os
+import html
 import jwt
 import json
 import hashlib
@@ -517,7 +518,19 @@ def generar_codigo_orden(conn) -> str:
         {"base": f"{base}%"},
     ).scalar() or 0
     return f"{base}-{int(total_dia) + 1:04d}"
-# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
+# Las comprobaciones de disponibilidad de Codespaces usan HEAD /.
+# FastAPI no crea esta variante automáticamente a partir de GET.
+@app.head("/", include_in_schema=False)
+async def healthcheck_root():
+    return HTMLResponse(status_code=200)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon_placeholder():
+    """Evita un 404 cuando el navegador solicita el icono del sitio."""
+    return HTMLResponse(content="", status_code=204)
+
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, access_token: str = Cookie(None)):
     data = []
@@ -2518,7 +2531,7 @@ async def logout():
         status_code=302
     )
 
-    response.delete_cookie("access_token", samesite="none", secure=True)
+    response.delete_cookie("access_token", path="/", samesite="none", secure=True)
     return response
 
 
@@ -2530,7 +2543,7 @@ async def logout_login():
         pass
 
     response = RedirectResponse(url="/login", status_code=302)
-    response.delete_cookie("access_token", samesite="none", secure=True)
+    response.delete_cookie("access_token", path="/", samesite="none", secure=True)
     return response
 
 
@@ -3471,22 +3484,36 @@ async def api_usuarios():
 
 @app.get("/api/citas")
 async def api_citas():
+    """Entrega citas con tipos compatibles con JSON para el calendario React."""
     try:
         with engine.connect() as conn:
             data = conn.execute(text("""
-                SELECT c.*, v.placa, v.marca, v.codigovehiculo
+                SELECT
+                    c.idcita,
+                    c.vehiculos_idvehiculo,
+                    c.fecha,
+                    c.hora,
+                    COALESCE(c.motivo, '') AS motivo,
+                    COALESCE(c.estado, 'pendiente') AS estado,
+                    COALESCE(c.notas, '') AS notas,
+                    COALESCE(v.placa, '') AS placa,
+                    COALESCE(v.marca, '') AS marca,
+                    COALESCE(v.codigovehiculo, '') AS codigovehiculo
                 FROM dmi.citas c
-                JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
-                ORDER BY c.fecha DESC
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+                ORDER BY c.fecha DESC, c.hora DESC, c.idcita DESC
             """)).mappings().fetchall()
-            result = []
-            for r in data:
-                row = dict(r)
-                row["fecha"] = str(row["fecha"])
-                row["hora"]  = str(row["hora"])
-                result.append(row)
-            return JSONResponse(result)
+            result = [
+                {
+                    **dict(r),
+                    "fecha": str(r.get("fecha") or ""),
+                    "hora": str(r.get("hora") or ""),
+                }
+                for r in data
+            ]
+            return JSONResponse(content=result)
     except Exception as e:
+        print("ERROR api/citas:", repr(e))
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -3500,6 +3527,8 @@ async def actualizar_pedido_catalogo(pedido_id: int, request: Request, access_to
     form = await request.form()
     estado = str(form.get("estado") or "").strip().lower()
     novedad = str(form.get("novedad") or "").strip()[:1000]
+    repartidor_nombre = str(form.get("repartidor_nombre") or "").strip()[:160]
+    repartidor_telefono = str(form.get("repartidor_telefono") or "").strip()[:50]
     estados_permitidos = {"pedido_aceptado", "enviado", "en_camino", "entregado", "pendiente_transferencia", "pendiente_pago_wompi", "cancelado"}
     if estado not in estados_permitidos:
         return RedirectResponse(url="/configuracion?error=Estado+de+pedido+no+valido#pedidos", status_code=303)
@@ -3507,9 +3536,38 @@ async def actualizar_pedido_catalogo(pedido_id: int, request: Request, access_to
         with engine.connect() as conn:
             if not table_exists(conn, "public", "pedidos"):
                 return RedirectResponse(url="/configuracion?error=No+hay+pedidos+de+catalogo#pedidos", status_code=303)
+            # Compatibilidad con pedidos creados antes de activar el reparto.
+            for sentencia in (
+                "ADD COLUMN IF NOT EXISTS departamento text", "ADD COLUMN IF NOT EXISTS barrio text",
+                "ADD COLUMN IF NOT EXISTS codigo_postal text", "ADD COLUMN IF NOT EXISTS referencia_envio text",
+                "ADD COLUMN IF NOT EXISTS repartidor_nombre text", "ADD COLUMN IF NOT EXISTS repartidor_telefono text",
+                "ADD COLUMN IF NOT EXISTS orden_envio varchar(60)", "ADD COLUMN IF NOT EXISTS token_repartidor varchar(80)",
+                "ADD COLUMN IF NOT EXISTS ruta_google_maps text", "ADD COLUMN IF NOT EXISTS latitud_repartidor numeric(10,7)",
+                "ADD COLUMN IF NOT EXISTS longitud_repartidor numeric(10,7)", "ADD COLUMN IF NOT EXISTS ubicacion_actualizada_en timestamptz",
+            ):
+                conn.execute(text(f"ALTER TABLE public.pedidos {sentencia}"))
+            pedido = conn.execute(text("SELECT * FROM public.pedidos WHERE id = :id"), {"id": pedido_id}).mappings().fetchone()
+            if not pedido:
+                return RedirectResponse(url="/configuracion?error=Pedido+no+encontrado#pedidos", status_code=303)
+            # El punto de partida de cada reparto es siempre el local DMI
+            # publicado en la página de Contacto.
+            origen_local = "Carrera 2a B, Soacha, Cundinamarca, Colombia"
+            destino = ", ".join(str(parte).strip() for parte in (pedido.get("direccion"), pedido.get("barrio"), pedido.get("ciudad"), pedido.get("departamento"), "Colombia") if parte and str(parte).strip())
+            orden_envio = pedido.get("orden_envio")
+            token_repartidor = pedido.get("token_repartidor")
+            ruta_google_maps = pedido.get("ruta_google_maps")
+            if repartidor_nombre and repartidor_telefono:
+                orden_envio = orden_envio or f"ENV-{datetime.now().strftime('%Y%m%d')}-{pedido_id:05d}"
+                token_repartidor = token_repartidor or uuid4().hex
+                ruta_google_maps = f"https://www.google.com/maps/dir/?api=1&origin={quote_plus(origen_local)}&destination={quote_plus(destino)}&travelmode=driving" if destino else None
             resultado = conn.execute(
-                text("UPDATE public.pedidos SET estado = :estado, novedad = :novedad WHERE id = :id"),
-                {"estado": estado, "novedad": novedad or None, "id": pedido_id},
+                text("""UPDATE public.pedidos SET estado=:estado, novedad=:novedad,
+                    repartidor_nombre=:repartidor_nombre, repartidor_telefono=:repartidor_telefono,
+                    orden_envio=:orden_envio, token_repartidor=:token_repartidor,
+                    ruta_google_maps=:ruta_google_maps WHERE id=:id"""),
+                {"estado": estado, "novedad": novedad or None, "id": pedido_id, "repartidor_nombre": repartidor_nombre or None,
+                 "repartidor_telefono": repartidor_telefono or None, "orden_envio": orden_envio,
+                 "token_repartidor": token_repartidor, "ruta_google_maps": ruta_google_maps},
             )
             if resultado.rowcount == 0:
                 return RedirectResponse(url="/configuracion?error=Pedido+no+encontrado#pedidos", status_code=303)
@@ -3517,6 +3575,71 @@ async def actualizar_pedido_catalogo(pedido_id: int, request: Request, access_to
         return RedirectResponse(url="/configuracion?success=Pedido+actualizado#pedidos", status_code=303)
     except Exception as e:
         return RedirectResponse(url="/configuracion?error=" + quote(str(e)) + "#pedidos", status_code=303)
+
+
+def _pedido_repartidor_valido(conn, pedido_id: int, token: str):
+    if not token:
+        return None
+    return conn.execute(text("SELECT * FROM public.pedidos WHERE id=:id AND token_repartidor=:token AND activo=TRUE"), {"id": pedido_id, "token": token}).mappings().fetchone()
+
+
+def _ficha_orden_envio(pedido: dict, iniciar_endpoint: str, ubicacion_endpoint: str):
+    """HTML autocontenido: evita errores por rutas o plantillas faltantes."""
+    seguro = lambda valor: html.escape(str(valor or ""))
+    direccion = ", ".join(str(parte).strip() for parte in (pedido.get("direccion"), pedido.get("barrio"), pedido.get("ciudad"), pedido.get("departamento")) if parte)
+    referencia = pedido.get("referencia_envio")
+    ruta = pedido.get("ruta_google_maps")
+    boton_ruta = ("<a class='button alt' target='_blank' rel='noopener' href='" + seguro(ruta) + "'>ABRIR RUTA EN GOOGLE MAPS</a>") if ruta else ""
+    bloque_referencia = ("<div class='field wide'><span>REFERENCIA</span><strong>" + seguro(referencia) + "</strong></div>") if referencia else ""
+    return """<!doctype html><html lang='es'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Orden de envío | DMI</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center;background:radial-gradient(circle at 20% 15%,#351019 0,transparent 34%),#07080c;color:#f6f7fa;font-family:Arial,sans-serif}.card{width:min(680px,100%);padding:clamp(24px,5vw,45px);border:1px solid #ff3158;background:linear-gradient(135deg,rgba(35,10,17,.96),rgba(13,17,25,.98));box-shadow:0 20px 60px #000}.eyebrow{color:#ff5271;letter-spacing:3px;font-size:11px;font-weight:700}.brand{font-size:clamp(34px,7vw,54px);margin:8px 0 4px}.brand b{color:#ff3158}.sub{color:#b6bac5;margin:0 0 28px}.code{display:inline-block;border:1px solid #ff3158;padding:8px 12px;font-weight:bold;margin-bottom:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{padding:14px;border:1px solid #3b414d;background:rgba(255,255,255,.035)}.field span{display:block;color:#ff6983;font-size:10px;letter-spacing:1.6px;margin-bottom:7px}.wide{grid-column:1/-1}.actions{display:grid;gap:12px;margin-top:26px}.button{border:1px solid #ff3158;background:#ff3158;color:#fff;text-decoration:none;text-align:center;padding:15px 18px;font-weight:800;letter-spacing:.7px;cursor:pointer}.button.alt{background:transparent}.note{font-size:12px;color:#aeb4c0;line-height:1.45;margin:18px 0 0}.status{font-size:13px;color:#86ebb0;min-height:20px}@media(max-width:540px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}</style></head><body><main class='card'><div class='eyebrow'>DMI / ORDEN DE REPARTO</div><h1 class='brand'>ENVIAR <b>PEDIDO</b></h1><p class='sub'>Abre la ruta, inicia el reparto y permite la ubicación para que el cliente pueda seguir el pedido.</p><div class='code'>""" + seguro(pedido.get("orden_envio") or f"ENV-{pedido.get('id')}") + """</div><section class='grid'><div class='field'><span>CLIENTE</span><strong>""" + seguro(pedido.get("nombre")) + """</strong></div><div class='field'><span>TELÉFONO</span><strong>""" + seguro(pedido.get("telefono")) + """</strong></div><div class='field wide'><span>DIRECCIÓN DE ENTREGA</span><strong>""" + seguro(direccion) + """</strong></div>""" + bloque_referencia + """</section><div class='actions'>""" + boton_ruta + """<button class='button' id='iniciar' type='button'>INICIAR REPARTO Y COMPARTIR UBICACIÓN</button><div id='estado' class='status'></div></div><p class='note'>Mantén esta página abierta y permite la ubicación mientras realizas el envío.</p></main><script>const iniciarEndpoint=""" + json.dumps(iniciar_endpoint) + """,ubicacionEndpoint=""" + json.dumps(ubicacion_endpoint) + """,estado=document.getElementById('estado');let activo=false;async function enviar(pos){const{latitude:a,longitude:b}=pos.coords;try{await fetch(ubicacionEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitud:a,longitud:b})})}catch(_){}}document.getElementById('iniciar').addEventListener('click',async()=>{const b=document.getElementById('iniciar');b.disabled=true;try{await fetch(iniciarEndpoint,{method:'POST'});if(!navigator.geolocation){estado.textContent='Este dispositivo no permite compartir ubicación.';return}if(!activo){activo=true;navigator.geolocation.watchPosition(enviar,()=>{estado.textContent='No pudimos obtener la ubicación. Revisa los permisos.'},{enableHighAccuracy:true,maximumAge:30000,timeout:15000})}estado.textContent='Reparto iniciado. Tu ubicación se está compartiendo con el cliente.'}catch(_){estado.textContent='No fue posible iniciar el reparto. Intenta nuevamente.';b.disabled=false}});</script></body></html>"""
+
+
+@app.get("/api/repartidor/envio/{pedido_id}", response_class=HTMLResponse)
+async def orden_envio_repartidor(pedido_id: int, request: Request, token: str = ""):
+    try:
+        with engine.connect() as conn:
+            pedido = _pedido_repartidor_valido(conn, pedido_id, token)
+        if not pedido:
+            raise HTTPException(status_code=404, detail="La orden de envio no existe o el enlace no es valido")
+        return HTMLResponse(_ficha_orden_envio(dict(pedido), f"/api/repartidor/envios/{pedido_id}/iniciar?token={quote(token)}", f"/api/repartidor/envios/{pedido_id}/ubicacion?token={quote(token)}"))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="No fue posible abrir la orden de envio") from e
+
+
+@app.post("/api/repartidor/envios/{pedido_id}/iniciar")
+async def iniciar_envio_repartidor(pedido_id: int, request: Request, token: str = ""):
+    try:
+        with engine.connect() as conn:
+            if not _pedido_repartidor_valido(conn, pedido_id, token):
+                return JSONResponse({"error": "Enlace de reparto no valido"}, status_code=404)
+            conn.execute(text("""UPDATE public.pedidos SET estado=CASE WHEN estado IN ('entregado','cancelado') THEN estado ELSE 'en_camino' END,
+                novedad=CASE WHEN estado IN ('entregado','cancelado') THEN novedad ELSE 'Tu pedido esta en camino con el repartidor asignado.' END WHERE id=:id"""), {"id": pedido_id})
+            conn.commit()
+        return JSONResponse({"ok": True})
+    except Exception:
+        return JSONResponse({"error": "No fue posible iniciar el envio"}, status_code=500)
+
+
+@app.post("/api/repartidor/envios/{pedido_id}/ubicacion")
+async def actualizar_ubicacion_repartidor(pedido_id: int, request: Request, token: str = ""):
+    try:
+        datos = await request.json()
+        latitud, longitud = float(datos.get("latitud")), float(datos.get("longitud"))
+        if not (-90 <= latitud <= 90 and -180 <= longitud <= 180):
+            return JSONResponse({"error": "Ubicacion no valida"}, status_code=400)
+        with engine.connect() as conn:
+            if not _pedido_repartidor_valido(conn, pedido_id, token):
+                return JSONResponse({"error": "Enlace de reparto no valido"}, status_code=404)
+            conn.execute(text("""UPDATE public.pedidos SET latitud_repartidor=:latitud, longitud_repartidor=:longitud,
+                ubicacion_actualizada_en=NOW(), estado=CASE WHEN estado IN ('entregado','cancelado') THEN estado ELSE 'en_camino' END WHERE id=:id"""), {"id": pedido_id, "latitud": latitud, "longitud": longitud})
+            conn.commit()
+        return JSONResponse({"ok": True})
+    except (TypeError, ValueError):
+        return JSONResponse({"error": "Ubicacion no valida"}, status_code=400)
+    except Exception:
+        return JSONResponse({"error": "No fue posible actualizar la ubicacion"}, status_code=500)
 
 
 #  GET /configuracion 
@@ -4779,6 +4902,9 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
         datos = body.get("datos") or {}
         if not isinstance(items, list) or not items:
             return JSONResponse({"error": "El carrito no tiene productos"}, status_code=400)
+        campos_envio = ("nombre", "telefono", "email", "direccion", "ciudad", "departamento", "barrio")
+        if not isinstance(datos, dict) or any(not str(datos.get(campo) or "").strip() for campo in campos_envio):
+            return JSONResponse({"error": "Completa los datos de contacto y la direccion de envio"}, status_code=400)
 
         productos, total_calculado = [], 0.0
         for item in items:
@@ -4822,6 +4948,10 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
                         email TEXT,
                         direccion TEXT,
                         ciudad TEXT,
+                        departamento TEXT,
+                        barrio TEXT,
+                        codigo_postal TEXT,
+                        referencia_envio TEXT,
                         metodo_pago TEXT,
                         total NUMERIC(14,2) NOT NULL DEFAULT 0,
                         productos JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -4831,6 +4961,14 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
                         codigo_pedido VARCHAR(50),
                         tipo_pago VARCHAR(40) NOT NULL DEFAULT 'contra_entrega',
                         novedad TEXT,
+                        repartidor_nombre TEXT,
+                        repartidor_telefono TEXT,
+                        orden_envio VARCHAR(60),
+                        token_repartidor VARCHAR(80),
+                        ruta_google_maps TEXT,
+                        latitud_repartidor NUMERIC(10,7),
+                        longitud_repartidor NUMERIC(10,7),
+                        ubicacion_actualizada_en TIMESTAMPTZ,
                         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     )
                 """))
@@ -4843,6 +4981,18 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS codigo_pedido varchar(50)"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS tipo_pago varchar(40) DEFAULT 'contra_entrega'"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS novedad text"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS departamento text"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS barrio text"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS codigo_postal text"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS referencia_envio text"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS repartidor_nombre text"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS repartidor_telefono text"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS orden_envio varchar(60)"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS token_repartidor varchar(80)"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS ruta_google_maps text"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS latitud_repartidor numeric(10,7)"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS longitud_repartidor numeric(10,7)"))
+            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS ubicacion_actualizada_en timestamptz"))
             columnas = table_columns(conn, "public", "pedidos")
             tipo_pago = str(datos.get("tipoPago") or datos.get("tipo_pago") or "contra_entrega").strip().lower()
             if tipo_pago not in {"contra_entrega", "transferencia", "wompi"}:
@@ -4856,7 +5006,9 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
             valores = {
                 "nombre": datos.get("nombre"), "telefono": datos.get("telefono"),
                 "email": usuario.get("email") or datos.get("email"), "direccion": datos.get("direccion"),
-                "ciudad": datos.get("ciudad"), "metodo_pago": datos.get("metodoPago") or datos.get("metodo_pago"),
+                "ciudad": datos.get("ciudad"), "departamento": datos.get("departamento"), "barrio": datos.get("barrio"),
+                "codigo_postal": datos.get("codigoPostal"), "referencia_envio": datos.get("referenciaEnvio"),
+                "metodo_pago": datos.get("metodoPago") or datos.get("metodo_pago"),
                 "total": total_calculado, "productos": json.dumps(productos),
                 "usuarios_idusuarios": usuario.get("idusuarios"), "activo": True, "estado": estado_pedido,
                 "codigo_pedido": codigo_pedido, "tipo_pago": tipo_pago,

@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -271,6 +272,46 @@
             background: transparent !important;
             color: #ffffff !important;
         }
+        /* Cabecera y fichas de control: mismo lenguaje visual que el portal DMI. */
+        .cfg-command-header { position: relative; overflow: hidden; display: flex; justify-content: space-between; gap: 24px; align-items: end; margin: 0 0 22px; padding: 27px 30px; border: 1px solid rgba(255,64,87,.68); background: linear-gradient(112deg, rgba(10,11,15,.98), rgba(43,6,16,.92)); box-shadow: 0 18px 42px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04); }
+        .cfg-command-header::after { content: 'DMI'; position: absolute; right: 22px; bottom: -28px; color: rgba(255,64,87,.09); font: 900 clamp(5rem,12vw,10rem)/1 'Orbitron','Rajdhani',sans-serif; letter-spacing: -.08em; pointer-events: none; }
+        .cfg-command-copy, .cfg-command-status { position: relative; z-index: 1; }
+        .cfg-command-copy span { display:block; margin-bottom: 8px; color:#ff4057; font:900 .72rem/1 'Orbitron','Rajdhani',sans-serif; letter-spacing:.2em; text-transform:uppercase; }
+        .cfg-command-copy h1 { margin:0; color:#fff; font:900 clamp(1.65rem,3vw,2.6rem)/1 'Orbitron','Rajdhani',sans-serif; text-transform:uppercase; }
+        .cfg-command-copy h1 b { color:#ff4057; font-weight:900; }
+        .cfg-command-copy p { max-width:680px; margin:10px 0 0; color:rgba(255,255,255,.68); font:700 1.02rem/1.35 'Rajdhani',Arial,sans-serif; }
+        .cfg-command-status { min-width:172px; padding:12px 15px; border:1px solid rgba(255,64,87,.45); background:rgba(0,0,0,.42); color:#fff; text-align:right; font:800 .77rem/1.35 'Orbitron','Rajdhani',sans-serif; letter-spacing:.07em; text-transform:uppercase; }
+        .cfg-command-status i { color:#31db7b; margin-right:6px; }
+        .cfg-catalog-orders { margin-top:24px; padding:24px; border:1px solid rgba(255,64,87,.58); background:linear-gradient(135deg,rgba(17,18,24,.98),rgba(20,4,10,.94)); box-shadow:0 20px 38px rgba(0,0,0,.32); }
+        .cfg-catalog-orders-head { display:flex; justify-content:space-between; gap:18px; align-items:end; padding-bottom:18px; border-bottom:1px solid rgba(255,64,87,.35); }
+        .cfg-catalog-orders-head span { display:block; color:#ff4057; font:900 .72rem/1 'Orbitron','Rajdhani',sans-serif; letter-spacing:.18em; text-transform:uppercase; }
+        .cfg-catalog-orders-head h2 { margin:8px 0 0; color:#fff; font:900 clamp(1.3rem,2.3vw,2rem)/1 'Orbitron','Rajdhani',sans-serif; text-transform:uppercase; }
+        .cfg-catalog-orders-head p { max-width:390px; margin:0; color:rgba(255,255,255,.6); text-align:right; font:700 1rem/1.35 'Rajdhani',Arial,sans-serif; }
+        .cfg-catalog-orders-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; margin-top:20px; }
+        .cfg-order-card { overflow:hidden; border:1px solid rgba(255,64,87,.5); background:linear-gradient(145deg,rgba(6,7,10,.96),rgba(42,5,15,.9)); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }
+        .cfg-order-card-head { display:flex; align-items:start; justify-content:space-between; gap:12px; padding:18px; border-bottom:1px solid rgba(255,64,87,.28); background:rgba(255,64,87,.055); }
+        .cfg-order-label { display:block; color:rgba(255,255,255,.56); font:900 .68rem/1 'Orbitron','Rajdhani',sans-serif; letter-spacing:.16em; text-transform:uppercase; }
+        .cfg-order-card h3 { margin:7px 0 5px; color:#fff; font:900 1.05rem/1.2 'Orbitron','Rajdhani',sans-serif; word-break:break-word; }
+        .cfg-order-card time { color:rgba(255,255,255,.58); font:700 .9rem/1 'Rajdhani',Arial,sans-serif; }
+        .cfg-order-state { flex:0 0 auto; padding:7px 9px; border:1px solid rgba(255,64,87,.55); color:#ff7888; background:rgba(255,64,87,.1); font:900 .65rem/1.15 'Orbitron','Rajdhani',sans-serif; letter-spacing:.06em; text-align:center; text-transform:uppercase; }
+        .cfg-order-details { display:grid; grid-template-columns:1.35fr .65fr; gap:10px; padding:16px 18px 10px; }
+        .cfg-order-detail { min-width:0; padding:12px; border:1px solid rgba(255,255,255,.11); background:rgba(255,255,255,.025); }
+        .cfg-order-detail span,.cfg-order-address span,.cfg-order-form label { display:block; color:#ff6a7c; font:900 .66rem/1.1 'Orbitron','Rajdhani',sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+        .cfg-order-detail strong { display:block; margin-top:7px; color:#fff; font:800 1rem/1.2 'Rajdhani',Arial,sans-serif; overflow-wrap:anywhere; }
+        .cfg-order-detail small { display:block; margin-top:5px; color:rgba(255,255,255,.56); font:700 .85rem/1.25 'Rajdhani',Arial,sans-serif; overflow-wrap:anywhere; }
+        .cfg-order-address { margin:0 18px 16px; padding:12px; border-left:2px solid #ff4057; background:rgba(255,64,87,.045); }
+        .cfg-order-address p { margin:7px 0 0; color:rgba(255,255,255,.74); font:700 .96rem/1.35 'Rajdhani',Arial,sans-serif; }
+        .cfg-order-form { padding:16px 18px 18px; border-top:1px solid rgba(255,64,87,.24); background:rgba(0,0,0,.22); }
+        .cfg-order-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
+        .cfg-order-form label { color:rgba(255,255,255,.68); }
+        .cfg-order-form .form-select,.cfg-order-form .form-control { width:100%; margin-top:6px; min-height:40px; border-color:rgba(255,64,87,.38); background:rgba(0,0,0,.68); color:#fff; font:700 .94rem 'Rajdhani',Arial,sans-serif; }
+        .cfg-order-form textarea.form-control { min-height:78px; resize:vertical; }
+        .cfg-order-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:15px; }
+        .cfg-order-actions .btn { border-radius:0; padding:10px 13px; font:900 .73rem/1 'Orbitron','Rajdhani',sans-serif; letter-spacing:.06em; text-transform:uppercase; }
+        .cfg-order-actions .btn-primary { border-color:#ff4057; background:#ff4057; }
+        .cfg-order-actions .btn-outline-light { border-color:rgba(255,255,255,.44); color:#fff; }
+        .cfg-order-empty { grid-column:1/-1; padding:34px; border:1px dashed rgba(255,64,87,.45); color:rgba(255,255,255,.62); text-align:center; font:800 1.05rem 'Rajdhani',Arial,sans-serif; }
+        @media (max-width: 760px) { .cfg-command-header,.cfg-catalog-orders-head { align-items:start; flex-direction:column; } .cfg-command-status,.cfg-catalog-orders-head p { text-align:left; } .cfg-catalog-orders { padding:16px; } .cfg-catalog-orders-grid { grid-template-columns:1fr; } .cfg-order-details,.cfg-order-form-grid { grid-template-columns:1fr; } }
     </style>
 
 </head>
@@ -342,6 +383,15 @@
             {% if error %}<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endif %}
             {% if success_msg %}<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i>{{ success_msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endif %}
 
+            <section class="cfg-command-header">
+                <div class="cfg-command-copy">
+                    <span>Administración / Disol Motors</span>
+                    <h1>Centro de <b>control</b></h1>
+                    <p>Administra operaciones, inventario, clientes, envíos y la configuración general del taller desde un solo punto.</p>
+                </div>
+                <div class="cfg-command-status"><i class="bi bi-activity"></i>Sistema operativo<br><span>Configuración DMI</span></div>
+            </section>
+
             <div id="panel-pedidos" class="cfg-panel active">
                 <div class="row g-4"><div class="col-lg-4"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold text-primary mb-3">Pedido</h5>
                 <form action="/config/pedidos/nuevo" method="POST">
@@ -357,9 +407,41 @@
                 <div class="col-lg-8"><div class="card shadow-sm border-0"><div class="card-body"><h5 class="card-title fw-bold mb-3">Pedidos</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>ID</th><th>Codigo</th><th>Fecha Cita</th><th>Estado</th><th>Oficina</th><th>Acciones</th></tr></thead><tbody>
                 {% for p in pedidos %}<tr><td>{{p.idpedido}}</td><td>{{p.codigopedido}}</td><td>{{p.fecha_cita}}</td><td><span class="badge bg-warning text-dark">{{p.estado}}</span></td><td>{{p.oficinas_idoficinas}}</td><td class="cfg-actions-cell"><button type="button" class="cfg-row-btn edit" onclick="confirmEditConfigRecord(document.getElementById('panel-pedidos'), '{{ p.idpedido }}')"><i class="bi bi-pencil-square"></i> Editar</button><button type="button" class="cfg-row-btn delete" onclick="deleteConfigRecord(document.getElementById('panel-pedidos'), '{{ p.idpedido }}')"><i class="bi bi-slash-circle"></i> Desactivar</button></td></tr>{% else %}<tr><td colspan="5" class="text-center text-muted">Sin registros.</td></tr>{% endfor %}
                 </tbody></table></div></div></div></div></div>
-                <div class="card shadow-sm border-0 mt-4"><div class="card-body"><h5 class="card-title fw-bold mb-3">Pedidos del catálogo web</h5><div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead class="table-dark"><tr><th>Pedido</th><th>Cliente</th><th>Total</th><th>Pago</th><th>Estado y novedad</th><th>Actualizar</th></tr></thead><tbody>
-                {% for p in pedidos_catalogo %}<tr><td><strong>{{p.codigo_pedido or ('PED-' ~ p.id)}}</strong><br><small>{{p.created_at}}</small></td><td>{{p.cliente_nombre or p.nombre or p.email}}</td><td>${{p.total}}</td><td><span class="badge bg-secondary">{{p.tipo_pago or p.metodo_pago}}</span></td><td><select class="form-select form-select-sm mb-2" name="estado" form="pedido-form-{{p.id}}"><option value="pedido_aceptado" {% if p.estado == 'pedido_aceptado' %}selected{% endif %}>Pedido aceptado</option><option value="pendiente_transferencia" {% if p.estado == 'pendiente_transferencia' %}selected{% endif %}>Pendiente transferencia</option><option value="pendiente_pago_wompi" {% if p.estado == 'pendiente_pago_wompi' %}selected{% endif %}>Pendiente pago Wompi</option><option value="enviado" {% if p.estado == 'enviado' %}selected{% endif %}>Enviado</option><option value="en_camino" {% if p.estado == 'en_camino' %}selected{% endif %}>En camino</option><option value="entregado" {% if p.estado == 'entregado' %}selected{% endif %}>Entregado</option><option value="cancelado" {% if p.estado == 'cancelado' %}selected{% endif %}>Cancelado</option></select><textarea class="form-control form-control-sm" name="novedad" form="pedido-form-{{p.id}}" placeholder="Novedad para el cliente">{{p.novedad or ''}}</textarea></td><td><form id="pedido-form-{{p.id}}" action="/admin/pedidos-catalogo/{{p.id}}/actualizar" method="POST"><button class="btn btn-primary btn-sm" type="submit">Guardar</button></form></td></tr>{% else %}<tr><td colspan="6" class="text-center text-muted">Aún no hay pedidos web.</td></tr>{% endfor %}
-                </tbody></table></div></div></div>
+                <section class="cfg-catalog-orders">
+                    <header class="cfg-catalog-orders-head">
+                        <div><span>Ventas en línea / Catálogo DMI</span><h2>Pedidos del catálogo</h2></div>
+                        <p>Cada pedido tiene su propia ficha: pago, datos de entrega, repartidor, novedad y estado de despacho.</p>
+                    </header>
+                    <div class="cfg-catalog-orders-grid">
+                    {% for p in pedidos_catalogo %}
+                        <article class="cfg-order-card">
+                            <header class="cfg-order-card-head">
+                                <div><span class="cfg-order-label">Pedido de catálogo</span><h3>{{p.codigo_pedido or ('PED-' ~ p.id)}}</h3><time>{{p.created_at}}</time></div>
+                                <span class="cfg-order-state">{{(p.estado or 'pedido_aceptado')|replace('_', ' ')}}</span>
+                            </header>
+                            <div class="cfg-order-details">
+                                <div class="cfg-order-detail"><span>Cliente</span><strong>{{p.cliente_nombre or p.nombre or p.email}}</strong><small>{{p.email or 'Sin correo'}}<br>{{p.telefono or 'Sin teléfono'}}</small></div>
+                                <div class="cfg-order-detail"><span>Pago</span><strong>{{p.tipo_pago or p.metodo_pago or 'Por definir'}}</strong><small>Total: ${{p.total or 0}}</small></div>
+                            </div>
+                            <div class="cfg-order-address"><span><i class="bi bi-geo-alt-fill me-1"></i>Dirección de entrega</span><p>{{p.direccion or 'Dirección pendiente'}}{% if p.barrio %}, {{p.barrio}}{% endif %}{% if p.ciudad %}<br>{{p.ciudad}}{% if p.departamento %}, {{p.departamento}}{% endif %}{% endif %}{% if p.codigo_postal %}<br>C.P. {{p.codigo_postal}}{% endif %}{% if p.referencia_envio %}<br>Referencia: {{p.referencia_envio}}{% endif %}</p></div>
+                            <form id="pedido-form-{{p.id}}" class="cfg-order-form" action="/admin/pedidos-catalogo/{{p.id}}/actualizar" method="POST">
+                                <div class="cfg-order-form-grid">
+                                    <label>Estado del pedido<select class="form-select" name="estado"><option value="pedido_aceptado" {% if p.estado == 'pedido_aceptado' %}selected{% endif %}>Pedido aceptado</option><option value="pendiente_transferencia" {% if p.estado == 'pendiente_transferencia' %}selected{% endif %}>Pendiente transferencia</option><option value="pendiente_pago_wompi" {% if p.estado == 'pendiente_pago_wompi' %}selected{% endif %}>Pendiente pago Wompi</option><option value="enviado" {% if p.estado == 'enviado' %}selected{% endif %}>Enviado</option><option value="en_camino" {% if p.estado == 'en_camino' %}selected{% endif %}>En camino</option><option value="entregado" {% if p.estado == 'entregado' %}selected{% endif %}>Entregado</option><option value="cancelado" {% if p.estado == 'cancelado' %}selected{% endif %}>Cancelado</option></select></label>
+                                    <label>Novedad para el cliente<textarea class="form-control" name="novedad" placeholder="Ej. El repartidor llega entre 2 y 4 p.m.">{{p.novedad or ''}}</textarea></label>
+                                    <label>Nombre del repartidor<input class="form-control" name="repartidor_nombre" placeholder="Nombre completo" value="{{p.repartidor_nombre or ''}}"></label>
+                                    <label>Teléfono del repartidor<input class="form-control" name="repartidor_telefono" placeholder="Número de contacto" value="{{p.repartidor_telefono or ''}}"></label>
+                                </div>
+                                <div class="cfg-order-actions">
+                                    {% if p.orden_envio and p.token_repartidor %}<a class="btn btn-outline-light" target="_blank" rel="noreferrer" href="/api/repartidor/envio/{{p.id}}?token={{p.token_repartidor}}"><i class="bi bi-box-arrow-up-right me-1"></i>{{p.orden_envio}}</a>{% endif %}
+                                    <button class="btn btn-primary" type="submit"><i class="bi bi-save2 me-1"></i>Guardar y asignar</button>
+                                </div>
+                            </form>
+                        </article>
+                    {% else %}
+                        <div class="cfg-order-empty"><i class="bi bi-bag-x me-2"></i>Aún no hay pedidos registrados desde el catálogo.</div>
+                    {% endfor %}
+                    </div>
+                </section>
             </div>
 
             <div id="panel-citas" class="cfg-panel">

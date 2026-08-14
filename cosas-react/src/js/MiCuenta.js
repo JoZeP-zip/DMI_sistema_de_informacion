@@ -47,10 +47,19 @@ const EmptyState = ({ icon = 'bi-info-circle', text }) => (
   </div>
 );
 
+const sectionSymbols = {
+  'bi-tools': '⚙',
+  'bi-box-seam-fill': '◈',
+  'bi-activity': '◉',
+  'bi-receipt-cutoff': '▤',
+  'bi-bag-check-fill': '▣',
+  'bi-clock-history': '◷',
+};
+
 const Section = ({ title, icon, children, className = '' }) => (
   <article className={`user-account-card ${className}`}>
     <div className="user-account-card-head">
-      <h3><i className={`bi ${icon}`} /> {title}</h3>
+      <h3><span className="user-section-symbol">{sectionSymbols[icon] || '◆'}</span> {title}</h3>
     </div>
     {children}
   </article>
@@ -92,6 +101,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const [respondiendoCotizacion, setRespondiendoCotizacion] = useState(false);
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
   const [facturaAPagar, setFacturaAPagar] = useState(null);
+  const [seccionActiva, setSeccionActiva] = useState('resumen');
 
   useEffect(() => {
     let mounted = true;
@@ -292,27 +302,26 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     <main className="user-account-shell">
       <section className="user-account-hero">
         <div>
-          <span>Centro del cliente</span>
+          <span><i className="bi bi-cpu" /> Panel personal / DMI</span>
           <h1>Mi <strong>Cuenta</strong></h1>
           <p>
-            Hola, <b>{nombre}</b>. Aqui puedes ver tus vehiculos, citas,
-            ordenes de trabajo, productos usados, facturas e historial.
+            Hola, <b>{nombre}</b>. Gestiona tu vehículo, servicios, compras y facturas desde un solo centro de control.
           </p>
         </div>
         <div className="user-account-actions">
-          <button type="button" onClick={onAddVehicle}>Agregar vehiculo</button>
-          <button type="button" className="outline" onClick={onScheduleAppointment}>Agendar cita</button>
+          <button type="button" onClick={onAddVehicle}><i className="bi bi-car-front-fill" /> Agregar vehículo</button>
+          <button type="button" className="outline" onClick={onScheduleAppointment}><i className="bi bi-calendar-plus" /> Agendar cita</button>
         </div>
       </section>
 
       <section className="user-account-summary">
-        <article><span>Vehiculos</span><strong>{resumen.vehiculos || 0}</strong></article>
-        <article><span>Citas activas</span><strong>{resumen.citas_activas || 0}</strong></article>
-        <article><span>Ordenes activas</span><strong>{resumen.ordenes_activas || 0}</strong></article>
-        <article><span>Facturas pendientes</span><strong>{resumen.facturas_pendientes || 0}</strong></article>
+        <article><b className="user-summary-symbol">▣</b><div><span>Vehículos</span><strong>{resumen.vehiculos || 0}</strong></div></article>
+        <article><b className="user-summary-symbol">◷</b><div><span>Citas activas</span><strong>{resumen.citas_activas || 0}</strong></div></article>
+        <article><b className="user-summary-symbol">⚙</b><div><span>Órdenes activas</span><strong>{resumen.ordenes_activas || 0}</strong></div></article>
+        <article><b className="user-summary-symbol">▤</b><div><span>Facturas pendientes</span><strong>{resumen.facturas_pendientes || 0}</strong></div></article>
       </section>
 
-      <section className="user-priority-grid">
+      {seccionActiva === 'resumen' && <section className="user-priority-grid">
         <article className="user-priority-card user-vehicle-focus">
           <div className="user-priority-head"><span><i className="bi bi-car-front-fill" /> Mi vehiculo</span><button type="button" onClick={onAddVehicle}><i className="bi bi-plus-lg" /> Agregar</button></div>
           {vehiculosCuenta.length ? <>
@@ -335,14 +344,29 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
           <div className="user-priority-head"><span><i className="bi bi-file-earmark-text-fill" /> Cotizacion</span><i className="bi bi-shield-check" /></div>
           {cotizacionPendiente ? <div className="user-quote-feature"><strong>{cotizacionPendiente.codigo_cotizacion}</strong><span>Tu taller espera tu respuesta</span><b>{money(cotizacionPendiente.total)}</b><button type="button" onClick={() => abrirCotizacion(cotizacionPendiente)}>Revisar cotizacion <i className="bi bi-arrow-right" /></button></div> : <EmptyState icon="bi-file-earmark-check" text={cotizacionesVehiculo.length ? 'No tienes cotizaciones pendientes.' : 'No tienes cotizaciones enviadas.'} />}
         </article>
-      </section>
+      </section>}
 
-      <section className="user-account-card wide user-quotes-priority">
+      <nav className="user-account-navigation" aria-label="Secciones de Mi Cuenta">
+        <button type="button" className={seccionActiva === 'resumen' ? 'active' : ''} onClick={() => setSeccionActiva('resumen')}>◆ Resumen</button>
+        <button type="button" className={seccionActiva === 'cotizaciones' ? 'active' : ''} onClick={() => setSeccionActiva('cotizaciones')}>▧ Cotizaciones</button>
+        <button type="button" className={seccionActiva === 'taller' ? 'active' : ''} onClick={() => setSeccionActiva('taller')}>⚙ Mi taller</button>
+        <button type="button" className={seccionActiva === 'facturas' ? 'active' : ''} onClick={() => setSeccionActiva('facturas')}>▤ Facturas</button>
+        <button type="button" className={seccionActiva === 'pedidos' ? 'active' : ''} onClick={() => setSeccionActiva('pedidos')}>▣ Pedidos</button>
+        <button type="button" className={seccionActiva === 'historial' ? 'active' : ''} onClick={() => setSeccionActiva('historial')}>◷ Historial</button>
+      </nav>
+
+      {seccionActiva === 'resumen' && <section className="user-account-card wide user-account-welcome">
+        <div className="user-account-card-head"><h3><i className="bi bi-stars" /> Todo organizado para ti</h3></div>
+        <p>Elige una categoría para consultar el detalle de tu taller, facturas, cotizaciones, pedidos e historial sin mezclar toda la información.</p>
+      </section>}
+
+      {seccionActiva === 'cotizaciones' && <section className="user-account-card wide user-quotes-priority">
         <div className="user-account-card-head"><h3><i className="bi bi-file-earmark-text" /> Mis cotizaciones</h3></div>
         {cotizacionesVehiculo.length ? <div className="user-account-list">{cotizacionesVehiculo.map((cotizacion) => <div className="user-account-item user-action-item" key={cotizacion.idcotizacion}><strong>{cotizacion.codigo_cotizacion}</strong><span>{money(cotizacion.total)} | Orden {cotizacion.codigo_orden || `#${cotizacion.orden_id}`}</span><small className={`user-status ${estadoClase(cotizacion.estado)}`}>{clean(cotizacion.estado)}</small><button type="button" onClick={() => abrirCotizacion(cotizacion)}>Ver cotizacion</button></div>)}</div> : <EmptyState icon="bi-file-earmark" text="No tienes cotizaciones enviadas." />}
-      </section>
+      </section>}
 
       <section className="user-account-grid">
+        {seccionActiva === 'taller' && <>
         <Section title="Servicios realizados" icon="bi-tools">
           {serviciosVehiculo.length ? (
             <div className="user-account-list">
@@ -387,8 +411,9 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
             </div>
           </section>
         )}
+        </>}
 
-        <Section title="Facturas" icon="bi-receipt-cutoff">
+        {seccionActiva === 'facturas' && <Section title="Mis facturas" icon="bi-receipt-cutoff" className="wide">
           {facturasVehiculo.length ? (
             <div className="user-account-list">
               {facturasVehiculo.map((factura) => (
@@ -406,9 +431,9 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
               ))}
             </div>
           ) : <EmptyState icon="bi-receipt" text="No tienes facturas generadas." />}
-        </Section>
+        </Section>}
 
-        <Section title="Mis pedidos de catalogo" icon="bi-bag-check-fill" className="wide user-catalog-orders">
+        {seccionActiva === 'pedidos' && <Section title="Mis pedidos de catalogo" icon="bi-bag-check-fill" className="wide user-catalog-orders">
           {pedidosCatalogo.length ? (
             <div className="user-account-list">
               {pedidosCatalogo.map((pedido) => (
@@ -419,13 +444,18 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
                   </div>
                   <span>Total {money(pedido.total)} | {clean(pedido.tipo_pago || pedido.metodo_pago, 'contra entrega').replaceAll('_', ' ')}</span>
                   <p><i className="bi bi-info-circle" /> {clean(pedido.novedad, 'Sin novedades. Te avisaremos cuando cambie el estado de tu pedido.')}</p>
+                  {pedido.repartidor_nombre && <p><i className="bi bi-person-badge" /> Repartidor: {pedido.repartidor_nombre}{pedido.repartidor_telefono ? ` | ${pedido.repartidor_telefono}` : ''}</p>}
+                  {(pedido.ruta_google_maps || (pedido.latitud_repartidor !== null && pedido.latitud_repartidor !== undefined && pedido.longitud_repartidor !== null && pedido.longitud_repartidor !== undefined)) && <div className="user-catalog-actions">
+                    {pedido.ruta_google_maps && <a href={pedido.ruta_google_maps} target="_blank" rel="noreferrer">Ver destino</a>}
+                    {pedido.latitud_repartidor !== null && pedido.latitud_repartidor !== undefined && pedido.longitud_repartidor !== null && pedido.longitud_repartidor !== undefined && <a href={`https://www.google.com/maps?q=${pedido.latitud_repartidor},${pedido.longitud_repartidor}`} target="_blank" rel="noreferrer">Rastrear pedido</a>}
+                  </div>}
                 </div>
               ))}
             </div>
           ) : <EmptyState icon="bi-bag-x" text="Aun no tienes pedidos del catalogo." />}
-        </Section>
+        </Section>}
 
-        <Section title="Historial" icon="bi-clock-history" className="wide">
+        {seccionActiva === 'historial' && <Section title="Historial" icon="bi-clock-history" className="wide">
           {historialVehiculo.length ? (
             <div className="user-history-list">
               {historialVehiculo.slice(0, 1).map((evento) => (
@@ -438,7 +468,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
               ))}
             </div>
           ) : <EmptyState icon="bi-clock" text="Aun no hay historial para tus vehiculos." />}
-        </Section>
+        </Section>}
       </section>
 
       <DetailModal title={cotizacionActiva ? 'Cotizacion realizada' : ''} onClose={() => setCotizacionActiva(null)}>

@@ -6,6 +6,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1482,7 +1483,7 @@
               numeracion autorizada y responsabilidades fiscales antes de usarlo como factura electronica legal ante la DIAN.
             </p>
           </main>
-          <script src="/static/dmi-messages.js?v=20260728"></script>
+          <script src="/static/dmi-messages.js?v=20260728"><\/script>
 </body>
         </html>
       `);
@@ -2161,11 +2162,15 @@
       method: 'POST',
       credentials: 'include'
     }).finally(function () {
-      try {
+      const embedded = window.parent && window.parent !== window;
+      if (embedded) {
+        // La app React elimina su sesión local y muestra la página principal.
         window.parent.postMessage({ type: 'DMI_LOGOUT' }, '*');
-      } catch (e) {
-        console.warn('No se pudo notificar el cierre de sesion al sitio principal', e);
+        return;
       }
+
+      // Respaldo para cuando el administrador se abra directamente.
+      window.location.replace('/');
     });
   });
 })();
@@ -2174,8 +2179,6 @@
   
 </body>
 </html>
-
-
 
 
 
