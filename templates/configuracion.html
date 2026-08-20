@@ -1043,12 +1043,30 @@
 
     function getFrontendOrigin() {
         const { protocol, hostname } = window.location;
+
+        // Desarrollo local
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             return `${protocol}//localhost:3000`;
         }
+
+        // GitHub Codespaces
         if (hostname.endsWith('.app.github.dev')) {
             return `${protocol}//${hostname.replace('-8000.app.github.dev', '-3000.app.github.dev')}`;
         }
+
+        // Producción: configuración está en Render y el catálogo
+        // está publicado en Vercel.
+        if (hostname.endsWith('.onrender.com')) {
+            return 'https://dmi-sistema-de-informacion.vercel.app';
+        }
+
+        // Si ya estamos en el frontend de Vercel,
+        // conservamos el dominio actual.
+        if (hostname.endsWith('.vercel.app')) {
+            return window.location.origin;
+        }
+
+        // Respaldo
         return window.location.origin;
     }
 
