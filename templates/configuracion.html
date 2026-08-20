@@ -333,7 +333,7 @@
             <ul class="nav flex-column mb-2">
                 <li class="nav-item"><a href="#" class="nav-link active" onclick="show('pedidos', this)"><i class="bi bi-file-earmark-text me-2"></i>Pedidos</a></li>
                 <li class="nav-item"><a href="#" class="nav-link" onclick="show('citas', this)"><i class="bi bi-calendar-event me-2"></i>Citas</a></li>
-                <li class="nav-item"><a href="/catalogo" target="_top" class="frontend-catalogo-link nav-link"><i class="bi bi-grid me-2"></i>Catalogo</a></li>
+                <li class="nav-item"><a href="https://dmi-sistema-de-informacion.vercel.app/catalogo" target="_top" class="frontend-catalogo-link nav-link"><i class="bi bi-grid me-2"></i>Catalogo</a></li>
             </ul>
 
             <div class="section-label mb-1">Estructura y Logistica</div>
@@ -1074,9 +1074,11 @@
         const initial = (window.location.hash || '').replace('#', '') || cfgCurrentPanel;
         show(initial, cfgFindMenuLink(initial));
 
+        // El catálogo vive en Vercel, no en Render.
+        // El href ya es absoluto para evitar que /catalogo se resuelva
+        // accidentalmente contra el dominio del backend.
         document.querySelectorAll('.frontend-catalogo-link').forEach(link => {
-            const path = link.getAttribute('href') || '/catalogo';
-            link.href = getFrontendOrigin() + path;
+            link.href = 'https://dmi-sistema-de-informacion.vercel.app/catalogo';
         });
     });
 </script>
