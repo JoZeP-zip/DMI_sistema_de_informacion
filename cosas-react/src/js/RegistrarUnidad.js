@@ -23,8 +23,6 @@ export const getApiBaseUrl = () => {
 };
 
 export const BASE_URL = getApiBaseUrl();
-
-const BASE_URL = getApiBaseUrl();
 const STEPS          = ['Cliente', 'Vehi­culo'];
 const tiposDocumento = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI'];
 
