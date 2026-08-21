@@ -79,6 +79,7 @@ function Catalogo({ onNeedLogin } = {}) {
   const cartSessionsKey = `dmiPendingCartSessions_${currentEmail}`;
 
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [cart, setCart] = useState(() => {
     try {
       const savedCart = localStorage.getItem(cartStorageKey);
@@ -210,6 +211,18 @@ function Catalogo({ onNeedLogin } = {}) {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]/g, "");
+
+  // BUSQUEDA (solo al presionar Enter)
+  const runSearch = () => {
+    setSearch(searchInput);
+    goToProducts();
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      runSearch();
+    }
+  };
 
   // CARRITO
   const addToCart = (product) => {
@@ -380,6 +393,7 @@ function Catalogo({ onNeedLogin } = {}) {
     setProducts([newProduct, ...products]);
     setSelectedCategory(newProduct.categoria);
     setSearch("");
+    setSearchInput("");
     setCurrentPage(1);
     setShowCreateProduct(false);
     setCreateForm(emptyProductForm());
@@ -465,12 +479,10 @@ function Catalogo({ onNeedLogin } = {}) {
 
           <input
             type="text"
-            placeholder="Buscar repuestos..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              goToProducts();
-            }}
+            placeholder="Buscar repuestos... (Enter para buscar)"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             className="header-search"
           />
           <button
