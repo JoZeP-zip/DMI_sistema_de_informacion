@@ -361,7 +361,7 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
                     onChange={handleChange}
                     required
                   >
-                    <option value="">Selecciona un vehiculo</option>
+                    
                     {vehiculos.map(v => (
                       <option key={v.idvehiculo} value={v.idvehiculo}>
                         {v.placa} - {v.marca} {v.modelo || ''}
