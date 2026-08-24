@@ -46,14 +46,7 @@ const isMechanicRole = (role) => {
 };
 
 const goToMechanicPanel = () => {
-  const apiBase = getApiBaseUrl().replace(/\/$/, "");
-  const frontendOrigin = window.location.origin;
-  const separator = apiBase.includes("?") ? "&" : "?";
-
-  // Enviamos el origen real del frontend al backend para que el
-  // mecánico pueda volver al MISMO frontend después de cerrar sesión.
-  window.location.href =
-    `${apiBase}/mecanico${separator}frontend=${encodeURIComponent(frontendOrigin)}`;
+  window.location.href = `${getApiBaseUrl()}/mecanico`;
 };
 
 const getDisplayName = (userData) => {
@@ -1350,10 +1343,9 @@ function App() {
                 </>
               )}
               
-              {/* MI CUENTA / MECANICO SEGUN EL ESTADO DE SESION.
-                  PANEL ADMIN YA SE RENDERIZA ARRIBA, UNA SOLA VEZ. */}
-              {!user ? (
-                <li className="nav-item">
+              {/* MI CUENTA / PANEL SEGUN EL ESTADO DE SESION */}
+              <li className="nav-item">
+                {!user ? (
                   <button
                     type="button"
                     className="btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta"
@@ -1364,9 +1356,20 @@ function App() {
                   >
                     MI CUENTA
                   </button>
-                </li>
-              ) : isMechanicRole(user.role) ? (
-                <li className="nav-item">
+                ) : user.role === 'admin' ? (
+                  <button
+                    type="button"
+                    className={`nav-link text-danger fw-black p-2 bg-transparent border-0 dmi-nav-link ${view === 'admin-dashboard' ? 'active' : ''}`}
+                    onClick={() => {
+                      window.history.replaceState(null, '', '/');
+                      setAdminFrameKey((key) => key + 1);
+                      setView('admin-dashboard');
+                      setMenuOpen(false);
+                    }}
+                  >
+                    PANEL ADMIN
+                  </button>
+                ) : isMechanicRole(user.role) ? (
                   <button
                     type="button"
                     className="nav-link text-danger fw-black p-2 bg-transparent border-0 dmi-nav-link"
@@ -1377,9 +1380,7 @@ function App() {
                   >
                     MECANICO
                   </button>
-                </li>
-              ) : user.role !== 'admin' ? (
-                <li className="nav-item">
+                ) : (
                   <button
                     type="button"
                     className={`btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta ${view === 'user-dashboard' ? 'active' : ''}`}
@@ -1391,10 +1392,11 @@ function App() {
                   >
                     MI CUENTA
                   </button>
-                </li>
-              ) : null}
+                )}
+              </li>
 
-              {user && <li className="nav-item dmi-nav-tools">
+              {user && view !== 'admin-dashboard' && view !== 'gallery-admin' && (
+                <li className="nav-item dmi-nav-tools">
                 <div className="dmi-nav-popover-wrap">
                   <button
                     type="button"
@@ -1466,7 +1468,8 @@ function App() {
                     </div>
                   )}
                 </div>
-              </li>}
+              </li>
+              )}
 
             </ul>
           </div>
