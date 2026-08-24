@@ -1350,9 +1350,10 @@ function App() {
                 </>
               )}
               
-              {/* MI CUENTA / PANEL SEGUN EL ESTADO DE SESION */}
-              <li className="nav-item">
-                {!user ? (
+              {/* MI CUENTA / MECANICO SEGUN EL ESTADO DE SESION.
+                  PANEL ADMIN YA SE RENDERIZA ARRIBA, UNA SOLA VEZ. */}
+              {!user ? (
+                <li className="nav-item">
                   <button
                     type="button"
                     className="btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta"
@@ -1363,20 +1364,9 @@ function App() {
                   >
                     MI CUENTA
                   </button>
-                ) : user.role === 'admin' ? (
-                  <button
-                    type="button"
-                    className={`nav-link text-danger fw-black p-2 bg-transparent border-0 dmi-nav-link ${view === 'admin-dashboard' ? 'active' : ''}`}
-                    onClick={() => {
-                      window.history.replaceState(null, '', '/');
-                      setAdminFrameKey((key) => key + 1);
-                      setView('admin-dashboard');
-                      setMenuOpen(false);
-                    }}
-                  >
-                    PANEL ADMIN
-                  </button>
-                ) : isMechanicRole(user.role) ? (
+                </li>
+              ) : isMechanicRole(user.role) ? (
+                <li className="nav-item">
                   <button
                     type="button"
                     className="nav-link text-danger fw-black p-2 bg-transparent border-0 dmi-nav-link"
@@ -1387,7 +1377,9 @@ function App() {
                   >
                     MECANICO
                   </button>
-                ) : (
+                </li>
+              ) : user.role !== 'admin' ? (
+                <li className="nav-item">
                   <button
                     type="button"
                     className={`btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta ${view === 'user-dashboard' ? 'active' : ''}`}
@@ -1399,8 +1391,8 @@ function App() {
                   >
                     MI CUENTA
                   </button>
-                )}
-              </li>
+                </li>
+              ) : null}
 
               {user && <li className="nav-item dmi-nav-tools">
                 <div className="dmi-nav-popover-wrap">
