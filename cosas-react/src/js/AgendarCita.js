@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../styles/AgendarCita.css';
 
 const getApiBaseUrl = () => {
@@ -89,7 +89,7 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
     setModalAlerta({ etiqueta, titulo, mensaje });
   };
 
-  const cargarDatosAgenda = async () => {
+  const cargarDatosAgenda = useCallback(async () => {
     if (!token) {
       setLoadingData(false);
       if (onNeedLogin) onNeedLogin();
@@ -159,11 +159,11 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
       .catch(() => {});
 
     setLoadingData(false);
-  };
+  }, [token, onNeedLogin, formData.vehiculos_idvehiculo]);
 
   useEffect(() => {
     cargarDatosAgenda();
-  }, []);
+  }, [cargarDatosAgenda]);
 
   useEffect(() => {
     if (loadingData || !token || vehiclePromptShown) return;
@@ -361,7 +361,7 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
                     onChange={handleChange}
                     required
                   >
-                    <option value="">Selecciona un vehiculo</option>
+                    
                     {vehiculos.map(v => (
                       <option key={v.idvehiculo} value={v.idvehiculo}>
                         {v.placa} - {v.marca} {v.modelo || ''}

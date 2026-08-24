@@ -8,7 +8,7 @@ import {
 import '../styles/RegistrarUnidad.css';
 import { showDmiError, showDmiSuccess } from './DmiMessages';
 
-const getApiBaseUrl = () => {
+export const getApiBaseUrl = () => {
   const { protocol, hostname } = window.location;
 
   if (hostname === "localhost" || hostname === "127.0.0.1") {
@@ -19,10 +19,10 @@ const getApiBaseUrl = () => {
     return `${protocol}//${hostname.replace(/-3000\.app\.github\.dev$/, "-8000.app.github.dev")}`;
   }
 
-  return "";
+  return "https://dmi-backend-0051.onrender.com";
 };
 
-const BASE_URL = getApiBaseUrl();
+export const BASE_URL = getApiBaseUrl();
 const STEPS          = ['Cliente', 'Vehi­culo'];
 const tiposDocumento = ['CC', 'CE', 'NIT', 'Pasaporte', 'TI'];
 
