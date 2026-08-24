@@ -36,16 +36,6 @@
     .ot-mini-select { min-height: 38px; max-width: 190px; border: 1px solid rgba(255,47,85,.62); background: #090909; color: #fff; padding: 0 10px; font-family: inherit; font-size: .78rem; }
     .cita-modal-actions .ot-order-form { flex-wrap: wrap; }
     .cita-modal-actions .ot-mini-select { max-width: 260px; min-height: 46px; }
-    .admin-notification-wrap { position: relative; margin-left: auto; }
-    .admin-notification-wrap .ot-icon-btn { position: relative; }
-    .admin-notification-wrap b { position: absolute; top: -8px; right: -8px; min-width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: #ff2f55; color: #fff; font-size: .6rem; }
-    .admin-notification-panel { position: absolute; right: 0; top: 54px; z-index: 7000; width: min(370px, calc(100vw - 30px)); max-height: 440px; overflow: auto; padding: 12px; border: 1px solid rgba(255,47,85,.62); background: #09090b; box-shadow: 0 20px 50px rgba(0,0,0,.65); }
-    .admin-notification-panel button { display: grid; gap: 4px; width: 100%; margin-bottom: 8px; padding: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); color: #fff; text-align: left; }
-    .admin-notification-panel button.unread { border-color: rgba(255,47,85,.9); background: linear-gradient(90deg, rgba(255,47,85,.20), rgba(255,47,85,.06)); box-shadow: inset 3px 0 0 #ff2f55; }
-    .admin-notification-panel button.read { border-color: rgba(255,255,255,.1); background: rgba(255,255,255,.025); opacity: .62; }
-    .admin-notification-panel button.read strong { color: rgba(255,255,255,.72); }
-    .admin-notification-panel span, .admin-notification-panel small, .admin-notification-panel p { color: rgba(255,255,255,.62); font-size: .72rem; }
-    .admin-profile-panel { display: grid; gap: 8px; }
     @media (max-width: 720px) { .cita-modal-actions .ot-main-btn, .cita-modal-actions .ot-outline-btn, .cita-modal-actions .ot-mini-select { width: 100%; max-width: 100%; justify-content: center; } .ot-order-form { flex-wrap: wrap; } }
   </style>
 </head>
@@ -59,7 +49,6 @@
       <a href="/admin/inventario"><i class="bi bi-box-seam-fill"></i> Inventario</a>
       <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
     </nav>
-    <div class="admin-notification-wrap"><button type="button" class="ot-icon-btn" id="adminNotificationButton" title="Notificaciones"><i class="bi bi-bell-fill"></i><b id="adminNotificationCount" hidden>0</b></button><button type="button" class="ot-icon-btn" id="adminProfileButton" title="Perfil"><i class="bi bi-person-circle"></i></button><div class="admin-notification-panel" id="adminNotificationPanel" hidden></div><div class="admin-notification-panel admin-profile-panel" id="adminProfilePanel" hidden><strong>{{ usuario.nombre }}</strong><span>{{ usuario.email or 'Correo no disponible' }}</span><small>{{ usuario.rol or 'admin' }}</small></div></div>
   </header>
 
   <main class="ot-page">
@@ -222,86 +211,6 @@
     </div>
   </div>
   <script>
-    const adminNotificationButton = document.getElementById('adminNotificationButton');
-    const adminNotificationPanel = document.getElementById('adminNotificationPanel');
-    const adminNotificationCount = document.getElementById('adminNotificationCount');
-    const adminProfileButton = document.getElementById('adminProfileButton');
-    const adminProfilePanel = document.getElementById('adminProfilePanel');
-    let solicitudReprogramacionActiva = null;
-    const textoSeguro = (valor) => String(valor === null || valor === undefined ? '' : valor).replace(/[&<>'"]/g, (caracter) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[caracter]);
-    async function cargarNotificacionesAdmin() {
-      try {
-        const response = await fetch('/api/notificaciones', { credentials: 'same-origin' });
-        const data = await response.json();
-        const items = data.notificaciones || [];
-        const pendientes = items.filter((item) => !item.leida).length;
-        adminNotificationCount.hidden = !pendientes;
-        adminNotificationCount.textContent = pendientes > 99 ? '99+' : pendientes;
-        adminNotificationPanel.innerHTML = items.length ? items.slice(0, 8).map((item) => `<button class="${item.leida ? 'read' : 'unread'}" data-notificacion-id="${item.idnotificacion}" data-solicitud-id="${item.referencia_tipo === 'solicitud_reprogramacion' ? item.referencia_id : ''}"><strong>${textoSeguro(item.titulo)}</strong><span>${textoSeguro(item.mensaje)}</span><small>${textoSeguro(item.creado_en || '')}</small></button>`).join('') : '<p>No hay notificaciones.</p>';
-        adminNotificationPanel.querySelectorAll('button[data-notificacion-id]').forEach((button) => button.addEventListener('click', () => {
-          if (button.dataset.solicitudId) abrirSolicitudReprogramacion(button.dataset.solicitudId);
-          fetch(`/api/notificaciones/${button.dataset.notificacionId}/leer`, { method: 'POST', credentials: 'same-origin' })
-            .catch(() => {})
-            .finally(cargarNotificacionesAdmin);
-        }));
-      } catch (_) { adminNotificationPanel.innerHTML = '<p>No fue posible cargar las notificaciones.</p>'; }
-    }
-    adminNotificationButton.addEventListener('click', () => { adminNotificationPanel.hidden = !adminNotificationPanel.hidden; adminProfilePanel.hidden = true; if (!adminNotificationPanel.hidden) cargarNotificacionesAdmin(); });
-    adminProfileButton.addEventListener('click', () => { adminProfilePanel.hidden = !adminProfilePanel.hidden; adminNotificationPanel.hidden = true; });
-    cargarNotificacionesAdmin();
-
-    // Cuando la campana superior del sitio abre una solicitud, esta ruta trae
-    // exactamente la ficha de esa notificación en lugar de perder el contexto.
-    const notificacionInicial = new URLSearchParams(window.location.search).get('notificacion');
-    if (notificacionInicial) {
-      fetch(`/api/notificaciones/${notificacionInicial}/solicitud-reprogramacion`, { credentials: 'same-origin' })
-        .then((response) => response.json().then((data) => ({ response, data })))
-        .then(({ response, data }) => { if (response.ok && data.solicitud_id) abrirSolicitudReprogramacion(data.solicitud_id); })
-        .catch(() => {});
-    }
-
-    async function abrirSolicitudReprogramacion(solicitudId) {
-      try {
-        const response = await fetch(`/api/solicitudes-reprogramacion/${solicitudId}`, { credentials: 'same-origin' });
-        const data = await response.json();
-        if (!response.ok) return window.alert(data.error || 'No fue posible abrir la solicitud.');
-        const solicitud = data.solicitud;
-        solicitudReprogramacionActiva = solicitud.idsolicitud_reprogramacion;
-        document.getElementById('solicitudReprogramacionTitle').textContent = `Solicitud para cita #${solicitud.cita_id}`;
-        document.getElementById('solicitudReprogramacionBody').innerHTML = `
-          <div class="cita-detail-grid">
-            <div class="cita-detail-item"><b>Cliente</b><span>${textoSeguro(solicitud.cliente_nombre || solicitud.cliente_email || 'Cliente')}</span></div>
-            <div class="cita-detail-item"><b>Vehículo</b><span>${textoSeguro([solicitud.placa, solicitud.marca, solicitud.modelo].filter(Boolean).join(' · ') || 'Sin información')}</span></div>
-            <div class="cita-detail-item"><b>Fecha actual</b><span>${textoSeguro(solicitud.fecha_actual)}</span></div>
-            <div class="cita-detail-item"><b>Hora actual</b><span>${textoSeguro(solicitud.hora_actual)}</span></div>
-            <div class="cita-detail-item"><b>Nueva fecha</b><span>${textoSeguro(solicitud.fecha_solicitada)}</span></div>
-            <div class="cita-detail-item"><b>Nueva hora</b><span>${textoSeguro(solicitud.hora_solicitada)}</span></div>
-          </div>
-          <label class="cita-detail-notes">Motivo del cliente<textarea readonly rows="4">${textoSeguro(solicitud.motivo || 'No indicó un motivo.')}</textarea></label>`;
-        const aceptar = document.getElementById('aprobarSolicitudReprogramacion');
-        aceptar.hidden = solicitud.estado !== 'pendiente';
-        document.getElementById('solicitudReprogramacionModal').classList.add('is-visible');
-        document.getElementById('solicitudReprogramacionModal').setAttribute('aria-hidden', 'false');
-      } catch (_) { window.alert('No fue posible abrir la solicitud.'); }
-    }
-
-    function cerrarSolicitudReprogramacion() {
-      document.getElementById('solicitudReprogramacionModal').classList.remove('is-visible');
-      document.getElementById('solicitudReprogramacionModal').setAttribute('aria-hidden', 'true');
-      solicitudReprogramacionActiva = null;
-    }
-
-    document.getElementById('aprobarSolicitudReprogramacion').addEventListener('click', async function () {
-      if (!solicitudReprogramacionActiva) return;
-      this.disabled = true;
-      try {
-        const response = await fetch(`/api/solicitudes-reprogramacion/${solicitudReprogramacionActiva}/aprobar`, { method: 'POST', credentials: 'same-origin' });
-        const data = await response.json();
-        if (!response.ok) return window.alert(data.error || 'No fue posible aprobar la solicitud.');
-        window.location.assign('/admin/citas?success=' + encodeURIComponent(data.message));
-      } finally { this.disabled = false; }
-    });
-
     let citaAdminActiva = null;
 
     function abrirReprogramacionAdmin(id, fecha, hora) {
