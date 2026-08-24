@@ -265,6 +265,23 @@ export const CitasService = {
     if (!res.ok) throw new Error(`Error al eliminar cita: ${res.status}`);
     return res;
   },
+
+  reprogramar: (id, datos) => request(`/api/citas/${id}/reprogramar`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(datos),
+  }),
+
+  cancelar: (id, motivo = "") => request(`/api/citas/${id}/cancelar`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ motivo }),
+  }),
+};
+
+export const NotificacionesService = {
+  listar: () => request("/api/notificaciones", { headers: authHeaders() }),
+  marcarLeida: (id) => request(`/api/notificaciones/${id}/leer`, { method: "POST", headers: authHeaders() }),
 };
 
 

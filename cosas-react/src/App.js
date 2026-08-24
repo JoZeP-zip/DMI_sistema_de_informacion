@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { AuthService } from './services/api';
+import { AuthService, NotificacionesService } from './services/api';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -1631,6 +1631,10 @@ function App() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const [user, setUser] = useState(null);
+  const [navNotifications, setNavNotifications] = useState([]);
+  const [navNotificationsOpen, setNavNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [userDashboardSection, setUserDashboardSection] = useState('resumen');
 
   const [selectedProject, setSelectedProject] = useState(null);
 
@@ -1642,9 +1646,45 @@ function App() {
 
   const [afterLoginView, setAfterLoginView] = useState(null);
 
+  useEffect(() => {
+    if (!user) { setNavNotifications([]); return undefined; }
+    let active = true;
+    NotificacionesService.listar().then((data) => { if (active) setNavNotifications(data.notificaciones || []); }).catch(() => { if (active) setNavNotifications([]); });
+    return () => { active = false; };
+  }, [user]);
+
  
 
   const closeDialog = () => setDialog(null);
+
+  const abrirNotificacionSuperior = async (item) => {
+    if (!item.leida) {
+      try {
+        await NotificacionesService.marcarLeida(item.idnotificacion);
+        setNavNotifications((items) => items.map((actual) => actual.idnotificacion === item.idnotificacion ? { ...actual, leida: true } : actual));
+      } catch (_) { /* La navegación no depende de que falle el marcado. */ }
+    }
+    setNavNotificationsOpen(false);
+
+    // Los módulos de cliente viven en React; los módulos administrativos y
+    // mecánicos se abren en sus rutas reales del backend.
+    if (user?.role === 'usuario' || user?.role === 'cliente') {
+      const seccionPorReferencia = {
+        cotizacion: 'cotizaciones', factura: 'facturas', orden: 'taller', pedido: 'pedidos', cita: 'resumen',
+      };
+      setUserDashboardSection(seccionPorReferencia[item.referencia_tipo] || 'resumen');
+      setView('user-dashboard');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (user?.role === 'admin' && item.tipo === 'solicitud_reprogramacion') {
+      window.location.assign(`${getApiBaseUrl().replace(/\/$/, '')}/admin/citas?notificacion=${encodeURIComponent(item.idnotificacion)}`);
+      return;
+    }
+    const destino = item.accion_url || (user?.role === 'admin' ? '/admin/citas' : '/mecanico');
+    window.location.assign(`${getApiBaseUrl().replace(/\/$/, '')}${destino}`);
+  };
 
  
 
@@ -2304,6 +2344,17 @@ function App() {
 
               </li>
 
+              {user && <li className="nav-item dmi-nav-tools">
+                <div className="dmi-nav-popover-wrap">
+                  <button type="button" className="dmi-nav-icon" aria-label="Notificaciones" onClick={() => { setNavNotificationsOpen((open) => !open); setProfileOpen(false); }}><span aria-hidden="true">🔔</span>{navNotifications.filter((item) => !item.leida).length > 0 && <b>{navNotifications.filter((item) => !item.leida).length}</b>}</button>
+                  {navNotificationsOpen && <div className="dmi-nav-popover"><header><strong>Notificaciones</strong></header>{navNotifications.length ? navNotifications.slice(0, 6).map((item) => <button key={item.idnotificacion} type="button" className={item.leida ? 'read' : 'unread'} onClick={() => abrirNotificacionSuperior(item)}><strong>{item.titulo}</strong><span>{item.mensaje}</span></button>) : <p>Estás al día.</p>}</div>}
+                </div>
+                <div className="dmi-nav-popover-wrap">
+                  <button type="button" className="dmi-nav-icon profile" aria-label="Perfil" onClick={() => { setProfileOpen((open) => !open); setNavNotificationsOpen(false); }}><span aria-hidden="true">👤</span></button>
+                  {profileOpen && <div className="dmi-nav-popover profile-card"><strong>{getDisplayName(user)}</strong><span>{user.email || 'Correo no disponible'}</span><small>{String(user.role || 'usuario').replace('_', ' ')}</small></div>}
+                </div>
+              </li>}
+
  
 
               <li className="nav-item">
@@ -2499,6 +2550,8 @@ function App() {
                         onAddVehicle={() => setView('registro')}
 
                           onScheduleAppointment={() => setView('citas')}
+
+                          initialSection={userDashboardSection}
 
                      />
 
@@ -2851,4 +2904,3 @@ function App() {
  
 
 export default App;
-

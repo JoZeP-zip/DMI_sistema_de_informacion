@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -143,6 +144,12 @@
 
     .admin-topbar .brand-mark,
     .admin-topbar .topbar-nav {
+      display: none !important;
+    }
+
+    /* El dashboard se muestra dentro de React: la barra principal de React
+       ya contiene sesión, campana y perfil; no se duplican dentro del iframe. */
+    body.dmi-embedded-admin .admin-topbar {
       display: none !important;
     }
 
@@ -512,6 +519,9 @@
   <link rel="stylesheet" href="/static/dmi-messages.css?v=20260728">
 </head>
 <body>
+  <script>
+    if (window.parent && window.parent !== window) document.body.classList.add('dmi-embedded-admin');
+  </script>
   {% set total_vehiculos = data|length if data else 0 %}
   {% set total_usuarios = usuarios_data|length if usuarios_data else 0 %}
   {% set total_citas = citas_data|length if citas_data else 0 %}
@@ -536,10 +546,15 @@
 
       <div class="topbar-user">
         {% if usuario %}
-          <span class="user-chip"><i class="bi bi-person-circle"></i>{{ usuario.nombre }}</span>
           <form action="/logout" method="post">
             <button type="submit" class="btn-salir"><i class="bi bi-box-arrow-right"></i> Salir</button>
           </form>
+          <div class="dmi-admin-tools">
+            <button type="button" class="dmi-admin-icon" id="dmiAdminBell" aria-label="Notificaciones"><i class="bi bi-bell-fill"></i><b id="dmiAdminCount" hidden>0</b></button>
+            <button type="button" class="dmi-admin-icon" id="dmiAdminProfile" aria-label="Perfil"><i class="bi bi-person-circle"></i></button>
+            <div class="dmi-admin-popover" id="dmiAdminNotifications" hidden></div>
+            <div class="dmi-admin-popover dmi-admin-profile-card" id="dmiAdminProfileCard" hidden><strong>{{ usuario.nombre }}</strong><span>{{ usuario.email or 'Correo no disponible' }}</span><small>{{ usuario.rol or 'admin' }}</small></div>
+          </div>
         {% else %}
           <span class="session-empty">No has iniciado sesion</span>
         {% endif %}
@@ -2166,6 +2181,33 @@
   });
 })();
 </script>
+  <div class="dmi-approval-modal" id="dmiReprogramacionModal" hidden>
+    <section class="dmi-approval-card" role="dialog" aria-modal="true" aria-labelledby="dmiReprogramacionTitle">
+      <button type="button" class="dmi-approval-close" id="dmiReprogramacionClose" aria-label="Cerrar">&times;</button>
+      <p>Solicitud del cliente</p>
+      <h2 id="dmiReprogramacionTitle">Reprogramar cita</h2>
+      <div id="dmiReprogramacionBody"></div>
+      <div class="dmi-approval-actions"><button type="button" class="outline" id="dmiReprogramacionCancel">Volver</button><button type="button" id="dmiReprogramacionAccept">Aceptar reprogramación</button></div>
+    </section>
+  </div>
+  <style>
+    .dmi-admin-tools{position:relative;display:flex;gap:8px;align-items:center}.dmi-admin-icon{position:relative;display:grid;place-items:center;width:38px;height:38px;border:0;background:transparent;color:#fff;font-size:1.35rem}.dmi-admin-icon:hover{color:#ff4057}.dmi-admin-icon b{position:absolute;top:-5px;right:-6px;min-width:17px;height:17px;display:grid;place-items:center;border-radius:50%;background:#ff4057;color:#fff;font-size:.56rem}.dmi-admin-popover{position:absolute;right:0;top:46px;z-index:10000;width:min(350px,calc(100vw - 22px));max-height:420px;overflow:auto;padding:12px;border:1px solid rgba(255,64,87,.58);background:#090a0d;box-shadow:0 20px 44px rgba(0,0,0,.64)}.dmi-admin-popover button{display:grid;gap:3px;width:100%;margin-top:8px;padding:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#fff;text-align:left}.dmi-admin-popover button.unread{border-color:rgba(255,64,87,.9);background:linear-gradient(90deg,rgba(255,64,87,.2),rgba(255,64,87,.06));box-shadow:inset 3px 0 0 #ff4057}.dmi-admin-popover button.unread strong{color:#fff}.dmi-admin-popover button.read{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.025);opacity:.62}.dmi-admin-popover button.read strong{color:rgba(255,255,255,.72)}.dmi-admin-popover button span,.dmi-admin-popover p,.dmi-admin-profile-card span,.dmi-admin-profile-card small{color:rgba(255,255,255,.65);font-size:.72rem}.dmi-admin-profile-card{display:grid;gap:7px}.dmi-approval-modal{position:fixed;inset:0;z-index:50000;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.72);backdrop-filter:blur(5px)}.dmi-approval-card{position:relative;width:min(680px,100%);padding:30px;border:1px solid #ff4057;background:#0b0b0e;color:#fff;box-shadow:0 28px 80px rgba(0,0,0,.78)}.dmi-approval-card>p{margin:0 0 7px;color:#ff6a80;text-transform:uppercase;font-size:.72rem;letter-spacing:.16em}.dmi-approval-card h2{margin:0 0 20px;color:#ff4057}.dmi-approval-close{position:absolute;top:12px;right:14px;border:0;background:transparent;color:#ff6a80;font-size:2rem}.dmi-approval-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.dmi-approval-item{display:grid;gap:5px;padding:11px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.025)}.dmi-approval-item b{color:#ff8596;font-size:.72rem;text-transform:uppercase}.dmi-approval-reason{display:grid;gap:7px;margin-top:12px}.dmi-approval-reason span{padding:12px;border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.78)}.dmi-approval-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.dmi-approval-actions button{padding:12px 16px;border:1px solid #ff4057;background:#ff4057;color:#fff;font:inherit;font-weight:800}.dmi-approval-actions .outline{background:transparent;color:#fff}@media(max-width:560px){.dmi-approval-grid{grid-template-columns:1fr}.dmi-approval-card{padding:24px 18px}.dmi-approval-actions{flex-direction:column}.dmi-approval-actions button{width:100%}}
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const bell=document.getElementById('dmiAdminBell'), count=document.getElementById('dmiAdminCount'), panel=document.getElementById('dmiAdminNotifications'), profile=document.getElementById('dmiAdminProfile'), profileCard=document.getElementById('dmiAdminProfileCard');
+      if (!bell || !panel) return;
+      const modal=document.getElementById('dmiReprogramacionModal'), modalBody=document.getElementById('dmiReprogramacionBody'), accept=document.getElementById('dmiReprogramacionAccept'); let solicitudId=null;
+      const safe=(valor)=>String(valor===null||valor===undefined?'':valor).replace(/[&<>'"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+      const closeModal=()=>{ modal.hidden=true; solicitudId=null; };
+      document.getElementById('dmiReprogramacionClose').addEventListener('click',closeModal); document.getElementById('dmiReprogramacionCancel').addEventListener('click',closeModal);
+      async function openRequestFromNotification(notificationId){try{const response=await fetch('/api/notificaciones/'+notificationId+'/solicitud-reprogramacion',{credentials:'same-origin'}),data=await response.json();if(!response.ok)return window.alert(data.error||'Esta solicitud ya no está disponible.');openRequest(data.solicitud_id);}catch(_){window.alert('No fue posible abrir la solicitud.');}}
+      async function openRequest(id){try{const response=await fetch('/api/solicitudes-reprogramacion/'+id,{credentials:'same-origin'}),data=await response.json();if(!response.ok)return window.alert(data.error||'No fue posible abrir la solicitud.');const s=data.solicitud;solicitudId=s.idsolicitud_reprogramacion;document.getElementById('dmiReprogramacionTitle').textContent='Solicitud para cita #'+s.cita_id;modalBody.innerHTML=`<div class="dmi-approval-grid"><div class="dmi-approval-item"><b>Cliente</b><span>${safe(s.cliente_nombre||s.cliente_email||'Cliente')}</span></div><div class="dmi-approval-item"><b>Vehículo</b><span>${safe([s.placa,s.marca,s.modelo].filter(Boolean).join(' · ')||'Sin información')}</span></div><div class="dmi-approval-item"><b>Fecha actual</b><span>${safe(s.fecha_actual)}</span></div><div class="dmi-approval-item"><b>Hora actual</b><span>${safe(s.hora_actual)}</span></div><div class="dmi-approval-item"><b>Nueva fecha</b><span>${safe(s.fecha_solicitada)}</span></div><div class="dmi-approval-item"><b>Nueva hora</b><span>${safe(s.hora_solicitada)}</span></div></div><div class="dmi-approval-reason"><b>Motivo del cliente</b><span>${safe(s.motivo||'No indicó un motivo.')}</span></div>`;accept.hidden=s.estado!=='pendiente';modal.hidden=false;}catch(_){window.alert('No fue posible abrir la solicitud.');}}
+      accept.addEventListener('click',async()=>{if(!solicitudId)return;accept.disabled=true;try{const response=await fetch('/api/solicitudes-reprogramacion/'+solicitudId+'/aprobar',{method:'POST',credentials:'same-origin'}),data=await response.json();if(!response.ok)return window.alert(data.error||'No fue posible aprobar la solicitud.');closeModal();loadNotifications();window.alert(data.message);}finally{accept.disabled=false;}});
+      async function loadNotifications(){try{const response=await fetch('/api/notificaciones',{credentials:'same-origin'}),data=await response.json(),items=data.notificaciones||[],pending=items.filter(item=>!item.leida).length;count.hidden=!pending;count.textContent=pending>99?'99+':pending;panel.innerHTML=items.length?items.slice(0,8).map(item=>`<button class="${item.leida?'read':'unread'}" data-id="${item.idnotificacion}" data-es-solicitud="${item.tipo==='solicitud_reprogramacion'?'1':''}"><strong>${safe(item.titulo)}</strong><span>${safe(item.mensaje)}</span></button>`).join(''):'<p>Estás al día.</p>';panel.querySelectorAll('button[data-id]').forEach(button=>button.addEventListener('click',function(){if(button.dataset.esSolicitud)openRequestFromNotification(button.dataset.id);fetch('/api/notificaciones/'+button.dataset.id+'/leer',{method:'POST',credentials:'same-origin'}).catch(()=>{}).finally(loadNotifications);}));}catch(_){panel.innerHTML='<p>No fue posible cargar las notificaciones.</p>';}}
+      bell.addEventListener('click',()=>{panel.hidden=!panel.hidden;profileCard.hidden=true;if(!panel.hidden)loadNotifications();}); profile.addEventListener('click',()=>{profileCard.hidden=!profileCard.hidden;panel.hidden=true;}); loadNotifications();
+    });
+  </script>
   <script src="/static/dmi-messages.js?v=20260728"></script>
   
 </body>

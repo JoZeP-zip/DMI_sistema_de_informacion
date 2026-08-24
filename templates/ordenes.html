@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="/static/ordenes.css?v=agenda-espanol-20260812-3">
+  <link rel="stylesheet" href="/static/ordenes.css?v=tablero-ordenes-20260821-1">
 
 <style id="dmi-client-report-style">
 /* ===== INFORMACION DEL CLIENTE - DMI ===== */
@@ -182,17 +183,8 @@
       {% if modo_mecanico %}
       <a href="/mecanico" class="active"><i class="bi bi-tools"></i> Panel Mecanico</a>
       <a href="/mecanico"><i class="bi bi-clipboard2-check-fill"></i> Mis ordenes</a>
-      <details class="ot-notifications">
-        <summary><i class="bi bi-bell-fill"></i> Notificaciones{% if notificaciones %}<b>{{ notificaciones|length }}</b>{% endif %}</summary>
-        <div class="ot-notification-menu">
-          {% for notificacion in notificaciones or [] %}
-            <a href="/mecanico/ordenes/{{ notificacion.idorden }}"><strong>Cotizacion aceptada</strong><span>{{ notificacion.codigo_orden }} - {{ notificacion.cliente }}</span><small>Haz clic para continuar la reparacion.</small></a>
-          {% else %}
-            <p>No tienes aprobaciones pendientes.</p>
-          {% endfor %}
-        </div>
-      </details>
       <a href="/logout-login"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</a>
+      <div class="ot-role-tools"><input class="ot-profile-toggle" id="otBellToggle" type="checkbox"><input class="ot-profile-toggle" id="otProfileToggle" type="checkbox"><label class="ot-role-icon" id="otBell" for="otBellToggle" aria-label="Notificaciones" onclick="document.getElementById('otProfileToggle').checked=false"><i class="bi bi-bell-fill"></i><b id="otBellCount" hidden>0</b></label><label class="ot-role-icon" id="otProfile" for="otProfileToggle" aria-label="Perfil" onclick="document.getElementById('otBellToggle').checked=false"><i class="bi bi-person-circle"></i></label><div class="ot-role-popover" id="otNotifications"></div><div class="ot-role-popover ot-role-profile" id="otProfileCard"><label class="ot-role-close" for="otProfileToggle" aria-label="Cerrar perfil">×</label><strong>{{ usuario.nombre }}</strong><span>{{ usuario.email or 'Correo no disponible' }}</span><small>{{ usuario.rol or 'mecanico' }}</small></div></div>
       {% else %}
       <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
       <a href="/admin/citas"><i class="bi bi-calendar-check"></i> Citas</a>
@@ -202,6 +194,11 @@
       {% endif %}
     </nav>
   </header>
+
+  {% if modo_mecanico %}
+  <style>.ot-role-tools{position:relative;display:flex;align-items:center;gap:7px}.ot-profile-toggle{position:absolute;opacity:0;pointer-events:none}.ot-role-icon{position:relative;display:grid;place-items:center;width:37px;height:37px;border:0;background:transparent;color:#fff;font-size:1.35rem;cursor:pointer}.ot-role-icon:hover{color:#ff2f55}.ot-role-icon b{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;display:grid;place-items:center;border-radius:50%;background:#ff2f55;color:#fff;font-size:.56rem}.ot-role-popover{display:none;position:absolute;right:0;top:44px;z-index:9999;width:min(340px,calc(100vw - 25px));max-height:400px;overflow:auto;padding:12px;border:1px solid rgba(255,47,85,.6);background:#09090b;box-shadow:0 20px 45px rgba(0,0,0,.65)}.ot-role-popover button{display:grid;gap:3px;width:100%;margin-top:8px;padding:9px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#fff;text-align:left}.ot-role-popover button.unread{border-color:rgba(255,47,85,.9);background:linear-gradient(90deg,rgba(255,47,85,.2),rgba(255,47,85,.06));box-shadow:inset 3px 0 0 #ff2f55}.ot-role-popover button.unread strong{color:#fff}.ot-role-popover button.read{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.025);opacity:.62}.ot-role-popover button.read strong{color:rgba(255,255,255,.72)}.ot-role-popover span,.ot-role-popover small,.ot-role-popover p{color:rgba(255,255,255,.62);font-size:.7rem}#otBellToggle:checked~#otNotifications{display:block}#otProfileToggle:checked~.ot-role-profile{display:grid}.ot-role-close{position:absolute;top:6px;right:7px;width:27px;height:27px;display:grid;place-items:center;border:1px solid rgba(255,47,85,.7);color:#ff8095;font-size:1.25rem;line-height:1;cursor:pointer}</style>
+  <script>document.addEventListener('DOMContentLoaded',function(){const bell=document.getElementById('otBell'),count=document.getElementById('otBellCount'),panel=document.getElementById('otNotifications');async function load(){try{const r=await fetch('/api/notificaciones',{credentials:'same-origin'}),d=await r.json(),items=d.notificaciones||[],unread=items.filter(x=>!x.leida).length;count.hidden=!unread;count.textContent=unread;panel.innerHTML=items.length?items.slice(0,8).map(x=>`<button class="${x.leida?'read':'unread'}" data-id="${x.idnotificacion}"><strong>${x.titulo}</strong><span>${x.mensaje}</span></button>`).join(''):'<p>Estás al día.</p>';panel.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',async()=>{await fetch('/api/notificaciones/'+b.dataset.id+'/leer',{method:'POST',credentials:'same-origin'});load()}));}catch(_){panel.innerHTML='<p>No fue posible cargar las notificaciones.</p>';}}bell.addEventListener('click',()=>load());load()});</script>
+  {% endif %}
 
   <main class="ot-page">
     <section class="ot-hero">
@@ -507,7 +504,7 @@
         <div class="ot-today-head">
           <div>
             <span><i class="bi bi-calendar-event"></i> Agenda del dia</span>
-            <h3>Citas programadas para hoy</h3>
+            <h3>Próximas citas asignadas</h3>
           </div>
           <small>{{ citas_hoy_ordenes|length if citas_hoy_ordenes else 0 }} cita{{ 's' if citas_hoy_ordenes and citas_hoy_ordenes|length != 1 else '' }}</small>
         </div>
@@ -515,15 +512,84 @@
           <div class="ot-today-grid">
             {% for cita in citas_hoy_ordenes %}
               <a href="{% if modo_mecanico %}/mecanico/ordenes/{{ cita.idorden }}{% else %}/admin/ordenes/{{ cita.idorden }}{% endif %}" class="ot-today-item">
-                <time>{{ cita.hora or 'Hora por confirmar' }}</time>
+                <time>{{ cita.fecha or 'Fecha por confirmar' }}<b>{{ cita.hora or 'Hora por confirmar' }}</b></time>
                 <div><strong>{{ cita.cliente }}</strong><span>{{ cita.vehiculo }} · {{ cita.placa }}</span><small>{{ cita.motivo or 'Servicio programado' }}</small></div>
                 <i class="bi bi-arrow-right-circle"></i>
               </a>
             {% endfor %}
           </div>
         {% else %}
-          <p class="ot-today-empty"><i class="bi bi-calendar-check"></i> No hay citas programadas para hoy.</p>
+          <p class="ot-today-empty"><i class="bi bi-calendar-check"></i> No hay próximas citas asignadas.</p>
         {% endif %}
+      </section>
+
+      <section class="ot-calendar-panel" aria-label="Calendario de citas del mes">
+        <div class="ot-section-heading">
+          <div><span><i class="bi bi-calendar3"></i> Planeación mensual</span><h3>Calendario de citas</h3></div>
+          <small>{{ citas_calendario|length }} cita{{ 's' if citas_calendario|length != 1 else '' }} en este mes</small>
+        </div>
+        <div class="ot-calendar-weekdays"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+        <div class="ot-calendar-grid">
+          {% for semana in calendario_mes %}
+            {% for celda in semana %}
+              <div class="ot-calendar-day {% if not celda.actual %}outside{% endif %}">
+                <b>{{ celda.dia }}</b>
+                {% for cita in celda.citas %}
+                  <a href="{% if cita.idorden %}{% if modo_mecanico %}/mecanico/ordenes/{{ cita.idorden }}{% else %}/admin/ordenes/{{ cita.idorden }}{% endif %}{% else %}{% if modo_mecanico %}/mecanico{% else %}/admin/citas{% endif %}{% endif %}" title="{{ cita.cliente }} · {{ cita.motivo }}"><time>{{ cita.hora or '--:--' }}</time><span>{{ cita.cliente }}</span></a>
+                {% endfor %}
+              </div>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="ot-reprogrammed-panel">
+        <div class="ot-section-heading">
+          <div><span><i class="bi bi-arrow-repeat"></i> Seguimiento especial</span><h3>Citas reprogramadas</h3></div>
+          <small>{{ citas_reprogramadas|length }} actualizada{{ 's' if citas_reprogramadas|length != 1 else '' }}</small>
+        </div>
+        {% if citas_reprogramadas %}
+          <div class="ot-reprogrammed-grid">
+            {% for cita in citas_reprogramadas %}
+              <a href="{% if cita.idorden %}{% if modo_mecanico %}/mecanico/ordenes/{{ cita.idorden }}{% else %}/admin/ordenes/{{ cita.idorden }}{% endif %}{% else %}{% if modo_mecanico %}/mecanico{% else %}/admin/citas{% endif %}{% endif %}" class="ot-reprogrammed-item">
+                <i class="bi bi-arrow-repeat"></i><div><strong>{{ cita.cliente }}</strong><span>{{ cita.fecha }} · {{ cita.hora }}</span><small>{{ cita.motivo or 'Cita actualizada' }} · {{ cita.placa }}</small></div><em>Cita reprogramada</em>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="ot-section-empty"><i class="bi bi-check2-circle"></i> No hay citas reprogramadas para este mes.</p>
+        {% endif %}
+      </section>
+
+      <section class="ot-workboard" aria-label="Flujo organizado de órdenes">
+        <article class="ot-work-lane process">
+          <header><span><i class="bi bi-tools"></i> Trabajo activo</span><b>{{ ordenes_en_proceso|length }}</b></header>
+          <h3>Órdenes en proceso</h3>
+          {% for orden in ordenes_en_proceso %}
+            <a href="{% if modo_mecanico %}/mecanico/ordenes/{{ orden.idorden }}{% else %}/admin/ordenes/{{ orden.idorden }}{% endif %}"><strong>{{ orden.codigo_orden }}</strong><span>{{ orden.cliente }} · {{ orden.placa }}</span><small class="ot-status {{ orden.estado }}">{{ orden.estado }}</small></a>
+          {% else %}<p>Sin trabajo activo.</p>{% endfor %}
+        </article>
+        <article class="ot-work-lane quote">
+          <header><span><i class="bi bi-send"></i> Esperando cliente</span><b>{{ cotizaciones_enviadas|length }}</b></header>
+          <h3>Cotizaciones enviadas</h3>
+          {% for orden in cotizaciones_enviadas %}
+            <a href="{% if modo_mecanico %}/mecanico/ordenes/{{ orden.idorden }}{% else %}/admin/ordenes/{{ orden.idorden }}{% endif %}"><strong>{{ orden.codigo_orden }}</strong><span>{{ orden.cliente }} · ${{ orden.total_orden or 0 }}</span><small>En espera de respuesta</small></a>
+          {% else %}<p>No hay cotizaciones pendientes.</p>{% endfor %}
+        </article>
+        <article class="ot-work-lane closing">
+          <header><span><i class="bi bi-clipboard-check"></i> Cierre operativo</span><b>{{ ordenes_por_cerrar|length }}</b></header>
+          <h3>Finalizadas por cerrar</h3>
+          {% for orden in ordenes_por_cerrar %}
+            <a href="{% if modo_mecanico %}/mecanico/ordenes/{{ orden.idorden }}{% else %}/admin/ordenes/{{ orden.idorden }}{% endif %}"><strong>{{ orden.codigo_orden }}</strong><span>{{ orden.cliente }} · {{ orden.placa }}</span><small class="ot-status {{ orden.estado }}">{{ orden.estado }}</small></a>
+          {% else %}<p>Todo está al día.</p>{% endfor %}
+        </article>
+      </section>
+
+      <section class="ot-history-panel">
+        <div class="ot-section-heading"><div><span><i class="bi bi-clock-history"></i> Histórico operativo</span><h3>Órdenes terminadas y entregadas</h3></div><small>De la más antigua a la más reciente</small></div>
+        {% if ordenes_terminadas %}
+          <div class="ot-history-table-wrap"><table class="ot-history-table"><thead><tr><th>Entrega</th><th>Orden</th><th>Cliente / vehículo</th><th>Total</th><th></th></tr></thead><tbody>{% for orden in ordenes_terminadas %}<tr><td>{{ orden.fecha_entrega or orden.fecha_finalizacion or orden.fecha_apertura }}</td><td><strong>{{ orden.codigo_orden }}</strong></td><td>{{ orden.cliente }} · {{ orden.marca }} {{ orden.modelo }} <span>{{ orden.placa }}</span></td><td>${{ orden.total_orden or 0 }}</td><td><a href="{% if modo_mecanico %}/mecanico/ordenes/{{ orden.idorden }}{% else %}/admin/ordenes/{{ orden.idorden }}{% endif %}" aria-label="Ver orden"><i class="bi bi-eye"></i></a></td></tr>{% endfor %}</tbody></table></div>
+        {% else %}<p class="ot-section-empty"><i class="bi bi-inbox"></i> Aún no hay órdenes entregadas.</p>{% endif %}
       </section>
 
       <div class="ot-table-wrap">

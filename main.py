@@ -8,13 +8,18 @@ from supabase import create_client
 from dotenv import load_dotenv
 from typing import Optional
 from datetime import date, datetime, time, timedelta
+import calendar
 from decimal import Decimal
 from urllib.parse import quote, quote_plus
 from urllib.parse import urlparse
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
+from email.message import EmailMessage
+import smtplib
+import ssl
 import os
 import html
+import re
 import jwt
 import json
 import hashlib
@@ -32,6 +37,13 @@ ADMIN_SECRET  = os.getenv("ADMIN_SECRET", "lolcito")
 # puede cambiar desde Vercel con la variable WOMPI_PAYMENT_LINK sin editar codigo.
 WOMPI_PAYMENT_LINK = os.getenv("WOMPI_PAYMENT_LINK", "https://checkout.wompi.co/l/VPOS_OEmmOs")
 WOMPI_EVENTS_SECRET = os.getenv("WOMPI_EVENTS_SECRET", "")
+# Correo transaccional. En Render se configura con variables de entorno; nunca
+# se escriben claves de Gmail ni proveedores externos dentro del repositorio.
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USERNAME)
 
 # Forzamos a SQLAlchemy a buscar directamente en el esquema dmi
 engine = create_engine(
@@ -500,11 +512,110 @@ def obtener_citas_programadas_hoy(conn, empleado_id: Optional[int] = None) -> li
         FROM dmi.citas c
         JOIN dmi.orden_trabajo ot ON ot.cita_id = c.idcita
         JOIN dmi.v_ordenes_resumen r ON r.idorden = ot.idorden
-        WHERE c.fecha = :hoy
+        WHERE c.fecha >= :hoy
           AND lower(COALESCE(c.estado, 'pendiente')) NOT IN ('cancelada', 'cancelado', 'completada')
           {filtro_empleado}
         ORDER BY c.hora ASC, c.idcita ASC
+        LIMIT 10
     """), params).mappings().fetchall()]
+
+
+def obtener_citas_calendario_ordenes(conn, mes: Optional[str], empleado_id: Optional[int] = None) -> list:
+    """Citas vigentes del mes para mostrar la agenda/calendario operativo."""
+    rango = rango_mes(mes)
+    if not rango:
+        return []
+    orden_col = empleado_orden_column(conn)
+    if empleado_id and not orden_col:
+        return []
+    filtro_empleado = f"AND ot.{orden_col} = :empleado_id" if empleado_id else ""
+    params = {"inicio_mes": rango[0], "fin_mes": rango[1]}
+    if empleado_id:
+        params["empleado_id"] = empleado_id
+    return [dict(row) for row in conn.execute(text(f"""
+        SELECT c.idcita, c.fecha, c.hora, c.motivo, c.estado,
+               COALESCE(u.nombre, 'Cliente') AS cliente,
+               COALESCE(v.placa, 'Sin placa') AS placa,
+               ot.idorden, ot.codigo_orden
+        FROM dmi.citas c
+        LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+        LEFT JOIN dmi.usuarios u
+                   ON u.idusuarios = v.cliente_id
+                   OR u.vehiculos_idvehiculo = v.idvehiculo
+        LEFT JOIN dmi.orden_trabajo ot ON ot.cita_id = c.idcita
+        WHERE c.fecha >= :inicio_mes AND c.fecha < :fin_mes
+          AND lower(COALESCE(c.estado, 'pendiente')) NOT IN ('cancelada', 'cancelado', 'completada')
+          {filtro_empleado}
+        ORDER BY c.fecha ASC, c.hora ASC, c.idcita ASC
+    """), params).mappings().fetchall()]
+
+
+def obtener_citas_reprogramadas_ordenes(conn, mes: Optional[str], empleado_id: Optional[int] = None) -> list:
+    """Citas aprobadas que cambiaron de fecha u hora, separadas para seguimiento."""
+    if "reprogramada_en" not in table_columns(conn, "dmi", "citas"):
+        return []
+    rango = rango_mes(mes)
+    filtro_mes = ""
+    params = {}
+    if rango:
+        filtro_mes = "AND c.fecha >= :inicio_mes AND c.fecha < :fin_mes"
+        params.update({"inicio_mes": rango[0], "fin_mes": rango[1]})
+    orden_col = empleado_orden_column(conn)
+    if empleado_id and not orden_col:
+        return []
+    filtro_empleado = f"AND ot.{orden_col} = :empleado_id" if empleado_id else ""
+    if empleado_id:
+        params["empleado_id"] = empleado_id
+    return [dict(row) for row in conn.execute(text(f"""
+        SELECT c.idcita, c.fecha, c.hora, c.motivo, c.reprogramada_en,
+               COALESCE(u.nombre, 'Cliente') AS cliente,
+               COALESCE(v.placa, 'Sin placa') AS placa,
+               ot.idorden, ot.codigo_orden
+        FROM dmi.citas c
+        LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+        LEFT JOIN dmi.usuarios u
+                   ON u.idusuarios = v.cliente_id
+                   OR u.vehiculos_idvehiculo = v.idvehiculo
+        LEFT JOIN dmi.orden_trabajo ot ON ot.cita_id = c.idcita
+        WHERE c.reprogramada_en IS NOT NULL
+          {filtro_mes}
+          {filtro_empleado}
+        ORDER BY c.fecha ASC, c.hora ASC
+        LIMIT 24
+    """), params).mappings().fetchall()]
+
+
+def organizar_ordenes(ordenes: list) -> dict:
+    """Agrupa la lista para que la pantalla no mezcle trabajo vivo con historial."""
+    estados_proceso = {"abierta", "diagnostico", "aprobada", "en_reparacion"}
+    estados_cierre = {"finalizada", "facturada", "pagada"}
+    entregadas = [orden for orden in ordenes if str(orden.get("estado") or "").lower() == "entregada"]
+    return {
+        "ordenes_en_proceso": [orden for orden in ordenes if str(orden.get("estado") or "").lower() in estados_proceso],
+        "cotizaciones_enviadas": [orden for orden in ordenes if str(orden.get("estado") or "").lower() == "cotizada"],
+        "ordenes_por_cerrar": [orden for orden in ordenes if str(orden.get("estado") or "").lower() in estados_cierre],
+        "ordenes_terminadas": sorted(entregadas, key=lambda orden: (orden.get("fecha_entrega") or orden.get("fecha_finalizacion") or orden.get("fecha_apertura") or date.min, orden.get("idorden") or 0)),
+    }
+
+
+def construir_calendario_mes(mes: Optional[str], citas: list) -> list:
+    """Matriz semanal simple para representar las citas del mes sin JavaScript externo."""
+    rango = rango_mes(mes)
+    if not rango:
+        return []
+    inicio, _ = rango
+    citas_por_dia = {}
+    for cita in citas:
+        fecha_cita = cita.get("fecha")
+        if isinstance(fecha_cita, datetime):
+            fecha_cita = fecha_cita.date()
+        if isinstance(fecha_cita, date):
+            citas_por_dia.setdefault(fecha_cita.day, []).append(cita)
+    calendario = calendar.Calendar(firstweekday=0)
+    return [
+        [{"dia": dia.day, "actual": dia.month == inicio.month, "citas": citas_por_dia.get(dia.day, [])} for dia in semana]
+        for semana in calendario.monthdatescalendar(inicio.year, inicio.month)
+    ]
 
 
 def generar_codigo_orden(conn) -> str:
@@ -992,6 +1103,10 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
     meses_ordenes = []
     notificaciones = []
     citas_hoy_ordenes = []
+    citas_calendario = []
+    citas_reprogramadas = []
+    calendario_mes = []
+    panel_ordenes = organizar_ordenes([])
     mes_seleccionado = request.query_params.get("mes")
 
     try:
@@ -1001,6 +1116,9 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
                 mes_seleccionado = mes_seleccionado or (meses_ordenes[0]["clave"] if meses_ordenes else None)
                 ordenes = obtener_ordenes_panel(conn, mes_seleccionado)
                 citas_hoy_ordenes = obtener_citas_programadas_hoy(conn)
+                citas_calendario = obtener_citas_calendario_ordenes(conn, mes_seleccionado)
+                citas_reprogramadas = obtener_citas_reprogramadas_ordenes(conn, mes_seleccionado)
+                panel_ordenes = organizar_ordenes(obtener_ordenes_panel(conn))
             else:
                 empleado = obtener_empleado_actual(conn, usuario)
                 if empleado:
@@ -1009,6 +1127,9 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
                     ordenes = obtener_ordenes_mecanico(conn, empleado.get("idempleado"), mes_seleccionado)
                     notificaciones = [orden for orden in obtener_ordenes_mecanico(conn, empleado.get("idempleado")) if orden.get("estado") == "aprobada"]
                     citas_hoy_ordenes = obtener_citas_programadas_hoy(conn, empleado.get("idempleado"))
+                    citas_calendario = obtener_citas_calendario_ordenes(conn, mes_seleccionado, empleado.get("idempleado"))
+                    citas_reprogramadas = obtener_citas_reprogramadas_ordenes(conn, mes_seleccionado, empleado.get("idempleado"))
+                    panel_ordenes = organizar_ordenes(obtener_ordenes_mecanico(conn, empleado.get("idempleado")))
                 else:
                     error_msg = "Tu usuario mecanico no esta enlazado a un empleado por correo."
     except Exception as e:
@@ -1030,6 +1151,10 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
             "mes_seleccionado": mes_seleccionado,
             "notificaciones": notificaciones,
             "citas_hoy_ordenes": citas_hoy_ordenes,
+            "citas_calendario": citas_calendario,
+            "citas_reprogramadas": citas_reprogramadas,
+            "calendario_mes": construir_calendario_mes(mes_seleccionado, citas_calendario),
+            **panel_ordenes,
             "success_msg": success_msg,
             "error": error_msg,
         },
@@ -1062,6 +1187,9 @@ async def admin_ordenes(request: Request, access_token: str = Cookie(None)):
     total_facturadas = 0
     meses_ordenes = []
     citas_hoy_ordenes = []
+    citas_calendario = []
+    citas_reprogramadas = []
+    panel_ordenes = organizar_ordenes([])
     mes_seleccionado = request.query_params.get("mes")
 
     try:
@@ -1070,6 +1198,9 @@ async def admin_ordenes(request: Request, access_token: str = Cookie(None)):
             mes_seleccionado = mes_seleccionado or (meses_ordenes[0]["clave"] if meses_ordenes else None)
             ordenes = obtener_ordenes_panel(conn, mes_seleccionado)
             citas_hoy_ordenes = obtener_citas_programadas_hoy(conn)
+            citas_calendario = obtener_citas_calendario_ordenes(conn, mes_seleccionado)
+            citas_reprogramadas = obtener_citas_reprogramadas_ordenes(conn, mes_seleccionado)
+            panel_ordenes = organizar_ordenes(obtener_ordenes_panel(conn))
             total_diagnostico = conn.execute(
                 text("SELECT COUNT(*) FROM dmi.orden_trabajo WHERE estado = 'diagnostico'")
             ).scalar() or 0
@@ -1095,6 +1226,10 @@ async def admin_ordenes(request: Request, access_token: str = Cookie(None)):
             "meses_ordenes": meses_ordenes,
             "mes_seleccionado": mes_seleccionado,
             "citas_hoy_ordenes": citas_hoy_ordenes,
+            "citas_calendario": citas_calendario,
+            "citas_reprogramadas": citas_reprogramadas,
+            "calendario_mes": construir_calendario_mes(mes_seleccionado, citas_calendario),
+            **panel_ordenes,
             "success_msg": success_msg,
             "error": error_msg,
         },
@@ -1117,11 +1252,18 @@ async def admin_ordenes_empleado(empleado_id: int, request: Request, access_toke
             mes_seleccionado = mes_seleccionado or (meses_ordenes[0]["clave"] if meses_ordenes else None)
             ordenes = obtener_ordenes_mecanico(conn, empleado_id, mes_seleccionado)
             citas_hoy_ordenes = obtener_citas_programadas_hoy(conn, empleado_id)
+            citas_calendario = obtener_citas_calendario_ordenes(conn, mes_seleccionado, empleado_id)
+            citas_reprogramadas = obtener_citas_reprogramadas_ordenes(conn, mes_seleccionado, empleado_id)
+            panel_ordenes = organizar_ordenes(obtener_ordenes_mecanico(conn, empleado_id))
             nombre_empleado = " ".join(filter(None, [empleado.get("nombre") or empleado.get("nombres"), empleado.get("apellido") or empleado.get("apellidos")]))
         return templates.TemplateResponse(request=request, name="ordenes.html", context={
             "usuario": usuario, "ordenes": ordenes, "meses_ordenes": meses_ordenes,
             "mes_seleccionado": mes_seleccionado, "empleado_filtro": nombre_empleado or f"Empleado #{empleado_id}", "empleado_filtro_id": empleado_id,
             "citas_hoy_ordenes": citas_hoy_ordenes,
+            "citas_calendario": citas_calendario,
+            "citas_reprogramadas": citas_reprogramadas,
+            "calendario_mes": construir_calendario_mes(mes_seleccionado, citas_calendario),
+            **panel_ordenes,
             "total_ordenes": len(ordenes),
             "total_diagnostico": sum(1 for o in ordenes if o.get("estado") == "diagnostico"),
             "total_reparacion": sum(1 for o in ordenes if o.get("estado") == "en_reparacion"),
@@ -1642,6 +1784,9 @@ async def enviar_cotizacion_orden(orden_id: int, request: Request, access_token:
             update_dynamic(conn, "cotizaciones", "idcotizacion", cotizacion["idcotizacion"], {"estado": "pendiente", "enviado_en": datetime.now()})
             update_dynamic(conn, "orden_trabajo", "idorden", orden_id, {"estado": "cotizada"})
             registrar_historial_orden(conn, orden_id, "cotizacion_enviada", f"Cotizacion {cotizacion.get('codigo_cotizacion')} enviada al cliente", total)
+            cliente_id = conn.execute(text("SELECT cliente_id FROM dmi.orden_trabajo WHERE idorden = :id"), {"id": orden_id}).scalar()
+            notificar_cliente(conn, cliente_id, "Cotización disponible", f"La cotización {cotizacion.get('codigo_cotizacion')} está lista para tu revisión.", "cotizacion_enviada", "cotizacion", cotizacion["idcotizacion"])
+            notificar_administradores(conn, "Cotización enviada", f"La cotización {cotizacion.get('codigo_cotizacion')} fue enviada al cliente.", "cotizacion_enviada", "cotizacion", cotizacion["idcotizacion"], "/admin/ordenes")
             conn.commit()
         return redirect_orden(usuario, orden_id, "Cotizacion enviada al cliente")
     except Exception as e:
@@ -1686,7 +1831,7 @@ async def generar_factura_orden(orden_id: int, request: Request, access_token: s
             if total_orden <= 0 and cotizacion_aprobada:
                 total_orden = float(cotizacion_aprobada.get("total") or 0)
             codigo = generar_codigo_documento(conn, "facturas", "codigo_factura", "FAC")
-            insert_dynamic_returning(conn, "facturas", {
+            factura_id = insert_dynamic_returning(conn, "facturas", {
                 "codigo_factura": codigo,
                 "orden_id": orden_id,
                 "cliente_id": orden.get("cliente_id"),
@@ -1697,8 +1842,10 @@ async def generar_factura_orden(orden_id: int, request: Request, access_token: s
                 "total": total_orden,
                 "saldo": total_orden,
                 "estado": "pendiente",
-            })
+            }, "idfactura")
             update_dynamic(conn, "orden_trabajo", "idorden", orden_id, {"estado": "facturada", "fecha_finalizacion": datetime.now()})
+            notificar_cliente(conn, orden.get("cliente_id"), "Factura disponible", f"Tu factura {codigo} fue generada por un total de ${total_orden:,.0f}.", "factura_generada", "factura", factura_id)
+            notificar_administradores(conn, "Factura generada", f"Se generó la factura {codigo} para la orden {orden.get('codigo_orden') or '#' + str(orden_id)}.", "factura_generada", "factura", factura_id, "/admin/ordenes")
             conn.commit()
         return RedirectResponse(url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"Factura generada", status_code=302)
     except Exception as e:
@@ -1740,6 +1887,9 @@ async def registrar_pago_orden(
             update_dynamic(conn, "facturas", "idfactura", factura["idfactura"], {"saldo": nuevo_saldo, "estado": estado_factura})
             if estado_factura == "pagada":
                 update_dynamic(conn, "orden_trabajo", "idorden", orden_id, {"estado": "pagada"})
+            cliente_id = conn.execute(text("SELECT cliente_id FROM dmi.orden_trabajo WHERE idorden = :id"), {"id": orden_id}).scalar()
+            notificar_cliente(conn, cliente_id, "Pago registrado", f"Registramos un pago de ${valor:,.0f} para tu factura {factura.get('codigo_factura')}.", "pago_registrado", "factura", factura["idfactura"])
+            notificar_administradores(conn, "Pago registrado", f"Se registró un pago de ${valor:,.0f} para la factura {factura.get('codigo_factura')}.", "pago_registrado", "factura", factura["idfactura"], "/admin/ordenes")
             conn.commit()
         return RedirectResponse(url=(f"/admin/ordenes/{orden_id}?success=" if es_admin(usuario) else f"/mecanico/ordenes/{orden_id}?success=") + f"Pago registrado", status_code=302)
     except Exception as e:
@@ -1844,6 +1994,10 @@ async def crear_orden_desde_cita(cita_id: int, request: Request, access_token: s
                 text("UPDATE dmi.citas SET estado = 'confirmada' WHERE idcita = :id"),
                 {"id": cita_id},
             )
+            notificar_cliente(conn, cita["cliente_id"], "Orden de trabajo creada", f"Creamos la orden {codigo} para tu cita. El taller iniciará la revisión.", "orden_creada", "orden", orden_id)
+            notificar_administradores(conn, "Nueva orden de trabajo", f"La cita #{cita_id} fue convertida en la orden {codigo}.", "orden_creada", "orden", orden_id, "/admin/ordenes")
+            if empleado_id:
+                crear_notificacion(conn, "Nueva orden asignada", f"Se te asignó la orden {codigo}.", "orden_asignada", "orden", orden_id, empleado_id=empleado_id, accion_url=f"/mecanico/ordenes/{orden_id}")
             conn.commit()
 
         return RedirectResponse(url=f"/admin/ordenes/{orden_id}?success=Orden de trabajo creada", status_code=302)
@@ -2116,7 +2270,7 @@ async def registro(
 @app.post("/registro-react")
 async def registro_react(request: Request):
     try:
-        body = await request.json()
+        body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else dict(await request.form())
         email = body.get("email")
         password = body.get("password")
         nombre = body.get("nombre")
@@ -2246,7 +2400,7 @@ async def registro_react(request: Request):
 async def verificar_registro_react(request: Request):
     """Confirma el PIN de Supabase y crea el perfil DMI solo despues del correo."""
     try:
-        body = await request.json()
+        body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else dict(await request.form())
         email = str(body.get("email") or "").strip().lower()
         redirect_url = obtener_url_recuperacion_segura(str(body.get("redirect_url") or "").strip())
         pin = str(body.get("pin") or "").strip()
@@ -3093,7 +3247,7 @@ async def crear_cita(
                         },
                     )
 
-            conn.execute(
+            cita_creada = conn.execute(
                 text("""
                     INSERT INTO dmi.citas
                         (
@@ -3113,6 +3267,7 @@ async def crear_cita(
                             :obs,
                             'pendiente'
                         )
+                    RETURNING idcita
                 """),
                 {
                     "vehiculo": vehiculo_id,
@@ -3123,6 +3278,20 @@ async def crear_cita(
                 },
             )
 
+            cita_id = cita_creada.scalar()
+            notificar_administradores(
+                conn, "Nueva cita agendada",
+                f"Se creó una cita para el {fecha_cita} a las {hora_cita}: {motivo}.",
+                "cita_creada", "cita", cita_id, "/admin/citas",
+            )
+            correo_cliente = str(usuario.get("email") or "").strip()
+            if correo_cliente:
+                mensaje_correo = f"Tu cita fue agendada para el {fecha_cita} a las {hora_cita}. Servicio: {motivo}."
+                enviar_correo_transaccional(
+                    correo_cliente, "DMI | Cita agendada",
+                    "<h2>DISOL MOTORS</h2><p>" + html.escape(mensaje_correo) + "</p>",
+                    "cita_agendada", usuario.get("idusuarios") or usuario.get("id"), "cita", cita_id,
+                )
             conn.commit()
 
         if quiere_json(request):
@@ -3149,38 +3318,567 @@ async def crear_cita(
             url=f"/citas?error={str(e)}",
             status_code=302
         )
-# ==================== ELIMINAR CITA ====================
-@app.post("/citas/eliminar/{cita_id}")
-async def eliminar_cita(cita_id: int, access_token: str = Cookie(None)):
-    if not access_token:
-        return RedirectResponse(
-            url="/citas?error=Debes iniciar sesion",
-            status_code=302
+# ==================== GESTION SEGURA DE CITAS ====================
+def usuario_puede_gestionar_cita(conn, usuario: Optional[dict], cita_id: int) -> bool:
+    """Autoriza solo al propietario de la cita o a un administrador."""
+    if es_admin(usuario):
+        return True
+    if not usuario or not usuario.get("idusuarios"):
+        return False
+
+    return conn.execute(
+        text("""
+            SELECT 1
+            FROM dmi.citas c
+            JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+            LEFT JOIN dmi.usuarios u ON u.vehiculos_idvehiculo = v.idvehiculo
+            WHERE c.idcita = :cita_id
+              AND (v.cliente_id = :usuario_id OR u.idusuarios = :usuario_id)
+            LIMIT 1
+        """),
+        {"cita_id": cita_id, "usuario_id": usuario["idusuarios"]},
+    ).scalar() is not None
+
+
+def obtener_cita_para_gestion(conn, cita_id: int) -> Optional[dict]:
+    row = conn.execute(
+        text("""
+            SELECT idcita, fecha, hora, motivo, notas, estado, vehiculos_idvehiculo
+            FROM dmi.citas
+            WHERE idcita = :cita_id
+        """),
+        {"cita_id": cita_id},
+    ).mappings().fetchone()
+    return dict(row) if row else None
+
+
+def registrar_historial_cita(conn, cita_id: int, evento: str, usuario: Optional[dict], motivo: str = None,
+                             datos_anteriores: Optional[dict] = None, datos_nuevos: Optional[dict] = None):
+    if not table_exists(conn, "dmi", "historial_citas"):
+        return
+    conn.execute(
+        text("""
+            INSERT INTO dmi.historial_citas
+                (cita_id, tipo_evento, actor_usuario_id, actor_email, motivo, datos_anteriores, datos_nuevos)
+            VALUES
+                (:cita_id, :evento, :actor_usuario_id, :actor_email, :motivo,
+                 CAST(:datos_anteriores AS jsonb), CAST(:datos_nuevos AS jsonb))
+        """),
+        {
+            "cita_id": cita_id,
+            "evento": evento,
+            "actor_usuario_id": usuario.get("idusuarios") if usuario else None,
+            "actor_email": usuario.get("email") if usuario else None,
+            "motivo": motivo,
+            "datos_anteriores": json.dumps(datos_anteriores or {}, default=str),
+            "datos_nuevos": json.dumps(datos_nuevos or {}, default=str),
+        },
+    )
+
+
+def crear_notificacion(conn, titulo: str, mensaje: str, tipo: str, referencia_tipo: str = None,
+                       referencia_id: int = None, usuario_id: int = None, empleado_id: int = None,
+                       accion_url: str = None):
+    """Registra una notificacion persistente para una cuenta o empleado."""
+    if not table_exists(conn, "dmi", "notificaciones") or (not usuario_id and not empleado_id):
+        return
+    insert_dynamic_returning(conn, "notificaciones", {
+        "usuario_id": usuario_id, "empleado_id": empleado_id, "tipo": tipo,
+        "titulo": titulo[:180], "mensaje": mensaje, "referencia_tipo": referencia_tipo,
+        "referencia_id": referencia_id, "accion_url": accion_url,
+    })
+
+
+def notificar_administradores(conn, titulo: str, mensaje: str, tipo: str,
+                              referencia_tipo: str = None, referencia_id: int = None,
+                              accion_url: str = "/"):
+    """Entrega un evento operativo a todos los administradores activos."""
+    administradores = conn.execute(text("""
+        SELECT idusuarios FROM dmi.usuarios
+        WHERE lower(COALESCE(rol, 'usuario')) = 'admin'
+    """)).scalars().all()
+    for admin_id in administradores:
+        crear_notificacion(conn, titulo, mensaje, tipo, referencia_tipo, referencia_id,
+                            admin_id, accion_url=accion_url)
+
+
+def notificar_cliente(conn, cliente_id: Optional[int], titulo: str, mensaje: str, tipo: str,
+                      referencia_tipo: str = None, referencia_id: int = None,
+                      accion_url: str = "/mi-cuenta"):
+    if cliente_id:
+        crear_notificacion(conn, titulo, mensaje, tipo, referencia_tipo, referencia_id,
+                            cliente_id, accion_url=accion_url)
+
+
+def registrar_correo(conn, destinatario: str, tipo: str, asunto: str, estado: str,
+                     usuario_id: Optional[int] = None, referencia_tipo: str = None,
+                     referencia_id: Optional[int] = None, error_detalle: str = None,
+                     proveedor_mensaje_id: str = None):
+    """Audita cada intento de envío sin guardar contraseñas ni contenido privado."""
+    if not table_exists(conn, "dmi", "correos_enviados"):
+        return None
+    return insert_dynamic_returning(conn, "correos_enviados", {
+        "usuario_id": usuario_id, "destinatario": destinatario, "tipo": tipo,
+        "asunto": asunto, "estado": estado, "referencia_tipo": referencia_tipo,
+        "referencia_id": referencia_id, "error_detalle": error_detalle,
+        "proveedor_mensaje_id": proveedor_mensaje_id,
+        "enviado_en": datetime.now() if estado == "enviado" else None,
+    }, "idcorreo")
+
+
+def enviar_correo_transaccional(destinatario: str, asunto: str, contenido_html: str, tipo: str,
+                                usuario_id: Optional[int] = None, referencia_tipo: str = None,
+                                referencia_id: Optional[int] = None) -> bool:
+    """Envía correo por SMTP y conserva resultado en dmi.correos_enviados.
+
+    Si aún no hay credenciales configuradas, no simula un envío: deja el evento
+    como pendiente para que el administrador pueda identificarlo.
+    """
+    if not destinatario:
+        return False
+    asunto = str(asunto)[:255]
+    try:
+        if not (SMTP_USERNAME and SMTP_PASSWORD and EMAIL_FROM):
+            with engine.connect() as conn:
+                registrar_correo(conn, destinatario, tipo, asunto, "pendiente", usuario_id,
+                                 referencia_tipo, referencia_id,
+                                 "Falta configurar SMTP_USERNAME, SMTP_PASSWORD y EMAIL_FROM.")
+                conn.commit()
+            return False
+
+        mensaje = EmailMessage()
+        mensaje["Subject"] = asunto
+        mensaje["From"] = EMAIL_FROM
+        mensaje["To"] = destinatario
+        mensaje.set_content("Consulta este mensaje desde un cliente compatible con HTML.")
+        mensaje.add_alternative(contenido_html, subtype="html")
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ssl.create_default_context(), timeout=20) as smtp:
+            smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+            smtp.send_message(mensaje)
+        with engine.connect() as conn:
+            registrar_correo(conn, destinatario, tipo, asunto, "enviado", usuario_id,
+                             referencia_tipo, referencia_id)
+            conn.commit()
+        return True
+    except Exception as error:
+        print("ERROR enviar_correo_transaccional:", error)
+        try:
+            with engine.connect() as conn:
+                registrar_correo(conn, destinatario, tipo, asunto, "fallido", usuario_id,
+                                 referencia_tipo, referencia_id, str(error)[:2000])
+                conn.commit()
+        except Exception as audit_error:
+            print("ERROR registrar_correo_fallido:", audit_error)
+        return False
+
+
+def notificar_evento_cita(conn, cita_id: int, usuario: Optional[dict], tipo: str, mensaje_cliente: str, mensaje_admin: str):
+    cliente = conn.execute(text("""
+        SELECT COALESCE(v.cliente_id, u.idusuarios) AS cliente_id, u.email
+        FROM dmi.citas c JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+        LEFT JOIN dmi.usuarios u ON u.vehiculos_idvehiculo = v.idvehiculo
+        WHERE c.idcita = :cita_id LIMIT 1
+    """), {"cita_id": cita_id}).mappings().fetchone()
+    cliente_id = cliente.get("cliente_id") if cliente else None
+    titulo = "Cita reprogramada" if tipo == "cita_reprogramada" else "Cita cancelada"
+    if cliente_id:
+        crear_notificacion(conn, titulo, mensaje_cliente, tipo, "cita", cita_id, cliente_id, accion_url="/mi-cuenta")
+    if cliente and cliente.get("email"):
+        enviar_correo_transaccional(
+            cliente["email"], "DMI | " + titulo,
+            "<h2>DISOL MOTORS</h2><p>" + html.escape(mensaje_cliente) + "</p>",
+            tipo, cliente_id, "cita", cita_id,
+        )
+    notificar_administradores(conn, titulo, mensaje_admin, tipo, "cita", cita_id, "/admin/citas")
+
+
+def enviar_correo_solicitud_reprogramacion(conn, cita_id: int, usuario_id: Optional[int], fecha: str, hora: str):
+    """Confirma por correo que el cambio quedó pendiente de aprobación."""
+    email = conn.execute(text("SELECT email FROM dmi.usuarios WHERE idusuarios = :id"), {"id": usuario_id}).scalar()
+    if email:
+        mensaje = "Recibimos tu solicitud para reprogramar la cita #" + str(cita_id) + " para " + fecha + " a las " + hora + ". Te avisaremos cuando el administrador la apruebe."
+        enviar_correo_transaccional(
+            email, "DMI | Solicitud de reprogramación recibida",
+            "<h2>DISOL MOTORS</h2><p>" + html.escape(mensaje) + "</p>",
+            "solicitud_reprogramacion", usuario_id, "cita", cita_id,
         )
 
-    usuario = obtener_usuario(access_token)
 
-    if not es_admin(usuario):
-        return redirigir_sin_permiso()
+def notificar_mecanico_cita_reprogramada(conn, cita_id: int, fecha: str, hora: str):
+    """Avisa al técnico asignado con la fecha vigente que quedó en la cita."""
+    orden_col = empleado_orden_column(conn)
+    if not orden_col:
+        return
+    empleado_id = conn.execute(text(f"""
+        SELECT ot.{orden_col}
+        FROM dmi.orden_trabajo ot
+        WHERE ot.cita_id = :cita_id AND ot.{orden_col} IS NOT NULL
+        ORDER BY ot.idorden DESC LIMIT 1
+    """), {"cita_id": cita_id}).scalar()
+    if empleado_id:
+        crear_notificacion(
+            conn, "Cita reprogramada", "La cita #" + str(cita_id) + " fue aprobada para " + fecha + " a las " + hora + ".",
+            "cita_reprogramada", "cita", cita_id, empleado_id=empleado_id, accion_url="/mecanico",
+        )
+
+
+def validar_fecha_hora_cita(fecha_cita: str, hora_cita: str) -> tuple[date, time]:
+    try:
+        fecha = datetime.strptime(str(fecha_cita), "%Y-%m-%d").date()
+        hora = datetime.strptime(str(hora_cita), "%H:%M").time()
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Selecciona una fecha y una hora validas.")
+    if fecha < datetime.now(ZoneInfo("America/Bogota")).date():
+        raise HTTPException(status_code=400, detail="No puedes agendar una cita en una fecha pasada.")
+    return fecha, hora
+
+
+@app.put("/api/citas/{cita_id}/reprogramar")
+async def reprogramar_cita(cita_id: int, request: Request, access_token: str = Cookie(None), authorization: Optional[str] = Header(None)):
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+    usuario = obtener_usuario(access_token, request)
+    if not usuario:
+        return JSONResponse({"error": "Debes iniciar sesion para reprogramar una cita."}, status_code=401)
 
     try:
+        body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else dict(await request.form())
+        fecha, hora = validar_fecha_hora_cita(body.get("fecha_cita"), body.get("hora_cita"))
+        motivo = str(body.get("motivo") or "").strip()[:1000] or None
+
         with engine.connect() as conn:
-            conn.execute(
-                text("DELETE FROM dmi.citas WHERE idcita = :id"),
-                {"id": cita_id},
-            )
+            if not usuario_puede_gestionar_cita(conn, usuario, cita_id):
+                return JSONResponse({"error": "No tienes permiso para modificar esta cita."}, status_code=403)
+            cita = obtener_cita_para_gestion(conn, cita_id)
+            if not cita:
+                return JSONResponse({"error": "La cita no existe."}, status_code=404)
+            if str(cita.get("estado") or "").lower() in {"cancelada", "cancelado", "completada"}:
+                return JSONResponse({"error": "Esta cita ya no puede reprogramarse."}, status_code=400)
+
+            ocupada = conn.execute(
+                text("""
+                    SELECT 1 FROM dmi.citas
+                    WHERE vehiculos_idvehiculo = :vehiculo_id
+                      AND fecha = :fecha AND hora = :hora AND idcita <> :cita_id
+                      AND lower(COALESCE(estado, 'pendiente')) NOT IN ('cancelada', 'cancelado')
+                    LIMIT 1
+                """),
+                {"vehiculo_id": cita["vehiculos_idvehiculo"], "fecha": fecha, "hora": hora, "cita_id": cita_id},
+            ).scalar()
+            if ocupada:
+                return JSONResponse({"error": "Ya tienes una cita activa para esa fecha y hora."}, status_code=409)
+
+            # El cliente propone el cambio; solamente un administrador puede
+            # confirmar y aplicar la nueva fecha sobre la cita original.
+            if not es_admin(usuario):
+                if not table_exists(conn, "dmi", "solicitudes_reprogramacion"):
+                    return JSONResponse({"error": "Falta ejecutar la migracion de solicitudes de reprogramacion."}, status_code=503)
+                conn.execute(text("""
+                    UPDATE dmi.solicitudes_reprogramacion
+                    SET estado = 'reemplazada', resuelta_en = now()
+                    WHERE cita_id = :cita_id AND estado = 'pendiente'
+                """), {"cita_id": cita_id})
+                solicitud_id = conn.execute(text("""
+                    INSERT INTO dmi.solicitudes_reprogramacion
+                        (cita_id, solicitante_usuario_id, fecha_solicitada, hora_solicitada, motivo)
+                    VALUES (:cita_id, :usuario_id, :fecha, :hora, :motivo)
+                    RETURNING idsolicitud_reprogramacion
+                """), {
+                    "cita_id": cita_id, "usuario_id": usuario.get("idusuarios"),
+                    "fecha": fecha, "hora": hora, "motivo": motivo,
+                }).scalar()
+                anteriores = {"fecha": str(cita.get("fecha")), "hora": str(cita.get("hora")), "estado": cita.get("estado")}
+                nuevos = {"fecha_solicitada": str(fecha), "hora_solicitada": hora.strftime("%H:%M"), "motivo": motivo, "estado": "pendiente"}
+                registrar_historial_cita(conn, cita_id, "reprogramacion_solicitada", usuario, motivo, anteriores, nuevos)
+                notificar_administradores(
+                    conn, "Solicitud de reprogramacion",
+                    "Un cliente solicita mover la cita #" + str(cita_id) + " para " + str(fecha) + " a las " + hora.strftime("%H:%M") + ".",
+                    "solicitud_reprogramacion", "solicitud_reprogramacion", solicitud_id, "/admin/citas",
+                )
+                enviar_correo_solicitud_reprogramacion(conn, cita_id, usuario.get("idusuarios"), str(fecha), hora.strftime("%H:%M"))
+                conn.commit()
+                return JSONResponse({
+                    "success": True,
+                    "message": "Solicitud enviada al administrador. Tu cita sigue pendiente hasta su aprobacion.",
+                    "solicitud": {"idsolicitud_reprogramacion": solicitud_id, **nuevos},
+                })
+
+            anteriores = {"fecha": str(cita.get("fecha")), "hora": str(cita.get("hora")), "estado": cita.get("estado")}
+            # Algunas bases ya desplegadas validan el campo estado con una lista
+            # antigua que no incluye "reprogramada". El historial conserva el
+            # evento real sin romper una cita confirmada o pendiente existente.
+            estado_resultante = cita.get("estado") or "pendiente"
+            cita_actualizada = conn.execute(
+                text("""
+                    UPDATE dmi.citas
+                    SET fecha = :fecha, hora = :hora,
+                        reprogramada_en = now(), reprogramada_por_usuario_id = :usuario_id
+                    WHERE idcita = :cita_id
+                    RETURNING fecha, hora, estado, reprogramada_en
+                """),
+                {"fecha": fecha, "hora": hora, "usuario_id": usuario.get("idusuarios"), "cita_id": cita_id},
+            ).mappings().fetchone()
+            if not cita_actualizada:
+                return JSONResponse({"error": "La cita no pudo actualizarse."}, status_code=404)
+
+            # Respondemos exactamente lo que PostgreSQL dejó guardado para que la
+            # tarjeta del cliente no se quede mostrando una fecha anterior.
+            nuevos = {
+                "fecha": str(cita_actualizada["fecha"]),
+                "hora": str(cita_actualizada["hora"]),
+                "estado": cita_actualizada["estado"] or estado_resultante,
+                "reprogramada_en": str(cita_actualizada["reprogramada_en"]),
+            }
+            registrar_historial_cita(conn, cita_id, "cita_reprogramada", usuario, motivo, anteriores, nuevos)
+            notificar_evento_cita(conn, cita_id, usuario, "cita_reprogramada",
+                                  "Tu cita fue reprogramada para " + str(fecha) + " a las " + hora.strftime("%H:%M") + ".",
+                                  "Una cita fue reprogramada para " + str(fecha) + " a las " + hora.strftime("%H:%M") + ".")
             conn.commit()
 
-        return RedirectResponse(
-            url="/citas?success=Cita eliminada",
-            status_code=302
-        )
-
+        return JSONResponse({"success": True, "message": "Tu cita fue reprogramada correctamente.", "cita": {"idcita": cita_id, **nuevos}})
+    except HTTPException as exc:
+        return JSONResponse({"error": exc.detail}, status_code=exc.status_code)
     except Exception as e:
-        return RedirectResponse(
-            url=f"/citas?error={str(e)}",
-            status_code=302
-        )
+        print("ERROR reprogramar_cita:", e)
+        return JSONResponse({"error": "No fue posible reprogramar la cita. Intenta nuevamente."}, status_code=500)
+
+
+@app.get("/api/solicitudes-reprogramacion/{solicitud_id}")
+async def obtener_solicitud_reprogramacion(solicitud_id: int, request: Request, access_token: str = Cookie(None), authorization: Optional[str] = Header(None)):
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+    usuario = obtener_usuario(access_token, request)
+    if not usuario or not es_admin(usuario):
+        return JSONResponse({"error": "Solo un administrador puede revisar esta solicitud."}, status_code=403)
+    try:
+        with engine.connect() as conn:
+            solicitud = conn.execute(text("""
+                SELECT sr.*, c.fecha AS fecha_actual, c.hora AS hora_actual, c.motivo AS servicio_cita,
+                       c.estado AS estado_cita, v.placa, v.marca, v.modelo,
+                       CONCAT_WS(' ', u.nombre, u.apellidos) AS cliente_nombre, u.email AS cliente_email
+                FROM dmi.solicitudes_reprogramacion sr
+                JOIN dmi.citas c ON c.idcita = sr.cita_id
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+                LEFT JOIN dmi.usuarios u ON u.idusuarios = sr.solicitante_usuario_id
+                WHERE sr.idsolicitud_reprogramacion = :solicitud_id
+            """), {"solicitud_id": solicitud_id}).mappings().fetchone()
+            if not solicitud:
+                return JSONResponse({"error": "La solicitud no existe."}, status_code=404)
+            datos = dict(solicitud)
+            for campo in ("fecha_actual", "hora_actual", "fecha_solicitada", "hora_solicitada", "creado_en", "resuelta_en"):
+                if datos.get(campo) is not None:
+                    datos[campo] = str(datos[campo])
+            return JSONResponse({"solicitud": datos})
+    except Exception as e:
+        print("ERROR obtener_solicitud_reprogramacion:", e)
+        return JSONResponse({"error": "No fue posible cargar la solicitud."}, status_code=500)
+
+
+@app.get("/api/notificaciones/{notificacion_id}/solicitud-reprogramacion")
+async def solicitud_desde_notificacion(notificacion_id: int, request: Request, access_token: str = Cookie(None), authorization: Optional[str] = Header(None)):
+    """Obtiene la solicitud vinculada a una alerta, también para alertas creadas antes de la referencia nueva."""
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+    usuario = obtener_usuario(access_token, request)
+    if not usuario or not es_admin(usuario):
+        return JSONResponse({"error": "Solo un administrador puede revisar esta solicitud."}, status_code=403)
+    try:
+        with engine.connect() as conn:
+            notificacion = conn.execute(text("""
+                SELECT referencia_tipo, referencia_id, titulo, mensaje
+                FROM dmi.notificaciones WHERE idnotificacion = :notificacion_id
+            """), {"notificacion_id": notificacion_id}).mappings().fetchone()
+            if not notificacion:
+                return JSONResponse({"error": "La notificación no existe."}, status_code=404)
+            solicitud_id = notificacion.get("referencia_id") if notificacion.get("referencia_tipo") == "solicitud_reprogramacion" else None
+            if not solicitud_id:
+                coincidencia = re.search(r"cita\s*#(\d+)", str(notificacion.get("mensaje") or ""), re.IGNORECASE)
+                if coincidencia:
+                    solicitud_id = conn.execute(text("""
+                        SELECT idsolicitud_reprogramacion FROM dmi.solicitudes_reprogramacion
+                        WHERE cita_id = :cita_id AND estado = 'pendiente'
+                        ORDER BY creado_en DESC LIMIT 1
+                    """), {"cita_id": int(coincidencia.group(1))}).scalar()
+            if not solicitud_id:
+                return JSONResponse({"error": "Esta notificación no tiene una solicitud pendiente asociada."}, status_code=404)
+            return JSONResponse({"solicitud_id": solicitud_id})
+    except Exception as e:
+        print("ERROR solicitud_desde_notificacion:", e)
+        return JSONResponse({"error": "No fue posible abrir la solicitud."}, status_code=500)
+
+
+@app.post("/api/solicitudes-reprogramacion/{solicitud_id}/aprobar")
+async def aprobar_solicitud_reprogramacion(solicitud_id: int, request: Request, access_token: str = Cookie(None), authorization: Optional[str] = Header(None)):
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+    usuario = obtener_usuario(access_token, request)
+    if not usuario or not es_admin(usuario):
+        return JSONResponse({"error": "Solo un administrador puede aprobar esta solicitud."}, status_code=403)
+    try:
+        with engine.connect() as conn:
+            solicitud = conn.execute(text("""
+                SELECT * FROM dmi.solicitudes_reprogramacion
+                WHERE idsolicitud_reprogramacion = :solicitud_id
+            """), {"solicitud_id": solicitud_id}).mappings().fetchone()
+            if not solicitud:
+                return JSONResponse({"error": "La solicitud no existe."}, status_code=404)
+            if solicitud.get("estado") != "pendiente":
+                return JSONResponse({"error": "Esta solicitud ya fue resuelta."}, status_code=400)
+            cita = obtener_cita_para_gestion(conn, solicitud["cita_id"])
+            if not cita or str(cita.get("estado") or "").lower() in {"cancelada", "cancelado", "completada"}:
+                return JSONResponse({"error": "La cita ya no puede reprogramarse."}, status_code=400)
+
+            ocupada = conn.execute(text("""
+                SELECT 1 FROM dmi.citas
+                WHERE vehiculos_idvehiculo = :vehiculo_id
+                  AND fecha = :fecha AND hora = :hora AND idcita <> :cita_id
+                  AND lower(COALESCE(estado, 'pendiente')) NOT IN ('cancelada', 'cancelado')
+                LIMIT 1
+            """), {
+                "vehiculo_id": cita["vehiculos_idvehiculo"], "fecha": solicitud["fecha_solicitada"],
+                "hora": solicitud["hora_solicitada"], "cita_id": solicitud["cita_id"],
+            }).scalar()
+            if ocupada:
+                return JSONResponse({"error": "La fecha y hora solicitadas ya no están disponibles."}, status_code=409)
+
+            cita_actualizada = conn.execute(text("""
+                UPDATE dmi.citas
+                SET fecha = :fecha, hora = :hora, reprogramada_en = now(),
+                    reprogramada_por_usuario_id = :administrador_id
+                WHERE idcita = :cita_id
+                RETURNING fecha, hora, estado, reprogramada_en
+            """), {
+                "fecha": solicitud["fecha_solicitada"], "hora": solicitud["hora_solicitada"],
+                "administrador_id": usuario.get("idusuarios"), "cita_id": solicitud["cita_id"],
+            }).mappings().fetchone()
+            conn.execute(text("""
+                UPDATE dmi.solicitudes_reprogramacion
+                SET estado = 'aprobada', administrador_usuario_id = :administrador_id, resuelta_en = now()
+                WHERE idsolicitud_reprogramacion = :solicitud_id
+            """), {"administrador_id": usuario.get("idusuarios"), "solicitud_id": solicitud_id})
+
+            anteriores = {"fecha": str(cita.get("fecha")), "hora": str(cita.get("hora")), "estado": cita.get("estado")}
+            nuevos = {
+                "fecha": str(cita_actualizada["fecha"]), "hora": str(cita_actualizada["hora"]),
+                "estado": cita_actualizada["estado"] or "pendiente",
+                "reprogramada_en": str(cita_actualizada["reprogramada_en"]),
+            }
+            registrar_historial_cita(conn, solicitud["cita_id"], "reprogramacion_aprobada", usuario, solicitud.get("motivo"), anteriores, nuevos)
+            notificar_evento_cita(
+                conn, solicitud["cita_id"], usuario, "cita_reprogramada",
+                "Tu solicitud fue aprobada. Tu cita quedó para " + nuevos["fecha"] + " a las " + nuevos["hora"] + ".",
+                "Se aprobó la reprogramación de la cita #" + str(solicitud["cita_id"]) + ".",
+            )
+            notificar_mecanico_cita_reprogramada(conn, solicitud["cita_id"], nuevos["fecha"], nuevos["hora"])
+            conn.commit()
+            return JSONResponse({"success": True, "message": "Reprogramación aprobada. La cita fue actualizada.", "cita": {"idcita": solicitud["cita_id"], **nuevos}})
+    except Exception as e:
+        print("ERROR aprobar_solicitud_reprogramacion:", e)
+        return JSONResponse({"error": "No fue posible aprobar la solicitud."}, status_code=500)
+
+
+@app.post("/api/citas/{cita_id}/cancelar")
+async def cancelar_cita(cita_id: int, request: Request, access_token: str = Cookie(None), authorization: Optional[str] = Header(None)):
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+    usuario = obtener_usuario(access_token, request)
+    if not usuario:
+        return JSONResponse({"error": "Debes iniciar sesion para cancelar una cita."}, status_code=401)
+
+    try:
+        body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else dict(await request.form())
+        motivo = str(body.get("motivo") or "").strip()[:1000] or None
+        with engine.connect() as conn:
+            if not usuario_puede_gestionar_cita(conn, usuario, cita_id):
+                return JSONResponse({"error": "No tienes permiso para cancelar esta cita."}, status_code=403)
+            cita = obtener_cita_para_gestion(conn, cita_id)
+            if not cita:
+                return JSONResponse({"error": "La cita no existe."}, status_code=404)
+            estado = str(cita.get("estado") or "").lower()
+            if estado in {"cancelada", "cancelado"}:
+                return JSONResponse({"error": "Esta cita ya fue cancelada."}, status_code=400)
+            if estado == "completada":
+                return JSONResponse({"error": "Una cita completada no puede cancelarse."}, status_code=400)
+
+            conn.execute(
+                text("""
+                    UPDATE dmi.citas
+                    SET estado = 'cancelada', cancelada_en = now(),
+                        cancelada_por_usuario_id = :usuario_id, motivo_cancelacion = :motivo
+                    WHERE idcita = :cita_id
+                """),
+                {"usuario_id": usuario.get("idusuarios"), "motivo": motivo, "cita_id": cita_id},
+            )
+            registrar_historial_cita(
+                conn, cita_id, "cita_cancelada", usuario, motivo,
+                {"fecha": str(cita.get("fecha")), "hora": str(cita.get("hora")), "estado": cita.get("estado")},
+                {"estado": "cancelada"},
+            )
+            notificar_evento_cita(conn, cita_id, usuario, "cita_cancelada",
+                                  "Tu cita fue cancelada. Conservamos el registro en tu historial.",
+                                  "Una cita fue cancelada y permanece disponible en el historial.")
+            conn.commit()
+
+        return JSONResponse({"success": True, "message": "Tu cita fue cancelada. Conservamos el registro en tu historial."})
+    except Exception as e:
+        print("ERROR cancelar_cita:", e)
+        return JSONResponse({"error": "No fue posible cancelar la cita. Intenta nuevamente."}, status_code=500)
+
+
+# Ruta anterior: se conserva por compatibilidad, pero ya no borra datos.
+@app.post("/citas/eliminar/{cita_id}")
+async def eliminar_cita(cita_id: int, request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/citas")
+    return await cancelar_cita(cita_id, request, access_token)
+
+
+@app.get("/api/notificaciones")
+async def listar_notificaciones(request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not usuario:
+        return JSONResponse({"error": "Debes iniciar sesion."}, status_code=401)
+    try:
+        with engine.connect() as conn:
+            filtros, params = [], {}
+            if usuario.get("idusuarios"):
+                filtros.append("usuario_id = :usuario_id")
+                params["usuario_id"] = usuario["idusuarios"]
+            empleado = obtener_empleado_actual(conn, usuario) if es_mecanico(usuario) else None
+            if empleado:
+                filtros.append("empleado_id = :empleado_id")
+                params["empleado_id"] = empleado["idempleado"]
+            if not filtros:
+                return JSONResponse({"notificaciones": [], "no_leidas": 0})
+            where = " OR ".join(filtros)
+            filas = conn.execute(text(f"SELECT * FROM dmi.notificaciones WHERE {where} ORDER BY creado_en DESC LIMIT 80"), params).mappings().fetchall()
+            datos = [{**dict(fila), "creado_en": str(fila.get("creado_en") or ""), "fecha_lectura": str(fila.get("fecha_lectura") or "")} for fila in filas]
+            return JSONResponse({"notificaciones": datos, "no_leidas": sum(1 for fila in datos if not fila.get("leida"))})
+    except Exception as e:
+        print("ERROR listar_notificaciones:", e)
+        return JSONResponse({"error": "No fue posible cargar las notificaciones."}, status_code=500)
+
+
+@app.post("/api/notificaciones/{notificacion_id}/leer")
+async def marcar_notificacion_leida(notificacion_id: int, request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not usuario:
+        return JSONResponse({"error": "No tienes permiso."}, status_code=403)
+    with engine.connect() as conn:
+        filtros, params = [], {"id": notificacion_id}
+        if usuario.get("idusuarios"):
+            filtros.append("usuario_id = :usuario_id")
+            params["usuario_id"] = usuario["idusuarios"]
+        empleado = obtener_empleado_actual(conn, usuario) if es_mecanico(usuario) else None
+        if empleado:
+            filtros.append("empleado_id = :empleado_id")
+            params["empleado_id"] = empleado["idempleado"]
+        if not filtros:
+            return JSONResponse({"error": "No tienes permiso."}, status_code=403)
+        conn.execute(text(f"UPDATE dmi.notificaciones SET leida = TRUE, fecha_lectura = COALESCE(fecha_lectura, now()) WHERE idnotificacion = :id AND ({' OR '.join(filtros)})"), params)
+        conn.commit()
+    return JSONResponse({"success": True})
 
 
 # ==================== CAMBIAR ESTADO CITA ====================
@@ -3279,6 +3977,7 @@ async def guardar_factura_servicio(
                         c.hora,
                         c.motivo,
                         c.estado,
+                        c.reprogramada_en,
                         c.notas,
                         v.placa,
                         v.marca,
@@ -4721,6 +5420,7 @@ async def admin_usuario_ficha(usuario_id: int, request: Request, access_token: s
                         c.hora,
                         c.motivo,
                         c.estado,
+                        c.reprogramada_en,
                         c.notas,
                         v.placa,
                         COALESCE(v.marca, '') || ' ' || COALESCE(v.modelo, '') AS vehiculo

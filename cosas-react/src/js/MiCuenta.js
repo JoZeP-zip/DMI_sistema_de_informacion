@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MiCuentaService } from '../services/api';
+import { CitasService, MiCuentaService } from '../services/api';
 import { openInvoiceDocument } from './invoice';
 import Checkout from './Checkout';
 
@@ -18,6 +18,7 @@ const clean = (value, fallback = 'Por definir') => {
 };
 
 const estadoClase = (estado = '') => String(estado).toLowerCase().replace(/[^a-z0-9_]/g, '-');
+const estadoCitaVisible = (cita) => cita?.reprogramada_en ? 'reprogramada' : (cita?.estado || 'pendiente');
 
 const estadoOrdenPasos = [
   { key: 'abierta', label: 'Orden' },
@@ -91,7 +92,7 @@ const OrderSteps = ({ estado }) => {
   );
 };
 
-export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
+export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialSection = 'resumen' }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -102,6 +103,11 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
   const [facturaAPagar, setFacturaAPagar] = useState(null);
   const [seccionActiva, setSeccionActiva] = useState('resumen');
+  const [citaGestionActiva, setCitaGestionActiva] = useState(null);
+  const [gestionandoCita, setGestionandoCita] = useState(false);
+  const [errorCita, setErrorCita] = useState('');
+  const [mensajeCita, setMensajeCita] = useState('');
+  const [citaDestacadaId, setCitaDestacadaId] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -123,6 +129,19 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    setSeccionActiva(initialSection || 'resumen');
+  }, [initialSection]);
+
+  // La aprobación la realiza el administrador en otro panel. Consultamos de
+  // forma liviana para reflejar su decisión sin pedir al cliente que recargue.
+  useEffect(() => {
+    const intervalo = window.setInterval(() => {
+      MiCuentaService.obtener().then(setData).catch(() => {});
+    }, 15000);
+    return () => window.clearInterval(intervalo);
   }, []);
 
   const resumen = data?.resumen || {};
@@ -167,6 +186,12 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     const activas = citasVehiculo.filter((cita) => !['cancelada', 'cancelado', 'completada'].includes(String(cita.estado || '').toLowerCase()));
     return [...activas].sort((a, b) => `${a.fecha || ''} ${a.hora || ''}`.localeCompare(`${b.fecha || ''} ${b.hora || ''}`))[0];
   }, [citasVehiculo]);
+  // Después de reprogramar, se muestra esa misma cita aunque exista otra más
+  // cercana. Así el cliente ve de inmediato la fecha y hora que acaba de elegir.
+  const citaMostrada = useMemo(
+    () => citasVehiculo.find((cita) => String(cita.idcita) === String(citaDestacadaId)) || citaProxima,
+    [citasVehiculo, citaDestacadaId, citaProxima],
+  );
 
   const cotizacionPendiente = useMemo(
     () => cotizacionesVehiculo.find((cotizacion) => String(cotizacion.estado || '').toLowerCase() === 'pendiente'),
@@ -186,6 +211,64 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const facturaPorOrden = (ordenId) => facturasVehiculo.find((item) => item.orden_id === ordenId);
   const pagosPorFactura = (facturaId) => (data?.pagos_facturas || []).filter((item) => item.factura_id === facturaId);
   const itemsPorCotizacion = (cotizacionId) => (data?.cotizacion_detalles || []).filter((item) => item.cotizacion_id === cotizacionId);
+  const actualizarCitaLocal = (citaId, cambios) => {
+    setData((actual) => ({
+      ...actual,
+      citas: (actual?.citas || []).map((cita) => String(cita.idcita) === String(citaId) ? { ...cita, ...cambios } : cita),
+    }));
+  };
+
+  const abrirReprogramacion = (cita) => {
+    setErrorCita('');
+    setMensajeCita('');
+    setCitaGestionActiva({ cita, fecha_cita: String(cita.fecha || '').slice(0, 10), hora_cita: String(cita.hora || '').slice(0, 5), motivo: '' });
+  };
+
+  const confirmarReprogramacion = async (event) => {
+    event.preventDefault();
+    if (!citaGestionActiva || gestionandoCita) return;
+    setGestionandoCita(true);
+    setErrorCita('');
+    setMensajeCita('');
+    try {
+      const citaId = citaGestionActiva.cita.idcita;
+      const response = await CitasService.reprogramar(citaId, {
+        fecha_cita: citaGestionActiva.fecha_cita,
+        hora_cita: citaGestionActiva.hora_cita,
+        motivo: citaGestionActiva.motivo,
+      });
+      if (response.cita) {
+        actualizarCitaLocal(citaId, response.cita);
+        setCitaDestacadaId(citaId);
+      } else {
+        // Para clientes, el servidor entrega una solicitud pendiente: la cita
+        // conserva su fecha actual hasta que el administrador la apruebe.
+        setCitaDestacadaId(citaId);
+        setMensajeCita(response.message || 'Solicitud enviada al administrador.');
+      }
+      setCitaGestionActiva(null);
+    } catch (err) {
+      setErrorCita(err.message || 'No se pudo reprogramar la cita.');
+    } finally {
+      setGestionandoCita(false);
+    }
+  };
+
+  const cancelarCita = async (cita) => {
+    if (gestionandoCita || !window.confirm('¿Deseas cancelar esta cita? El registro se conservará en tu historial.')) return;
+    const motivo = window.prompt('Motivo de cancelación (opcional):') || '';
+    setGestionandoCita(true);
+    setErrorCita('');
+    try {
+      await CitasService.cancelar(cita.idcita, motivo);
+      actualizarCitaLocal(cita.idcita, { estado: 'cancelada' });
+      if (String(citaDestacadaId) === String(cita.idcita)) setCitaDestacadaId(null);
+    } catch (err) {
+      setErrorCita(err.message || 'No se pudo cancelar la cita.');
+    } finally {
+      setGestionandoCita(false);
+    }
+  };
 
   const abrirCotizacion = (cotizacion) => setCotizacionActiva({
     ...cotizacion,
@@ -336,8 +419,8 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
         </article>
 
         <article className="user-priority-card user-appointment-focus">
-          <div className="user-priority-head"><span><i className="bi bi-calendar2-check-fill" /> Proxima cita</span><button type="button" onClick={onScheduleAppointment}><i className="bi bi-calendar-plus" /> Agendar</button></div>
-          {citaProxima ? <div className="user-appointment-feature"><time>{clean(citaProxima.fecha, 'Fecha pendiente')}<b>{clean(citaProxima.hora, 'Hora por confirmar')}</b></time><div><strong>{clean(citaProxima.motivo, 'Servicio agendado')}</strong><span>{clean(citaProxima.vehiculo, 'Tu vehiculo')}</span><small className={`user-status ${estadoClase(citaProxima.estado)}`}>{clean(citaProxima.estado, 'pendiente')}</small></div></div> : <EmptyState icon="bi-calendar-x" text="No tienes citas activas." />}
+          <div className="user-priority-head"><span><i className="bi bi-calendar2-check-fill" /> {citaMostrada?.reprogramada_en ? 'Cita reprogramada' : 'Proxima cita'}</span><button type="button" onClick={onScheduleAppointment}><i className="bi bi-calendar-plus" /> Agendar</button></div>
+          {citaMostrada ? <div className="user-appointment-feature"><time>{clean(citaMostrada.fecha, 'Fecha pendiente')}<b>{clean(citaMostrada.hora, 'Hora por confirmar')}</b></time><div><strong>{clean(citaMostrada.motivo, 'Servicio agendado')}</strong><span>{clean(citaMostrada.vehiculo, 'Tu vehiculo')}</span><small className={`user-status ${estadoClase(estadoCitaVisible(citaMostrada))}`}>{estadoCitaVisible(citaMostrada)}</small><div className="user-appointment-actions"><button type="button" onClick={() => abrirReprogramacion(citaMostrada)}><i className="bi bi-calendar2-week" /> Reprogramar</button><button type="button" className="danger" disabled={gestionandoCita} onClick={() => cancelarCita(citaMostrada)}><i className="bi bi-x-circle" /> Cancelar</button></div>{mensajeCita && <small className="user-action-success">{mensajeCita}</small>}{errorCita && <small className="user-action-error">{errorCita}</small>}</div></div> : <EmptyState icon="bi-calendar-x" text="No tienes citas activas." />}
         </article>
 
         <article className="user-priority-card user-quote-focus">
@@ -495,6 +578,17 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
             )}
           </div>
         )}
+      </DetailModal>
+
+      <DetailModal title={citaGestionActiva ? 'Reprogramar cita' : ''} onClose={() => setCitaGestionActiva(null)}>
+        {citaGestionActiva && <form className="user-appointment-form" onSubmit={confirmarReprogramacion}>
+          <p>Actualizarás la misma cita #{citaGestionActiva.cita.idcita}; su historial se conservará.</p>
+          <label>Fecha<input required type="date" min={new Date().toISOString().slice(0, 10)} value={citaGestionActiva.fecha_cita} onChange={(event) => setCitaGestionActiva((actual) => ({ ...actual, fecha_cita: event.target.value }))} /></label>
+          <label>Hora<input required type="time" value={citaGestionActiva.hora_cita} onChange={(event) => setCitaGestionActiva((actual) => ({ ...actual, hora_cita: event.target.value }))} /></label>
+          <label>Motivo del cambio (opcional)<textarea value={citaGestionActiva.motivo} onChange={(event) => setCitaGestionActiva((actual) => ({ ...actual, motivo: event.target.value }))} /></label>
+          {errorCita && <p className="user-action-error">{errorCita}</p>}
+          <div className="user-detail-footer"><button type="button" className="outline" onClick={() => setCitaGestionActiva(null)}>Volver</button><button type="submit" disabled={gestionandoCita}>{gestionandoCita ? 'Guardando...' : 'Confirmar reprogramación'}</button></div>
+        </form>}
       </DetailModal>
 
       <DetailModal title={ordenActiva ? 'Detalle de orden' : ''} onClose={() => setOrdenActiva(null)}>
