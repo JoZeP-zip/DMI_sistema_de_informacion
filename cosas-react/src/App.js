@@ -934,10 +934,23 @@ function App() {
   const [view, setView] = useState(getInitialView);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [user, setUser] = useState(null);
+
+  // Estado de la barra superior y de los modales/notificaciones.
+  // Estos estados se perdieron durante el merge y por eso Vercel
+  // estaba reportando varios "is not defined".
   const [navNotifications, setNavNotifications] = useState([]);
   const [navNotificationsOpen, setNavNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [userDashboardSection, setUserDashboardSection] = useState('resumen');
+
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const [dialog, setDialog] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const [afterLoginView, setAfterLoginView] = useState(null);
+
   const showNotice = (title, message) => {
     setToast({ title, message });
     window.setTimeout(() => setToast(null), 4200);
@@ -952,6 +965,90 @@ function App() {
       }
     });
   };
+
+  const closeDialog = () => {
+    setDialog(null);
+  };
+
+  const abrirNotificacionSuperior = async (item) => {
+    if (!item) return;
+
+    if (!item.leida) {
+      try {
+        if (typeof NotificacionesService?.marcarLeida === 'function') {
+          await NotificacionesService.marcarLeida(item.idnotificacion);
+        }
+
+        setNavNotifications((items) =>
+          items.map((actual) =>
+            actual.idnotificacion === item.idnotificacion
+              ? { ...actual, leida: true }
+              : actual
+          )
+        );
+      } catch (error) {
+        // No bloqueamos la navegación si falla el marcado de lectura.
+        console.warn('No se pudo marcar la notificacion como leida:', error);
+      }
+    }
+
+    setNavNotificationsOpen(false);
+
+    if (user?.role === 'usuario' || user?.role === 'cliente') {
+      const seccionPorReferencia = {
+        cotizacion: 'cotizaciones',
+        factura: 'facturas',
+        orden: 'taller',
+        pedido: 'pedidos',
+        cita: 'resumen',
+      };
+
+      setUserDashboardSection(
+        seccionPorReferencia[item.referencia_tipo] || 'resumen'
+      );
+
+      setView('user-dashboard');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (
+      user?.role === 'admin' &&
+      item.tipo === 'solicitud_reprogramacion'
+    ) {
+      window.location.assign(
+        `${getApiBaseUrl().replace(/\/$/, '')}/admin/citas?notificacion=${encodeURIComponent(item.idnotificacion)}`
+      );
+      return;
+    }
+
+    const destino =
+      item.accion_url ||
+      (user?.role === 'admin' ? '/admin/citas' : '/mecanico');
+
+    window.location.assign(
+      `${getApiBaseUrl().replace(/\/$/, '')}${destino}`
+    );
+  };
+
+  useEffect(() => {
+    const cargarNotificaciones = async () => {
+      if (!user || typeof NotificacionesService?.listar !== 'function') {
+        setNavNotifications([]);
+        return;
+      }
+
+      try {
+        const data = await NotificacionesService.listar();
+        setNavNotifications(data?.notificaciones || data || []);
+      } catch (error) {
+        console.warn('No se pudieron cargar las notificaciones:', error);
+        setNavNotifications([]);
+      }
+    };
+
+    cargarNotificaciones();
+  }, [user]);
 
   useEffect(() => {
     const handleDmiMessage = (event) => {
