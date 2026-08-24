@@ -183,9 +183,7 @@
       {% if modo_mecanico %}
       <a href="/mecanico" class="active"><i class="bi bi-tools"></i> Panel Mecanico</a>
       <a href="/mecanico"><i class="bi bi-clipboard2-check-fill"></i> Mis ordenes</a>
-      <a href="/logout-login" id="btnCerrarSesionMecanico">
-        <i class="bi bi-box-arrow-right"></i> Cerrar sesion
-      </a>
+      <a href="/logout-login" id="btnCerrarSesionMecanico"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</a>
       <div class="ot-role-tools"><input class="ot-profile-toggle" id="otBellToggle" type="checkbox"><input class="ot-profile-toggle" id="otProfileToggle" type="checkbox"><label class="ot-role-icon" id="otBell" for="otBellToggle" aria-label="Notificaciones" onclick="document.getElementById('otProfileToggle').checked=false"><i class="bi bi-bell-fill"></i><b id="otBellCount" hidden>0</b></label><label class="ot-role-icon" id="otProfile" for="otProfileToggle" aria-label="Perfil" onclick="document.getElementById('otBellToggle').checked=false"><i class="bi bi-person-circle"></i></label><div class="ot-role-popover" id="otNotifications"></div><div class="ot-role-popover ot-role-profile" id="otProfileCard"><label class="ot-role-close" for="otProfileToggle" aria-label="Cerrar perfil">×</label><strong>{{ usuario.nombre }}</strong><span>{{ usuario.email or 'Correo no disponible' }}</span><small>{{ usuario.rol or 'mecanico' }}</small></div></div>
       {% else %}
       <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
@@ -198,45 +196,238 @@
   </header>
 
   {% if modo_mecanico %}
+  <!-- MODAL DMI PARA CERRAR SESION -->
+  <div id="dmiLogoutModal" class="dmi-logout-overlay" hidden aria-hidden="true">
+    <div class="dmi-logout-modal" role="dialog" aria-modal="true" aria-labelledby="dmiLogoutTitle">
+      <span class="dmi-logout-kicker">ERROR SESION</span>
+      <h2 id="dmiLogoutTitle">Confirmar salida</h2>
+      <p>Vas a cerrar tu sesión actual en Disol Motors Injections.</p>
+
+      <div class="dmi-logout-actions">
+        <button type="button" id="dmiLogoutConfirm" class="dmi-logout-confirm">
+          Cerrar sesion
+        </button>
+        <button type="button" id="dmiLogoutCancel" class="dmi-logout-cancel">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .dmi-logout-overlay{
+      position:fixed;
+      inset:0;
+      z-index:100000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(0,0,0,.78);
+      backdrop-filter:blur(8px);
+    }
+    .dmi-logout-overlay[hidden]{display:none}
+    .dmi-logout-modal{
+      width:min(520px,100%);
+      padding:34px 36px 30px;
+      border:1px solid #ff2f55;
+      background:
+        radial-gradient(circle at 85% 15%,rgba(255,47,85,.12),transparent 32%),
+        linear-gradient(145deg,#17070d 0%,#09090b 58%,#050506 100%);
+      box-shadow:0 0 0 1px rgba(255,47,85,.08) inset,0 24px 70px rgba(0,0,0,.72),0 0 35px rgba(255,47,85,.12);
+      font-family:'Orbitron',Arial,sans-serif;
+    }
+    .dmi-logout-kicker{
+      display:block;
+      margin-bottom:14px;
+      color:#ff2f55;
+      font-size:.72rem;
+      font-weight:900;
+      letter-spacing:.22em;
+      text-transform:uppercase;
+    }
+    .dmi-logout-modal h2{
+      margin:0 0 18px;
+      color:#ff2f55;
+      font-size:clamp(1.7rem,4vw,2.35rem);
+      font-weight:900;
+      line-height:1.05;
+      text-transform:none;
+    }
+    .dmi-logout-modal p{
+      margin:0 0 28px;
+      color:rgba(255,255,255,.74);
+      font-size:.88rem;
+      line-height:1.7;
+    }
+    .dmi-logout-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+    .dmi-logout-actions button{
+      min-height:58px;
+      padding:0 18px;
+      border-radius:0;
+      font-family:'Orbitron',Arial,sans-serif;
+      font-size:.88rem;
+      font-weight:900;
+      cursor:pointer;
+      text-transform:none;
+      transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+    }
+    .dmi-logout-confirm{
+      border:1px solid #ff2f55;
+      background:#e52d4d;
+      color:#fff;
+      box-shadow:0 10px 25px rgba(255,47,85,.18);
+    }
+    .dmi-logout-confirm:hover{
+      background:#ff2f55;
+      transform:translateY(-1px);
+      box-shadow:0 12px 30px rgba(255,47,85,.28);
+    }
+    .dmi-logout-cancel{
+      border:1px solid #ff2f55;
+      background:transparent;
+      color:#fff;
+    }
+    .dmi-logout-cancel:hover{
+      background:rgba(255,47,85,.09);
+      transform:translateY(-1px);
+    }
+    @media(max-width:560px){
+      .dmi-logout-modal{padding:26px 22px 22px}
+      .dmi-logout-actions{grid-template-columns:1fr}
+      .dmi-logout-actions button{width:100%}
+    }
+  </style>
+
   <script>
-    // Cierre de sesión del mecánico:
-    // 1. Cierra la sesión del backend.
-    // 2. Envía al usuario al LOGIN del frontend de DISOL MOTORS.
     document.addEventListener("DOMContentLoaded", function () {
-      const btnLogout = document.getElementById("btnCerrarSesionMecanico");
-      if (!btnLogout) return;
+      const logoutLink = document.getElementById("btnCerrarSesionMecanico");
+      const modal = document.getElementById("dmiLogoutModal");
+      const confirmButton = document.getElementById("dmiLogoutConfirm");
+      const cancelButton = document.getElementById("dmiLogoutCancel");
 
-      btnLogout.addEventListener("click", async function (event) {
+      if (!logoutLink || !modal || !confirmButton || !cancelButton) return;
+
+      /*
+       * El frontend manda ?frontend=ORIGIN cuando envía al mecánico.
+       * Lo guardamos en sessionStorage para que siga disponible aunque
+       * el mecánico navegue por /mecanico/ordenes/18, /mecanico, etc.
+       */
+      const params = new URLSearchParams(window.location.search);
+      const frontendFromQuery = params.get("frontend");
+
+      if (frontendFromQuery) {
+        try {
+          const parsed = new URL(frontendFromQuery);
+          const allowed =
+            parsed.protocol === "https:" ||
+            parsed.hostname === "localhost" ||
+            parsed.hostname === "127.0.0.1" ||
+            parsed.hostname.endsWith(".app.github.dev");
+
+          if (allowed) {
+            sessionStorage.setItem("dmiFrontendOrigin", parsed.origin);
+          }
+        } catch (_) {
+          console.warn("Origen frontend invalido.");
+        }
+      }
+
+      function getFrontendOrigin() {
+        const saved = sessionStorage.getItem("dmiFrontendOrigin");
+        if (saved) return saved.replace(/\/$/, "");
+
+        const referrer = document.referrer;
+        if (referrer) {
+          try {
+            const parsed = new URL(referrer);
+            if (
+              parsed.protocol === "https:" ||
+              parsed.hostname === "localhost" ||
+              parsed.hostname === "127.0.0.1" ||
+              parsed.hostname.endsWith(".app.github.dev")
+            ) {
+              return parsed.origin;
+            }
+          } catch (_) {}
+        }
+
+        return "";
+      }
+
+      function openLogoutModal() {
+        modal.hidden = false;
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+        setTimeout(() => confirmButton.focus(), 50);
+      }
+
+      function closeLogoutModal() {
+        modal.hidden = true;
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+        logoutLink.focus();
+      }
+
+      logoutLink.addEventListener("click", function (event) {
         event.preventDefault();
+        openLogoutModal();
+      });
 
-        const confirmar = window.confirm(
-          "¿Deseas cerrar la sesión del mecánico?"
-        );
+      cancelButton.addEventListener("click", closeLogoutModal);
 
-        if (!confirmar) return;
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) closeLogoutModal();
+      });
 
-        btnLogout.style.pointerEvents = "none";
-        btnLogout.style.opacity = "0.6";
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !modal.hidden) {
+          closeLogoutModal();
+        }
+      });
+
+      confirmButton.addEventListener("click", async function () {
+        confirmButton.disabled = true;
+        cancelButton.disabled = true;
+        confirmButton.textContent = "CERRANDO...";
 
         try {
-          // Este endpoint ya existe en el flujo actual del backend.
-          // credentials:'same-origin' permite enviar la cookie de sesión.
+          /*
+           * No seguimos el redirect del backend porque el redirect antiguo
+           * era el que terminaba mostrando DEPLOYMENT_NOT_FOUND en Vercel.
+           * Solo necesitamos ejecutar el logout del backend.
+           */
           await fetch("/logout-login", {
             method: "GET",
             credentials: "same-origin",
+            redirect: "manual",
             cache: "no-store"
           });
         } catch (error) {
-          // Aunque el backend falle, no dejamos al mecánico atrapado
-          // en el panel: lo enviamos al login del frontend.
-          console.warn("No se pudo completar el logout del backend:", error);
-        } finally {
-          // /login hace que App.js limpie token, rol, correo y nombre
-          // del localStorage del frontend.
-          window.location.replace(
-            "https://dmi-sistema-de-informacion-gntbgba8.vercel.app/login"
-          );
+          console.warn("No fue posible confirmar el logout con el backend:", error);
         }
+
+        const frontendOrigin = getFrontendOrigin();
+
+        if (frontendOrigin) {
+          /*
+           * App.js reconoce /login y elimina token, role, email, nombre
+           * y dmiSessionStartedAt antes de mostrar el formulario de acceso.
+           */
+          window.location.replace(`${frontendOrigin}/login`);
+          return;
+        }
+
+        /*
+         * Si alguien abrió el panel mecánico directamente sin venir del
+         * frontend, volvemos al endpoint de salida para que el backend
+         * resuelva su destino configurado.
+         */
+        window.location.replace("/logout-login");
       });
     });
   </script>

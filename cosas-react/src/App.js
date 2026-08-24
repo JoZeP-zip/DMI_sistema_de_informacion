@@ -46,7 +46,14 @@ const isMechanicRole = (role) => {
 };
 
 const goToMechanicPanel = () => {
-  window.location.href = `${getApiBaseUrl()}/mecanico`;
+  const apiBase = getApiBaseUrl().replace(/\/$/, "");
+  const frontendOrigin = window.location.origin;
+  const separator = apiBase.includes("?") ? "&" : "?";
+
+  // Enviamos el origen real del frontend al backend para que el
+  // mecánico pueda volver al MISMO frontend después de cerrar sesión.
+  window.location.href =
+    `${apiBase}/mecanico${separator}frontend=${encodeURIComponent(frontendOrigin)}`;
 };
 
 const getDisplayName = (userData) => {
