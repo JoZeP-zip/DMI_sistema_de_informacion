@@ -1343,39 +1343,129 @@ function App() {
                 </>
               )}
               
+              {/* MI CUENTA / PANEL SEGUN EL ESTADO DE SESION */}
               <li className="nav-item">
-                <button
-                  className={`btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta ${view === 'user-dashboard' ? 'active' : ''}`}
-                  onClick={() => {
-                    if (!user) {
-                      setView('login');    
-                    } else if (user.role === 'admin') {
+                {!user ? (
+                  <button
+                    type="button"
+                    className="btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta"
+                    onClick={() => {
+                      setView('login');
+                      setMenuOpen(false);
+                    }}
+                  >
+                    MI CUENTA
+                  </button>
+                ) : user.role === 'admin' ? (
+                  <button
+                    type="button"
+                    className={`nav-link text-danger fw-black p-2 bg-transparent border-0 dmi-nav-link ${view === 'admin-dashboard' ? 'active' : ''}`}
+                    onClick={() => {
                       window.history.replaceState(null, '', '/');
                       setAdminFrameKey((key) => key + 1);
                       setView('admin-dashboard');
-                    } else if (isMechanicRole(user.role)) {
+                      setMenuOpen(false);
+                    }}
+                  >
+                    PANEL ADMIN
+                  </button>
+                ) : isMechanicRole(user.role) ? (
+                  <button
+                    type="button"
+                    className="nav-link text-danger fw-black p-2 bg-transparent border-0 dmi-nav-link"
+                    onClick={() => {
                       setMenuOpen(false);
                       goToMechanicPanel();
-                      return;
-                    } else {
+                    }}
+                  >
+                    MECANICO
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={`btn btn-danger px-4 rounded-0 fw-bold shadow-sm dmi-nav-cta ${view === 'user-dashboard' ? 'active' : ''}`}
+                    onClick={() => {
                       setView('user-dashboard');
+                      setMenuOpen(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                    setMenuOpen(false);
-                  }}
-                >
-                  {user && isMechanicRole(user.role) ? 'MECANICO' : 'MI CUENTA'}
-                </button>
+                    }}
+                  >
+                    MI CUENTA
+                  </button>
+                )}
               </li>
 
               {user && <li className="nav-item dmi-nav-tools">
                 <div className="dmi-nav-popover-wrap">
-                  <button type="button" className="dmi-nav-icon" aria-label="Notificaciones" onClick={() => { setNavNotificationsOpen((open) => !open); setProfileOpen(false); }}><span aria-hidden="true">🔔</span>{navNotifications.filter((item) => !item.leida).length > 0 && <b>{navNotifications.filter((item) => !item.leida).length}</b>}</button>
-                  {navNotificationsOpen && <div className="dmi-nav-popover"><header><strong>Notificaciones</strong></header>{navNotifications.length ? navNotifications.slice(0, 6).map((item) => <button key={item.idnotificacion} type="button" className={item.leida ? 'read' : 'unread'} onClick={() => abrirNotificacionSuperior(item)}><strong>{item.titulo}</strong><span>{item.mensaje}</span></button>) : <p>Estás al día.</p>}</div>}
+                  <button
+                    type="button"
+                    className="dmi-nav-icon"
+                    aria-label="Notificaciones"
+                    onClick={() => {
+                      setNavNotificationsOpen((open) => !open);
+                      setProfileOpen(false);
+                    }}
+                  >
+                    <span aria-hidden="true">🔔</span>
+                    {navNotifications.filter((item) => !item.leida).length > 0 && (
+                      <b>{navNotifications.filter((item) => !item.leida).length}</b>
+                    )}
+                  </button>
+
+                  {navNotificationsOpen && (
+                    <div className="dmi-nav-popover">
+                      <header><strong>Notificaciones</strong></header>
+                      {navNotifications.length ? (
+                        navNotifications.slice(0, 6).map((item) => (
+                          <button
+                            key={item.idnotificacion}
+                            type="button"
+                            className={item.leida ? 'read' : 'unread'}
+                            onClick={() => abrirNotificacionSuperior(item)}
+                          >
+                            <strong>{item.titulo}</strong>
+                            <span>{item.mensaje}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <p>Estás al día.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
+
                 <div className="dmi-nav-popover-wrap">
-                  <button type="button" className="dmi-nav-icon profile" aria-label="Perfil" onClick={() => { setProfileOpen((open) => !open); setNavNotificationsOpen(false); }}><span aria-hidden="true">👤</span></button>
-                  {profileOpen && <div className="dmi-nav-popover profile-card"><strong>{getDisplayName(user)}</strong><span>{user.email || 'Correo no disponible'}</span><small>{String(user.role || 'usuario').replace('_', ' ')}</small></div>}
+                  <button
+                    type="button"
+                    className="dmi-nav-icon profile"
+                    aria-label="Perfil"
+                    onClick={() => {
+                      setProfileOpen((open) => !open);
+                      setNavNotificationsOpen(false);
+                    }}
+                  >
+                    <span aria-hidden="true">👤</span>
+                  </button>
+
+                  {profileOpen && (
+                    <div className="dmi-nav-popover profile-card">
+                      <strong>{getDisplayName(user)}</strong>
+                      <span>{user.email || 'Correo no disponible'}</span>
+                      <small>{String(user.role || 'usuario').replace('_', ' ')}</small>
+
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm w-100 mt-3 rounded-0 fw-bold"
+                        onClick={() => {
+                          setProfileOpen(false);
+                          setNavNotificationsOpen(false);
+                          handleLogout();
+                        }}
+                      >
+                        CERRAR SESIÓN
+                      </button>
+                    </div>
+                  )}
                 </div>
               </li>}
 
