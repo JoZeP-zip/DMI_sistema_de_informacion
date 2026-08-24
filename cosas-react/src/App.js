@@ -1356,7 +1356,7 @@ function App() {
                       setMenuOpen(false);
                     }}
                   >
-                    MI CUENTA
+                    LOGIN
                   </button>
                 </li>
               )}
