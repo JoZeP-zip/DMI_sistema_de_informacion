@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AuthService, NotificacionesService } from './services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
@@ -250,7 +251,8 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openC
 
       onLoginSuccess({
         email: data.email,
-        role: data.role
+        role: data.role,
+        nombre: data.nombre,
       });
 
     } catch (err) {
@@ -1074,42 +1076,65 @@ function App() {
 
   useEffect(() => {
     if (window.location.pathname === '/login') {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      localStorage.removeItem("email");
-      localStorage.removeItem("nombre");
-      localStorage.removeItem("dmiSessionStartedAt");
+      AuthService.logout();
       setUser(null);
       setView('login');
       return;
     }
 
     const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-    const email = localStorage.getItem("email");
-    const nombre = localStorage.getItem("nombre");
+    if (!token) return;
 
-    if (token && role && email) {
-      const normalizedRole = role.toLowerCase();
-      setUser({ 
-        email, 
-        role: normalizedRole,
-        nombre
-      });
+    let mounted = true;
+    const validarSesion = async () => {
+      try {
+        const session = await AuthService.validarSesion();
+        if (!mounted) return;
 
-      const initialView = getInitialView();
-      if (initialView !== 'inicio') {
-        setView(initialView);
-      } else if (normalizedRole === 'admin') {
-        window.history.replaceState(null, '', '/');
-        setAdminFrameKey((key) => key + 1);
-        setView('admin-dashboard');
-      } else if (isMechanicRole(normalizedRole)) {
-        setView('inicio');
-      } else if (normalizedRole === 'usuario' || normalizedRole === 'cliente') {
-        setView('user-dashboard');
+        const normalizedRole = String(session.role || 'usuario').toLowerCase();
+        localStorage.setItem('role', normalizedRole);
+        localStorage.setItem('email', session.email || '');
+        localStorage.setItem('nombre', session.nombre || '');
+        setUser({ email: session.email, role: normalizedRole, nombre: session.nombre });
+
+        const initialView = getInitialView();
+        if (initialView !== 'inicio') {
+          setView(initialView);
+        } else if (normalizedRole === 'admin') {
+          window.history.replaceState(null, '', '/');
+          setAdminFrameKey((key) => key + 1);
+          setView('admin-dashboard');
+        } else if (isMechanicRole(normalizedRole)) {
+          setView('inicio');
+        } else if (normalizedRole === 'usuario' || normalizedRole === 'cliente') {
+          setView('user-dashboard');
+        }
+      } catch (error) {
+        if (!mounted) return;
+        if (!localStorage.getItem('token')) return;
+        AuthService.logout();
+        setUser(null);
+        setView('login');
+        showNotice('Sesion no valida', 'Tu sesion ya no es valida o tu cuenta ya no existe. Inicia sesion nuevamente.');
       }
-    }
+    };
+
+    validarSesion();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    const cerrarSesionInvalida = () => {
+      setUser(null);
+      setNavNotifications([]);
+      setProfileOpen(false);
+      setNavNotificationsOpen(false);
+      setView('login');
+      showNotice('Sesion no valida', 'Tu sesion ya no es valida o tu cuenta ya no existe. Inicia sesion nuevamente.');
+    };
+
+    window.addEventListener('dmi:session-invalid', cerrarSesionInvalida);
+    return () => window.removeEventListener('dmi:session-invalid', cerrarSesionInvalida);
   }, []);
 
   useEffect(() => {
@@ -1233,11 +1258,7 @@ function App() {
       confirmText: "Cerrar sesion",
       cancelText: "Cancelar",
       onConfirm: () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
-        localStorage.removeItem("email");
-        localStorage.removeItem("nombre");
-        localStorage.removeItem("dmiSessionStartedAt");
+        AuthService.logout();
         setUser(null);
         setView('inicio');
         showNotice("Sesion cerrada", "Has salido del sistema correctamente.");
@@ -1394,84 +1415,127 @@ function App() {
 
               {user && (
                 <li className="nav-item dmi-nav-tools">
-                <div className="dmi-nav-popover-wrap">
-                  <button
-                    type="button"
-                    className="dmi-nav-icon"
-                    aria-label="Notificaciones"
-                    onClick={() => {
-                      setNavNotificationsOpen((open) => !open);
-                      setProfileOpen(false);
-                    }}
-                  >
-                    <span aria-hidden="true">🔔</span>
-                    {navNotifications.filter((item) => !item.leida).length > 0 && (
-                      <b>{navNotifications.filter((item) => !item.leida).length}</b>
-                    )}
-                  </button>
-
-                  {navNotificationsOpen && (
-                    <div className="dmi-nav-popover">
-                      <header><strong>Notificaciones</strong></header>
-                      {navNotifications.length ? (
-                        navNotifications.slice(0, 6).map((item) => (
-                          <button
-                            key={item.idnotificacion}
-                            type="button"
-                            className={item.leida ? 'read' : 'unread'}
-                            onClick={() => abrirNotificacionSuperior(item)}
-                          >
-                            <strong>{item.titulo}</strong>
-                            <span>{item.mensaje}</span>
-                          </button>
-                        ))
-                      ) : (
-                        <p>Estás al día.</p>
+                  <div className="dmi-nav-popover-wrap">
+                    <button
+                      type="button"
+                      className="dmi-nav-icon"
+                      aria-label="Notificaciones"
+                      aria-expanded={navNotificationsOpen}
+                      onClick={() => {
+                        setNavNotificationsOpen((open) => !open);
+                        setProfileOpen(false);
+                      }}
+                    >
+                      <span aria-hidden="true">🔔</span>
+                      {navNotifications.filter((item) => !item.leida).length > 0 && (
+                        <b>{navNotifications.filter((item) => !item.leida).length}</b>
                       )}
-                    </div>
-                  )}
-                </div>
+                    </button>
+                  </div>
 
-                <div className="dmi-nav-popover-wrap">
-                  <button
-                    type="button"
-                    className="dmi-nav-icon profile"
-                    aria-label="Perfil"
-                    onClick={() => {
-                      setProfileOpen((open) => !open);
-                      setNavNotificationsOpen(false);
-                    }}
-                  >
-                    <span aria-hidden="true">👤</span>
-                  </button>
-
-                  {profileOpen && (
-                    <div className="dmi-nav-popover profile-card">
-                      <strong>{getDisplayName(user)}</strong>
-                      <span>{user.email || 'Correo no disponible'}</span>
-                      <small>{String(user.role || 'usuario').replace('_', ' ')}</small>
-
-                      <button
-                        type="button"
-                        className="btn btn-outline-danger btn-sm w-100 mt-3 rounded-0 fw-bold"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setNavNotificationsOpen(false);
-                          handleLogout();
-                        }}
-                      >
-                        CERRAR SESIÓN
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </li>
+                  <div className="dmi-nav-popover-wrap">
+                    <button
+                      type="button"
+                      className="dmi-nav-icon profile"
+                      aria-label="Perfil"
+                      aria-expanded={profileOpen}
+                      onClick={() => {
+                        setProfileOpen((open) => !open);
+                        setNavNotificationsOpen(false);
+                      }}
+                    >
+                      <span aria-hidden="true">👤</span>
+                    </button>
+                  </div>
+                </li>
               )}
+
 
             </ul>
           </div>
         </div>
       </nav>
+
+      {typeof document !== 'undefined' && navNotificationsOpen && createPortal(
+        <div className="dmi-nav-overlay-root">
+          <button
+            type="button"
+            className="dmi-nav-popover-backdrop"
+            aria-label="Cerrar notificaciones"
+            onClick={() => setNavNotificationsOpen(false)}
+          />
+          <section className="dmi-nav-popover" role="dialog" aria-modal="true" aria-label="Notificaciones">
+            <header className="dmi-popover-header">
+              <div className="dmi-popover-heading">
+                <span className="dmi-popover-icon" aria-hidden="true">🔔</span>
+                <div>
+                  <span className="dmi-popover-kicker">CENTRO DMI</span>
+                  <strong>NOTIFICACIONES</strong>
+                </div>
+              </div>
+              <button type="button" className="dmi-popover-close" aria-label="Cerrar notificaciones" onClick={() => setNavNotificationsOpen(false)}>×</button>
+            </header>
+            <div className="dmi-popover-content">
+              {navNotifications.length ? (
+                navNotifications.slice(0, 6).map((item) => (
+                  <button key={item.idnotificacion} type="button" className={item.leida ? 'read' : 'unread'} onClick={() => abrirNotificacionSuperior(item)}>
+                    <strong>{item.titulo}</strong>
+                    <span>{item.mensaje}</span>
+                  </button>
+                ))
+              ) : (
+                <div className="dmi-empty-notifications">
+                  <span aria-hidden="true">✓</span>
+                  <strong>ESTÁS AL DÍA</strong>
+                  <p>No tienes notificaciones pendientes.</p>
+                </div>
+              )}
+            </div>
+            <footer className="dmi-popover-footer">
+              <span>{navNotifications.length} {navNotifications.length === 1 ? 'notificación' : 'notificaciones'}</span>
+              <button type="button" onClick={() => setNavNotificationsOpen(false)}>CERRAR</button>
+            </footer>
+          </section>
+        </div>,
+        document.body
+      )}
+
+      {typeof document !== 'undefined' && profileOpen && createPortal(
+        <div className="dmi-nav-overlay-root">
+          <button type="button" className="dmi-nav-popover-backdrop" aria-label="Cerrar perfil" onClick={() => setProfileOpen(false)} />
+          <section className="dmi-nav-popover profile-card" role="dialog" aria-modal="true" aria-label="Mi cuenta">
+            <header className="dmi-popover-header">
+              <div className="dmi-popover-heading">
+                <span className="dmi-popover-icon profile" aria-hidden="true">👤</span>
+                <div>
+                  <span className="dmi-popover-kicker">CENTRO DMI</span>
+                  <strong>MI CUENTA</strong>
+                </div>
+              </div>
+              <button type="button" className="dmi-popover-close" aria-label="Cerrar perfil" onClick={() => setProfileOpen(false)}>×</button>
+            </header>
+            <div className="dmi-profile-identity">
+              <div className="dmi-profile-avatar" aria-hidden="true">{getDisplayName(user).charAt(0).toUpperCase()}</div>
+              <div className="dmi-profile-main">
+                <span className="dmi-profile-label">USUARIO AUTENTICADO</span>
+                <strong>{getDisplayName(user)}</strong>
+                <span>{user.email || 'Correo no disponible'}</span>
+              </div>
+            </div>
+            <div className="dmi-profile-data">
+              <div><span>ROL</span><strong>{String(user.role || 'usuario').replace('_', ' ').toUpperCase()}</strong></div>
+              <div><span>ESTADO</span><strong className="online">● ACTIVO</strong></div>
+            </div>
+            <div className="dmi-profile-actions">
+              <button type="button" className="dmi-profile-logout" onClick={() => { setProfileOpen(false); setNavNotificationsOpen(false); handleLogout(); }}>
+                <span aria-hidden="true">↪</span> CERRAR SESIÓN
+              </button>
+              <button type="button" className="dmi-profile-close" onClick={() => setProfileOpen(false)}>VOLVER</button>
+            </div>
+          </section>
+        </div>,
+        document.body
+      )}
 
       {/* CONTENEDOR PRINCIPAL */}
       <main className="flex-grow-1">

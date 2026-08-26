@@ -2207,3 +2207,719 @@ body {
   border-radius: 0 !important;
   box-shadow: none !important;
 }
+
+
+/* ============================================================
+   DMI — MODALES PROFESIONALES DE NOTIFICACIONES Y MI CUENTA
+   Reemplaza visualmente los antiguos desplegables del navbar.
+   ============================================================ */
+.dmi-nav-popover-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483645 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: rgba(0, 0, 0, .76) !important;
+    box-shadow: none !important;
+    cursor: default !important;
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+}
+
+.dmi-nav-popover-backdrop:hover {
+    background: rgba(0, 0, 0, .82) !important;
+}
+
+.dmi-nav-popover {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(580px, calc(100vw - 36px)) !important;
+    max-width: 580px !important;
+    max-height: min(78vh, 720px) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    border: 1px solid rgba(255, 64, 87, .82) !important;
+    border-top: 4px solid #ff4057 !important;
+    border-radius: 2px !important;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(255, 64, 87, .13), transparent 34%),
+        linear-gradient(145deg, rgba(16, 17, 22, .99), rgba(4, 5, 8, .995)) !important;
+    box-shadow:
+        0 34px 90px rgba(0, 0, 0, .82),
+        0 0 0 1px rgba(255, 255, 255, .025) inset,
+        0 0 42px rgba(255, 64, 87, .16) !important;
+    animation: dmiPopoverIn .22s cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes dmiPopoverIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -47%) scale(.96) !important;
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1) !important;
+    }
+}
+
+.dmi-popover-header {
+    min-height: 84px;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 22px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, .10) !important;
+    background: linear-gradient(90deg, rgba(255, 64, 87, .10), rgba(255, 64, 87, .025) 55%, transparent) !important;
+}
+
+.dmi-popover-heading {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.dmi-popover-icon {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    display: grid !important;
+    place-items: center;
+    border: 1px solid rgba(255, 64, 87, .62);
+    background: rgba(255, 64, 87, .10);
+    color: #ff4057;
+    font-size: 1.35rem;
+    box-shadow: 0 0 24px rgba(255, 64, 87, .12);
+}
+
+.dmi-popover-icon.profile {
+    font-size: 1.2rem;
+}
+
+.dmi-popover-kicker {
+    display: block;
+    margin-bottom: 4px;
+    color: #ff8095;
+    font: 800 .58rem/1 'Orbitron', sans-serif;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+}
+
+.dmi-popover-header strong {
+    display: block;
+    color: #fff;
+    font: 800 clamp(1rem, 2.5vw, 1.35rem)/1.1 'Orbitron', sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.dmi-popover-close {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, .15) !important;
+    background: rgba(255, 255, 255, .035) !important;
+    color: rgba(255, 255, 255, .72) !important;
+    font: 400 1.65rem/1 'Arial', sans-serif !important;
+    text-align: center !important;
+    cursor: pointer;
+    transition: .2s ease;
+}
+
+.dmi-popover-close:hover {
+    border-color: #ff4057 !important;
+    background: rgba(255, 64, 87, .13) !important;
+    color: #fff !important;
+    transform: rotate(90deg);
+}
+
+.dmi-popover-content {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px 20px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: #ff4057 rgba(255,255,255,.04);
+}
+
+.dmi-popover-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dmi-popover-content::-webkit-scrollbar-track {
+    background: rgba(255,255,255,.025);
+}
+
+.dmi-popover-content::-webkit-scrollbar-thumb {
+    background: #ff4057;
+    border-radius: 20px;
+}
+
+.dmi-popover-content > button {
+    position: relative;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 14px;
+    width: 100% !important;
+    min-height: 84px;
+    margin: 0 0 10px !important;
+    padding: 17px 18px 16px 20px !important;
+    border: 1px solid rgba(255, 255, 255, .10) !important;
+    border-left: 3px solid rgba(255, 255, 255, .18) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,.045), rgba(255,255,255,.018)) !important;
+    color: #fff !important;
+    text-align: left !important;
+    cursor: pointer;
+    transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.dmi-popover-content > button::before {
+    content: "";
+    position: absolute;
+    left: -3px;
+    top: 14px;
+    bottom: 14px;
+    width: 3px;
+    background: transparent;
+}
+
+.dmi-popover-content > button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 64, 87, .68) !important;
+    background: linear-gradient(135deg, rgba(255,64,87,.13), rgba(255,255,255,.025)) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+
+.dmi-popover-content > button.unread {
+    border-color: rgba(255, 64, 87, .56) !important;
+    border-left-color: #ff4057 !important;
+    background: linear-gradient(135deg, rgba(255,64,87,.17), rgba(255,64,87,.045)) !important;
+    box-shadow: inset 4px 0 0 #ff4057, 0 8px 22px rgba(0,0,0,.18);
+}
+
+.dmi-popover-content > button.unread::after {
+    content: "NUEVA";
+    align-self: start;
+    padding: 5px 7px;
+    border: 1px solid rgba(255,64,87,.5);
+    color: #ff8095;
+    background: rgba(255,64,87,.08);
+    font: 800 .5rem/1 'Orbitron', sans-serif;
+    letter-spacing: .08em;
+}
+
+.dmi-popover-content > button.read {
+    opacity: .68;
+}
+
+.dmi-popover-content > button strong {
+    display: block;
+    color: #fff !important;
+    font: 800 .84rem/1.3 'Orbitron', sans-serif;
+    letter-spacing: .03em;
+    overflow-wrap: anywhere;
+}
+
+.dmi-popover-content > button span {
+    grid-column: 1 / -1;
+    display: block;
+    margin: 0 !important;
+    color: rgba(255,255,255,.66) !important;
+    font: 600 .92rem/1.45 'Rajdhani', sans-serif !important;
+    overflow-wrap: anywhere;
+}
+
+.dmi-empty-notifications {
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 8px;
+    padding: 30px 20px;
+    border: 1px dashed rgba(255,64,87,.3);
+    background: rgba(255,255,255,.018);
+    text-align: center;
+}
+
+.dmi-empty-notifications > span {
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255,64,87,.5);
+    border-radius: 50%;
+    color: #ff4057;
+    font-size: 1.4rem;
+}
+
+.dmi-empty-notifications strong {
+    color: #fff;
+    font: 800 .82rem/1 'Orbitron', sans-serif;
+    letter-spacing: .12em;
+}
+
+.dmi-empty-notifications p {
+    margin: 0;
+    color: rgba(255,255,255,.56);
+    font: 600 .92rem/1.4 'Rajdhani', sans-serif;
+}
+
+.dmi-popover-footer {
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 20px;
+    border-top: 1px solid rgba(255,255,255,.09);
+    background: rgba(0,0,0,.22);
+}
+
+.dmi-popover-footer > span {
+    color: rgba(255,255,255,.48);
+    font: 700 .72rem/1 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.dmi-popover-footer > button {
+    width: auto !important;
+    min-width: 108px;
+    min-height: 38px;
+    margin: 0 !important;
+    padding: 0 14px !important;
+    border: 1px solid rgba(255,64,87,.65) !important;
+    background: rgba(255,64,87,.08) !important;
+    color: #fff !important;
+    font: 800 .62rem/1 'Orbitron', sans-serif !important;
+    letter-spacing: .08em;
+    text-align: center !important;
+    cursor: pointer;
+}
+
+.dmi-popover-footer > button:hover {
+    background: #ff4057 !important;
+    border-color: #ff4057 !important;
+}
+
+/* ---------------------------
+   Perfil / Mi cuenta
+   --------------------------- */
+.dmi-nav-popover.profile-card {
+    width: min(500px, calc(100vw - 36px)) !important;
+    max-width: 500px !important;
+}
+
+.dmi-profile-identity {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin: 20px 20px 16px;
+    padding: 20px;
+    border: 1px solid rgba(255,64,87,.28);
+    background: linear-gradient(135deg, rgba(255,64,87,.09), rgba(255,255,255,.025));
+}
+
+.dmi-profile-avatar {
+    width: 74px;
+    height: 74px;
+    flex: 0 0 74px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #ff4057;
+    background: radial-gradient(circle, rgba(255,64,87,.28), rgba(255,64,87,.06));
+    color: #fff;
+    font: 800 1.8rem/1 'Orbitron', sans-serif;
+    box-shadow: 0 0 28px rgba(255,64,87,.18);
+}
+
+.dmi-profile-main {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+}
+
+.dmi-profile-label {
+    color: #ff8095;
+    font: 800 .54rem/1 'Orbitron', sans-serif;
+    letter-spacing: .16em;
+}
+
+.dmi-profile-main strong {
+    color: #fff;
+    font: 800 clamp(1.05rem, 4vw, 1.55rem)/1.2 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+
+.dmi-profile-main > span:last-child {
+    color: rgba(255,255,255,.62);
+    font: 600 .9rem/1.35 'Rajdhani', sans-serif;
+    overflow-wrap: anywhere;
+}
+
+.dmi-profile-data {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 0 20px 18px;
+}
+
+.dmi-profile-data > div {
+    min-width: 0;
+    display: grid;
+    gap: 7px;
+    padding: 15px 16px;
+    border: 1px solid rgba(255,255,255,.09);
+    background: rgba(255,255,255,.025);
+}
+
+.dmi-profile-data span {
+    color: rgba(255,255,255,.45) !important;
+    font: 800 .55rem/1 'Orbitron', sans-serif !important;
+    letter-spacing: .14em;
+}
+
+.dmi-profile-data strong {
+    color: #fff;
+    font: 800 .78rem/1.2 'Orbitron', sans-serif;
+    overflow-wrap: anywhere;
+}
+
+.dmi-profile-data strong.online {
+    color: #65e6a1;
+}
+
+.dmi-profile-actions {
+    display: grid;
+    gap: 9px;
+    padding: 0 20px 20px;
+}
+
+.dmi-profile-actions button {
+    width: 100% !important;
+    min-height: 48px;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 0 16px !important;
+    text-align: center !important;
+    cursor: pointer;
+    font: 800 .68rem/1 'Orbitron', sans-serif !important;
+    letter-spacing: .1em;
+    transition: .2s ease;
+}
+
+.dmi-profile-logout {
+    border: 1px solid #ff4057 !important;
+    background: #dc3545 !important;
+    color: #fff !important;
+    box-shadow: 0 8px 22px rgba(220,53,69,.2);
+}
+
+.dmi-profile-logout:hover {
+    background: #ff4057 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(255,64,87,.25);
+}
+
+.dmi-profile-close {
+    border: 1px solid rgba(255,255,255,.14) !important;
+    background: rgba(255,255,255,.025) !important;
+    color: rgba(255,255,255,.72) !important;
+}
+
+.dmi-profile-close:hover {
+    border-color: rgba(255,64,87,.6) !important;
+    color: #fff !important;
+    background: rgba(255,64,87,.07) !important;
+}
+
+@media (max-width: 767.98px) {
+    .dmi-nav-popover {
+        width: calc(100vw - 24px) !important;
+        max-width: none !important;
+        max-height: min(82vh, 680px) !important;
+        border-top-width: 3px !important;
+    }
+
+    .dmi-popover-header {
+        min-height: 72px;
+        padding: 16px 16px !important;
+    }
+
+    .dmi-popover-icon {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+        font-size: 1.15rem;
+    }
+
+    .dmi-popover-heading {
+        gap: 11px;
+    }
+
+    .dmi-popover-kicker {
+        font-size: .5rem;
+        letter-spacing: .18em;
+    }
+
+    .dmi-popover-header strong {
+        font-size: .95rem;
+    }
+
+    .dmi-popover-close {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+    }
+
+    .dmi-popover-content {
+        padding: 13px 13px 15px;
+    }
+
+    .dmi-popover-content > button {
+        min-height: 92px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 7px;
+        padding: 15px 14px 15px 16px !important;
+    }
+
+    .dmi-popover-content > button.unread::after {
+        width: fit-content;
+        grid-row: 3;
+    }
+
+    .dmi-popover-content > button strong {
+        font-size: .72rem;
+        line-height: 1.35;
+    }
+
+    .dmi-popover-content > button span {
+        font-size: .88rem !important;
+        line-height: 1.4 !important;
+    }
+
+    .dmi-popover-footer {
+        min-height: 60px;
+        padding: 10px 14px;
+    }
+
+    .dmi-popover-footer > span {
+        font-size: .62rem;
+    }
+
+    .dmi-popover-footer > button {
+        min-width: 92px;
+        min-height: 36px;
+    }
+
+    .dmi-nav-popover.profile-card {
+        width: calc(100vw - 24px) !important;
+        max-width: none !important;
+    }
+
+    .dmi-profile-identity {
+        gap: 13px;
+        margin: 15px 14px 13px;
+        padding: 15px;
+    }
+
+    .dmi-profile-avatar {
+        width: 58px;
+        height: 58px;
+        flex-basis: 58px;
+        font-size: 1.35rem;
+    }
+
+    .dmi-profile-main strong {
+        font-size: .95rem;
+    }
+
+    .dmi-profile-main > span:last-child {
+        font-size: .82rem;
+    }
+
+    .dmi-profile-data {
+        margin: 0 14px 14px;
+        gap: 8px;
+    }
+
+    .dmi-profile-data > div {
+        padding: 13px 12px;
+    }
+
+    .dmi-profile-data strong {
+        font-size: .68rem;
+    }
+
+    .dmi-profile-actions {
+        padding: 0 14px 14px;
+    }
+}
+
+@media (max-width: 420px) {
+    .dmi-nav-popover {
+        width: calc(100vw - 16px) !important;
+        max-height: 84vh !important;
+    }
+
+    .dmi-popover-header {
+        padding: 13px 12px !important;
+    }
+
+    .dmi-popover-icon {
+        width: 38px;
+        height: 38px;
+        flex-basis: 38px;
+    }
+
+    .dmi-popover-close {
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+    }
+
+    .dmi-popover-content {
+        padding: 10px 10px 12px;
+    }
+
+    .dmi-popover-content > button {
+        padding: 13px 12px 13px 14px !important;
+    }
+
+    .dmi-popover-footer {
+        padding: 9px 10px;
+    }
+
+    .dmi-profile-identity {
+        margin: 12px 10px;
+    }
+
+    .dmi-profile-data {
+        grid-template-columns: 1fr;
+        margin: 0 10px 12px;
+    }
+
+    .dmi-profile-actions {
+        padding: 0 10px 10px;
+    }
+}
+
+/* ============================================================
+   DMI — FIX DEFINITIVO: MODALES CENTRADOS FUERA DEL NAVBAR
+   Se renderizan mediante portal en document.body para evitar que
+   backdrop-filter del navbar cree un contenedor para position:fixed.
+   ============================================================ */
+.dmi-nav-overlay-root {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483646 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    display: grid !important;
+    place-items: center !important;
+    padding: 18px !important;
+    box-sizing: border-box !important;
+    isolation: isolate !important;
+}
+
+.dmi-nav-overlay-root .dmi-nav-popover-backdrop {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: rgba(0, 0, 0, .82) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    cursor: default !important;
+}
+
+.dmi-nav-overlay-root > .dmi-nav-popover {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    z-index: 1 !important;
+    width: min(620px, calc(100vw - 36px)) !important;
+    max-width: 620px !important;
+    height: auto !important;
+    max-height: calc(100dvh - 36px) !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+    animation: dmiPopoverPortalIn .22s cubic-bezier(.2,.8,.2,1) both !important;
+}
+
+.dmi-nav-overlay-root > .dmi-nav-popover .dmi-popover-content {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+}
+
+.dmi-nav-overlay-root > .dmi-nav-popover.profile-card {
+    width: min(560px, calc(100vw - 36px)) !important;
+    max-width: 560px !important;
+}
+
+@keyframes dmiPopoverPortalIn {
+    from { opacity: 0; transform: translateY(12px) scale(.97) !important; }
+    to { opacity: 1; transform: translateY(0) scale(1) !important; }
+}
+
+@media (max-width: 767.98px) {
+    .dmi-nav-overlay-root {
+        padding: 12px !important;
+    }
+
+    .dmi-nav-overlay-root > .dmi-nav-popover,
+    .dmi-nav-overlay-root > .dmi-nav-popover.profile-card {
+        width: calc(100vw - 24px) !important;
+        max-width: none !important;
+        max-height: calc(100dvh - 24px) !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .dmi-nav-overlay-root {
+        padding: 8px !important;
+    }
+
+    .dmi-nav-overlay-root > .dmi-nav-popover,
+    .dmi-nav-overlay-root > .dmi-nav-popover.profile-card {
+        width: calc(100vw - 16px) !important;
+        max-height: calc(100dvh - 16px) !important;
+    }
+
+    .dmi-nav-overlay-root .dmi-popover-header {
+        min-height: 66px;
+        padding: 12px !important;
+    }
+}

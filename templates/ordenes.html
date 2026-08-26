@@ -179,20 +179,9 @@
       <strong>{% if modo_mecanico %}Mecanico{% else %}Ordenes{% endif %}</strong>
     </a>
 
-    <nav class="ot-nav">
-      {% if modo_mecanico %}
-      <a href="/mecanico" class="active"><i class="bi bi-tools"></i> Panel Mecanico</a>
-      <a href="/mecanico"><i class="bi bi-clipboard2-check-fill"></i> Mis ordenes</a>
-      <a href="/logout-login" id="btnCerrarSesionMecanico"><i class="bi bi-box-arrow-right"></i> Cerrar sesion</a>
-      <div class="ot-role-tools"><input class="ot-profile-toggle" id="otBellToggle" type="checkbox"><input class="ot-profile-toggle" id="otProfileToggle" type="checkbox"><label class="ot-role-icon" id="otBell" for="otBellToggle" aria-label="Notificaciones" onclick="document.getElementById('otProfileToggle').checked=false"><i class="bi bi-bell-fill"></i><b id="otBellCount" hidden>0</b></label><label class="ot-role-icon" id="otProfile" for="otProfileToggle" aria-label="Perfil" onclick="document.getElementById('otBellToggle').checked=false"><i class="bi bi-person-circle"></i></label><div class="ot-role-popover" id="otNotifications"></div><div class="ot-role-popover ot-role-profile" id="otProfileCard"><label class="ot-role-close" for="otProfileToggle" aria-label="Cerrar perfil">×</label><strong>{{ usuario.nombre }}</strong><span>{{ usuario.email or 'Correo no disponible' }}</span><small>{{ usuario.rol or 'mecanico' }}</small></div></div>
-      {% else %}
-      <a href="/"><i class="bi bi-grid-1x2-fill"></i> Panel Admin</a>
-      <a href="/admin/citas"><i class="bi bi-calendar-check"></i> Citas</a>
-      <a href="/admin/ordenes" class="active"><i class="bi bi-clipboard2-check-fill"></i> Ordenes</a>
-      <a href="/admin/inventario"><i class="bi bi-box-seam-fill"></i> Inventario</a>
-      <a href="/configuracion"><i class="bi bi-gear-fill"></i> Configuracion</a>
-      {% endif %}
-    </nav>
+    <a class="ot-outline-btn" href="{% if modo_mecanico %}/mecanico{% else %}/{% endif %}">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
   </header>
 
   {% if modo_mecanico %}

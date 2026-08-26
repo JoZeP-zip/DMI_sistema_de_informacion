@@ -35,6 +35,25 @@ const getApiBaseUrl = () => {
 const BASE_URL = getApiBaseUrl();
 const PASSWORD_RECOVERY_PUBLIC_URL = "https://dmi-sistema-de-informacion.vercel.app/?recovery=1";
 
+const clearAuthSession = () => {
+  ["token", "role", "email", "nombre", "dmiSessionStartedAt"].forEach((key) => {
+    localStorage.removeItem(key);
+  });
+};
+
+export const handleUnauthorizedResponse = () => {
+  clearAuthSession();
+  window.dispatchEvent(new CustomEvent("dmi:session-invalid"));
+};
+
+const requireActiveSession = (response) => {
+  if (response.status === 401) {
+    handleUnauthorizedResponse();
+    throw new Error("Tu sesion ya no es valida o tu cuenta ya no existe.");
+  }
+  return response;
+};
+
 const authHeaders = () => {
   const token = localStorage.getItem("token");
 
@@ -49,6 +68,7 @@ const authHeaders = () => {
  * o si el status HTTP no es 2xx.
  */
 const request = async (path, options = {}) => {
+  const { skipSessionInvalidation = false, ...fetchOptions } = options;
   console.log("BASE_URL:", BASE_URL);
 console.log("URL:", `${BASE_URL}${path}`);
 
@@ -56,7 +76,7 @@ let res;
 
 try {
   res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     credentials: "include",
   });
 } catch (error) {
@@ -66,6 +86,10 @@ try {
   throw error;
 }
   const contentType = res.headers.get("content-type") || "";
+
+  if (res.status === 401 && !skipSessionInvalidation) {
+    handleUnauthorizedResponse();
+  }
 
   if (contentType.includes("application/json")) {
     const data = await res.json();
@@ -89,6 +113,7 @@ export const AuthService = {
   login: async (email, password) => {
     const data = await request("/login-react", {
       method: "POST",
+      skipSessionInvalidation: true,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
@@ -118,6 +143,10 @@ export const AuthService = {
     body: JSON.stringify({ email, pin }),
   }),
 
+  validarSesion: () => request("/api/auth/session", {
+    headers: authHeaders(),
+  }),
+
   solicitarRecuperacionPassword: (email) => request("/password-recovery/request", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -137,11 +166,7 @@ export const AuthService = {
 
   /** Limpia localStorage y cierra sesion local. */
   logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("email");
-    localStorage.removeItem("nombre");
-    localStorage.removeItem("dmiSessionStartedAt");
+    clearAuthSession();
   },
 
   /** Devuelve el usuario guardado en localStorage o null. */
@@ -181,6 +206,7 @@ export const VehiculosService = {
       credentials: "include",
       body: form.toString(),
     });
+    requireActiveSession(res);
     if (!res.ok) throw new Error(`Error al crear vehículo: ${res.status}`);
     return res;
   },
@@ -197,6 +223,7 @@ export const VehiculosService = {
       credentials: "include",
       body: form.toString(),
     });
+    requireActiveSession(res);
     if (!res.ok) throw new Error(`Error al editar vehículo: ${res.status}`);
     return res;
   },
@@ -208,6 +235,7 @@ export const VehiculosService = {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       credentials: "include",
     });
+    requireActiveSession(res);
     if (!res.ok) throw new Error(`Error al eliminar vehículo: ${res.status}`);
     return res;
   },
@@ -238,6 +266,7 @@ export const CitasService = {
       credentials: "include",
       body: form.toString(),
     });
+    requireActiveSession(res);
     if (!res.ok) throw new Error(`Error al crear cita: ${res.status}`);
     return res;
   },
@@ -251,6 +280,7 @@ export const CitasService = {
       credentials: "include",
       body: form.toString(),
     });
+    requireActiveSession(res);
     if (!res.ok) throw new Error(`Error al cambiar estado: ${res.status}`);
     return res;
   },
@@ -262,6 +292,7 @@ export const CitasService = {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       credentials: "include",
     });
+    requireActiveSession(res);
     if (!res.ok) throw new Error(`Error al eliminar cita: ${res.status}`);
     return res;
   },
@@ -299,6 +330,7 @@ const configPost = async (path, datos = {}) => {
     credentials: "include",
     body: form.toString(),
   });
+  requireActiveSession(res);
   if (!res.ok) throw new Error(`Error en ${path}: ${res.status}`);
   return res;
 };

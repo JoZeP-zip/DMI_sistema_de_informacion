@@ -603,6 +603,11 @@
             <span>Inventario</span>
             <b>{{ total_inventario_catalogo }}</b>
           </a>
+          <a href="/admin/facturas">
+            <i class="bi bi-receipt-cutoff"></i>
+            <span>Facturas</span>
+            <b>{{ total_facturas }}</b>
+          </a>
           <a href="/configuracion#empleados">
             <i class="bi bi-person-badge-fill"></i>
             <span>Empleados</span>
@@ -1958,7 +1963,8 @@
     citas: "/admin/citas",
     ordenes: "/admin/ordenes",
     registros: "/admin/registros",
-    inventario: "/admin/inventario"
+    inventario: "/admin/inventario",
+    facturas: "/admin/facturas"
   };
 
   if (adminModuleRoutes[section]) {
@@ -1973,7 +1979,8 @@
     citas: { kicker: "Agenda del taller", title: '<span>Citas</span>' },
     ordenes: { kicker: "Centro operativo", title: '<span>Ordenes de trabajo</span>' },
     registros: { kicker: "Sistema", title: '<span>Registros</span>' },
-    inventario: { kicker: "Control de productos", title: '<span>Inventario</span>' }
+    inventario: { kicker: "Control de productos", title: '<span>Inventario</span>' },
+    facturas: { kicker: "Control financiero", title: '<span>Facturas</span>' }
   };
 
   const setSectionTitle = (target) => {

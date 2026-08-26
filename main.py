@@ -29,10 +29,23 @@ from datetime import datetime
 load_dotenv()
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres.pjgldixdkavafmxowujt:camiloide1606@aws-1-us-east-1.pooler.supabase.com:5432/postgres")
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://pjgldixdkavafmxowujt.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqZ2xkaXhka2F2YWZteG93dWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDMxOTAsImV4cCI6MjA4NzE3OTE5MH0.VsdOpz44v2pVYb94ESnw-nmLe7OmaXsm_mMfU-FEKAA")
-ADMIN_SECRET  = os.getenv("ADMIN_SECRET", "lolcito")  
+DATABASE_URL = os.getenv("DATABASE_URL")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+ADMIN_SECRET = os.getenv("ADMIN_SECRET")
+
+missing_environment = [
+    name for name, value in {
+        "DATABASE_URL": DATABASE_URL,
+        "SUPABASE_URL": SUPABASE_URL,
+        "SUPABASE_KEY": SUPABASE_KEY,
+    }.items() if not value
+]
+if missing_environment:
+    raise RuntimeError(
+        "Faltan variables de entorno requeridas: " + ", ".join(missing_environment)
+    )
 # Enlace de pago hospedado creado en el panel de Wompi. Es publico, pero se
 # puede cambiar desde Vercel con la variable WOMPI_PAYMENT_LINK sin editar codigo.
 WOMPI_PAYMENT_LINK = os.getenv("WOMPI_PAYMENT_LINK", "https://checkout.wompi.co/l/VPOS_OEmmOs")
@@ -51,6 +64,10 @@ engine = create_engine(
     connect_args={"options": "-csearch_path=dmi,public"}
 )
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase_admin = (
+    create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    if SUPABASE_SERVICE_ROLE_KEY else None
+)
 
 # URL a la que Supabase redirige despues de validar el enlace de recuperacion.
 # En produccion se debe definir PASSWORD_RECOVERY_REDIRECT_URL en el archivo .env.
@@ -173,39 +190,48 @@ def obtener_usuario(access_token: Optional[str], request: Request = None) -> Opt
     if not access_token:
         return None
     try:
-        # Se mantiene el decodificador sin verificaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n automÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡tica
-        payload = jwt.decode(access_token, options={"verify_signature": False})
-        user_id = payload.get("sub")
-        if not user_id:
+        auth_response = supabase.auth.get_user(access_token)
+        auth_user = getattr(auth_response, "user", None)
+        if not auth_user or not getattr(auth_user, "id", None):
             return None
-        user_res = (
-            supabase.schema("dmi")
-            .table("usuarios")
-            .select("idusuarios, usuarionombre, rol, email")   
-            .eq("id", user_id)
-            .execute()
-        )
-        if user_res.data:
+
+        user_id = str(auth_user.id)
+        email = str(getattr(auth_user, "email", "") or "").strip().lower()
+        with engine.connect() as conn:
+            profile_columns = table_columns(conn, "dmi", "usuarios")
+            filters = ["id = :auth_id"]
+            if "activo" in profile_columns:
+                filters.append("COALESCE(activo, TRUE) = TRUE")
+            elif "estado" in profile_columns:
+                filters.append("COALESCE(lower(estado), 'activo') NOT IN ('desactivado', 'inactivo', 'inactive')")
+            profile = conn.execute(
+                text(
+                    "SELECT idusuarios, usuarionombre, rol, email "
+                    "FROM dmi.usuarios WHERE " + " AND ".join(filters) + " LIMIT 1"
+                ),
+                {"auth_id": user_id},
+            ).mappings().fetchone()
+
+        if profile:
             usuario = {
                 "id": user_id,
-                "idusuarios": user_res.data[0].get("idusuarios"),
-                "nombre": user_res.data[0].get("usuarionombre"),
-                "email": user_res.data[0].get("email"),
-                "rol": user_res.data[0].get("rol"),
+                "idusuarios": profile.get("idusuarios"),
+                "nombre": profile.get("usuarionombre"),
+                "email": profile.get("email") or email,
+                "rol": profile.get("rol") or "usuario",
             }
-            rol_empleado = obtener_rol_empleado_por_email(usuario.get("email"))
-            if rol_empleado and usuario.get("rol") != "admin":
+            rol_empleado = obtener_rol_empleado_por_email(usuario["email"])
+            if rol_empleado and usuario["rol"] != "admin":
                 usuario["rol"] = rol_empleado
             return usuario
 
-        email_token = payload.get("email")
-        rol_empleado = obtener_rol_empleado_por_email(email_token)
+        rol_empleado = obtener_rol_empleado_por_email(email)
         if rol_empleado:
             return {
                 "id": user_id,
                 "idusuarios": None,
-                "nombre": email_token.split("@")[0] if email_token else "Mecanico",
-                "email": email_token,
+                "nombre": email.split("@")[0] if email else "Mecanico",
+                "email": email,
                 "rol": rol_empleado,
             }
     except Exception as e:
@@ -641,7 +667,7 @@ async def favicon_placeholder():
     """Evita un 404 cuando el navegador solicita el icono del sitio."""
     return HTMLResponse(content="", status_code=204)
 
-# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
+# ==================== PÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂGINA PRINCIPAL ====================
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, access_token: str = Cookie(None)):
     data = []
@@ -930,6 +956,69 @@ async def admin_registros(request: Request, access_token: str = Cookie(None)):
     )
 
 
+@app.get("/admin/facturas", response_class=HTMLResponse)
+async def admin_facturas(request: Request, access_token: str = Cookie(None)):
+    """Historial de facturas generadas para el administrador."""
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/")
+
+    error_msg = request.query_params.get("error")
+    facturas = []
+
+    try:
+        with engine.connect() as conn:
+            if not table_exists(conn, "dmi", "facturas"):
+                raise RuntimeError("La tabla dmi.facturas no existe.")
+
+            facturas = [
+                dict(row) for row in conn.execute(
+                    text("""
+                        SELECT
+                            f.idfactura,
+                            f.codigo_factura,
+                            f.fecha_factura,
+                            f.total,
+                            f.saldo,
+                            f.estado,
+                            f.orden_id,
+                            COALESCE(
+                                NULLIF(trim(concat_ws(' ', u.nombre, u.apellidos)), ''),
+                                NULLIF(u.usuarionombre, ''),
+                                'Cliente'
+                            ) AS cliente,
+                            COALESCE(u.documento::text, 'Sin documento') AS documento,
+                            COALESCE(ot.codigo_orden, 'Sin orden') AS codigo_orden
+                        FROM dmi.facturas f
+                        LEFT JOIN dmi.usuarios u ON u.idusuarios = f.cliente_id
+                        LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id
+                        ORDER BY f.fecha_factura DESC, f.idfactura DESC
+                    """)
+                ).mappings().fetchall()
+            ]
+
+            for factura in facturas:
+                fecha = factura.get("fecha_factura")
+                factura["fecha_factura"] = (
+                    fecha.strftime("%d/%m/%Y %H:%M")
+                    if hasattr(fecha, "strftime")
+                    else str(fecha or "Sin fecha")
+                )
+    except Exception as e:
+        error_msg = f"No se pudieron cargar las facturas: {e}"
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_facturas.html",
+        context={
+            "usuario": usuario,
+            "facturas": facturas,
+            "total_facturas": len(facturas),
+            "error": error_msg,
+        },
+    )
+
+
 # ==================== ACCIONES DE ORDENES ====================
 def insert_dynamic_returning(conn, table: str, data: dict, returning: str = None):
     cols = table_columns(conn, "dmi", table)
@@ -1125,7 +1214,23 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
                     meses_ordenes = obtener_meses_ordenes(conn, empleado.get("idempleado"))
                     mes_seleccionado = mes_seleccionado or (meses_ordenes[0]["clave"] if meses_ordenes else None)
                     ordenes = obtener_ordenes_mecanico(conn, empleado.get("idempleado"), mes_seleccionado)
-                    notificaciones = [orden for orden in obtener_ordenes_mecanico(conn, empleado.get("idempleado")) if orden.get("estado") == "aprobada"]
+
+                    # Notificaciones reales del mecánico. Se cargan desde la misma
+                    # tabla que utiliza /api/notificaciones y la campanita del panel.
+                    if table_exists(conn, "dmi", "notificaciones"):
+                        notificaciones = [
+                            dict(row) for row in conn.execute(
+                                text("""
+                                    SELECT *
+                                    FROM dmi.notificaciones
+                                    WHERE empleado_id = :empleado_id
+                                    ORDER BY creado_en DESC
+                                    LIMIT 10
+                                """),
+                                {"empleado_id": empleado.get("idempleado")},
+                            ).mappings().fetchall()
+                        ]
+
                     citas_hoy_ordenes = obtener_citas_programadas_hoy(conn, empleado.get("idempleado"))
                     citas_calendario = obtener_citas_calendario_ordenes(conn, mes_seleccionado, empleado.get("idempleado"))
                     citas_reprogramadas = obtener_citas_reprogramadas_ordenes(conn, mes_seleccionado, empleado.get("idempleado"))
@@ -1137,7 +1242,7 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
 
     return templates.TemplateResponse(
         request=request,
-        name="ordenes.html",
+        name="panel_mecanico.html",
         context={
             "usuario": usuario,
             "modo_mecanico": True,
@@ -2077,18 +2182,60 @@ async def admin_inventario(
                     ORDER BY categoria
                 """)
             ).fetchall()]
+
+            # Las estadisticas superiores representan TODO el inventario,
+            # no solamente los productos de la pagina actual.
+            resumen_inventario = conn.execute(
+                text("""
+                    SELECT
+                        COUNT(*) AS total_productos,
+                        COALESCE(SUM(COALESCE(cantidad, 0)), 0) AS stock_total,
+                        COUNT(*) FILTER (
+                            WHERE COALESCE(cantidad, 0) <= 0
+                        ) AS sin_stock,
+                        COUNT(*) FILTER (
+                            WHERE COALESCE(cantidad, 0) > 0
+                              AND COALESCE(cantidad, 0) <= 2
+                        ) AS stock_bajo,
+                        COALESCE(
+                            SUM(
+                                COALESCE(precio_venta, 0)
+                                * COALESCE(cantidad, 0)
+                            ),
+                            0
+                        ) AS valor_total
+                    FROM dmi.inventario_catalogo
+                """)
+            ).mappings().first() or {}
+
+            total_productos = int(
+                resumen_inventario.get("total_productos") or 0
+            )
+            stock_total = int(
+                resumen_inventario.get("stock_total") or 0
+            )
+            sin_stock = int(
+                resumen_inventario.get("sin_stock") or 0
+            )
+            stock_bajo = int(
+                resumen_inventario.get("stock_bajo") or 0
+            )
+            valor_total = float(
+                resumen_inventario.get("valor_total") or 0
+            )
     except Exception as e:
         error_msg = f"No se pudo cargar inventario: {e}"
         total_filtrado = 0
+        total_productos = 0
+        stock_total = 0
+        sin_stock = 0
+        stock_bajo = 0
+        valor_total = 0
 
-    total_productos = int(total_filtrado)
-    total_pages = max((total_productos + per_page - 1) // per_page, 1)
+    # La paginacion depende de los filtros aplicados a la tabla.
+    total_pages = max((int(total_filtrado) + per_page - 1) // per_page, 1)
     if page > total_pages:
         page = total_pages
-    stock_total = sum(int(p.get("cantidad") or 0) for p in productos)
-    sin_stock = sum(1 for p in productos if int(p.get("cantidad") or 0) <= 0)
-    stock_bajo = sum(1 for p in productos if 0 < int(p.get("cantidad") or 0) <= 2)
-    valor_total = sum(float(p.get("precio_venta") or 0) * int(p.get("cantidad") or 0) for p in productos)
     base_params = []
     if q.strip():
         base_params.append(f"q={quote(q.strip())}")
@@ -2147,7 +2294,7 @@ async def admin_inventario_nuevo(
 
     try:
         with engine.connect() as conn:
-            conn.execute(
+            nuevo_producto = conn.execute(
                 text("""
                     INSERT INTO dmi.inventario_catalogo
                     (id_original, codigo, nombre, precio_costo, precio_venta, cantidad, categoria, departamento, imagen_url, activo)
@@ -2155,6 +2302,7 @@ async def admin_inventario_nuevo(
                         (SELECT COALESCE(MAX(id_original), 0) + 1 FROM dmi.inventario_catalogo),
                         :codigo, :nombre, :precio_costo, :precio_venta, :cantidad, :categoria, :departamento, :imagen_url, TRUE
                     )
+                    RETURNING id, nombre, codigo, cantidad
                 """),
                 {
                     "codigo": codigo,
@@ -2166,9 +2314,26 @@ async def admin_inventario_nuevo(
                     "departamento": departamento,
                     "imagen_url": imagen_url,
                 },
-            )
+            ).mappings().fetchone()
+
+            # Notificacion persistente para los administradores.
+            # La campanita del panel ya consulta /api/notificaciones.
+            if nuevo_producto:
+                notificar_administradores(
+                    conn,
+                    "Nuevo producto en inventario",
+                    f"Se agregó el producto '{nuevo_producto.get('nombre') or 'Sin nombre'}'"
+                    f" (código: {nuevo_producto.get('codigo') or 'Sin código'})"
+                    f" con {int(nuevo_producto.get('cantidad') or 0)} unidades.",
+                    "inventario_creado",
+                    "inventario",
+                    nuevo_producto.get("id"),
+                    "/admin/inventario",
+                    usuario_actual=usuario,
+                )
+
             conn.commit()
-        return RedirectResponse(url="/admin/inventario?success=Producto creado", status_code=302)
+        return RedirectResponse(url="/admin/inventario?success=Producto creado y notificacion enviada", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/admin/inventario?error={quote(str(e))}", status_code=302)
 
@@ -2194,7 +2359,7 @@ async def admin_inventario_actualizar(
 
     try:
         with engine.connect() as conn:
-            conn.execute(
+            producto_actualizado = conn.execute(
                 text("""
                     UPDATE dmi.inventario_catalogo SET
                         codigo = :codigo,
@@ -2208,6 +2373,7 @@ async def admin_inventario_actualizar(
                         activo = :activo,
                         actualizado_en = NOW()
                     WHERE id = :id
+                    RETURNING id, nombre, codigo, cantidad, activo
                 """),
                 {
                     "id": producto_id,
@@ -2221,9 +2387,31 @@ async def admin_inventario_actualizar(
                     "imagen_url": imagen_url,
                     "activo": activo == "on",
                 },
+            ).mappings().fetchone()
+
+            if not producto_actualizado:
+                return RedirectResponse(
+                    url="/admin/inventario?error=Producto no encontrado",
+                    status_code=302,
+                )
+
+            # Notificacion persistente para los administradores.
+            # Indica que un producto existente fue editado.
+            notificar_administradores(
+                conn,
+                "Inventario actualizado",
+                f"Se editó el producto '{producto_actualizado.get('nombre') or 'Sin nombre'}'"
+                f" (código: {producto_actualizado.get('codigo') or 'Sin código'})."
+                f" Stock actual: {int(producto_actualizado.get('cantidad') or 0)} unidades.",
+                "inventario_actualizado",
+                "inventario",
+                producto_actualizado.get("id"),
+                "/admin/inventario",
+                usuario_actual=usuario,
             )
+
             conn.commit()
-        return RedirectResponse(url="/admin/inventario?success=Producto actualizado", status_code=302)
+        return RedirectResponse(url="/admin/inventario?success=Producto actualizado y notificacion enviada", status_code=302)
     except Exception as e:
         return RedirectResponse(url=f"/admin/inventario?error={quote(str(e))}", status_code=302)
 
@@ -2596,32 +2784,20 @@ async def login_react(request: Request):
         if not res.user:
             return JSONResponse({"message": "Credenciales incorrectas"}, status_code=401)
 
-        usuario_res = (
-            supabase.schema("dmi")
-            .table("usuarios")
-            .select("idusuarios, usuarionombre, rol, email")
-            .eq("id", res.user.id)
-            .execute()
-        )
-
-        rol = "usuario"
-        nombre = ""
-
-        if usuario_res.data:
-            rol = usuario_res.data[0].get("rol", "usuario")
-            nombre = usuario_res.data[0].get("usuarionombre", "")
-
-        rol_empleado = obtener_rol_empleado_por_email(email)
-        if rol != "admin" and rol_empleado:
-            rol = rol_empleado
+        usuario = obtener_usuario(res.session.access_token)
+        if not usuario:
+            return JSONResponse(
+                {"message": "Tu cuenta no tiene un perfil activo en DMI."},
+                status_code=401,
+            )
 
         response = JSONResponse({
             "access_token": res.session.access_token,
             "token": res.session.access_token,
-            "role": rol,
-            "rol": rol,
-            "email": email,
-            "nombre": nombre
+            "role": usuario["rol"],
+            "rol": usuario["rol"],
+            "email": usuario["email"],
+            "nombre": usuario["nombre"],
         })
 
         response.set_cookie(
@@ -2671,6 +2847,23 @@ async def login_react(request: Request):
             {"message": "Error al iniciar sesion", "detail": error_text},
             status_code=500
         )
+
+
+@app.get("/api/auth/session")
+async def validar_sesion_react(request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not usuario:
+        return JSONResponse(
+            {"error": "Tu sesion ya no es valida o tu cuenta ya no existe."},
+            status_code=401,
+        )
+
+    return JSONResponse({
+        "email": usuario["email"],
+        "role": usuario["rol"],
+        "rol": usuario["rol"],
+        "nombre": usuario["nombre"],
+    })
 
 
 @app.post("/logout")
@@ -3091,6 +3284,12 @@ async def crear_cita(
     usuario = obtener_usuario(access_token, request) if access_token else None
 
     try:
+        # Validamos la fecha en el backend para que la regla de los dos meses
+        # no pueda saltarse manipulando el calendario del navegador.
+        fecha_cita_validada, hora_cita_validada = validar_fecha_hora_cita(fecha_cita, hora_cita)
+        fecha_cita = fecha_cita_validada
+        hora_cita = hora_cita_validada.strftime("%H:%M")
+
         notas = observaciones or ""
 
         descripcion_vehiculo = (descripcion_vehiculo or "").strip()
@@ -3391,15 +3590,41 @@ def crear_notificacion(conn, titulo: str, mensaje: str, tipo: str, referencia_ti
 
 def notificar_administradores(conn, titulo: str, mensaje: str, tipo: str,
                               referencia_tipo: str = None, referencia_id: int = None,
-                              accion_url: str = "/"):
-    """Entrega un evento operativo a todos los administradores activos."""
+                              accion_url: str = "/", usuario_actual: Optional[dict] = None):
+    """Entrega un evento operativo a los administradores.
+
+    Ademas de buscar todos los usuarios con rol ``admin``, incluye de forma
+    explicita al administrador que esta ejecutando la accion. Esto evita que
+    una diferencia en el valor almacenado del rol impida que la notificacion
+    del inventario llegue a la cuenta que hizo el cambio.
+    """
     administradores = conn.execute(text("""
-        SELECT idusuarios FROM dmi.usuarios
-        WHERE lower(COALESCE(rol, 'usuario')) = 'admin'
+        SELECT idusuarios
+        FROM dmi.usuarios
+        WHERE lower(trim(COALESCE(rol, 'usuario'))) IN ('admin', 'administrador')
     """)).scalars().all()
-    for admin_id in administradores:
-        crear_notificacion(conn, titulo, mensaje, tipo, referencia_tipo, referencia_id,
-                            admin_id, accion_url=accion_url)
+
+    ids_admin = {int(admin_id) for admin_id in administradores if admin_id is not None}
+
+    if usuario_actual and usuario_actual.get("idusuarios"):
+        ids_admin.add(int(usuario_actual["idusuarios"]))
+
+    for admin_id in ids_admin:
+        crear_notificacion(
+            conn,
+            titulo,
+            mensaje,
+            tipo,
+            referencia_tipo,
+            referencia_id,
+            admin_id,
+            accion_url=accion_url,
+        )
+
+    print(
+        f"[NOTIFICACION] tipo={tipo} titulo={titulo!r} "
+        f"destinatarios={sorted(ids_admin)} referencia={referencia_tipo}:{referencia_id}"
+    )
 
 
 def notificar_cliente(conn, cliente_id: Optional[int], titulo: str, mensaje: str, tipo: str,
@@ -3522,14 +3747,39 @@ def notificar_mecanico_cita_reprogramada(conn, cita_id: int, fecha: str, hora: s
         )
 
 
+def fecha_maxima_cita(desde: Optional[date] = None, meses: int = 2) -> date:
+    """Devuelve la fecha limite permitida para agendar/reprogramar una cita.
+
+    La regla de DMI es permitir citas desde hoy hasta dos meses hacia adelante.
+    Se calculan meses calendario (por ejemplo, 24/08 -> 24/10) y se ajusta al
+    ultimo dia disponible cuando el mes destino no tiene ese dia.
+    """
+    base = desde or datetime.now(ZoneInfo("America/Bogota")).date()
+    total_meses = base.month - 1 + meses
+    anio = base.year + total_meses // 12
+    mes = total_meses % 12 + 1
+    dia = min(base.day, calendar.monthrange(anio, mes)[1])
+    return date(anio, mes, dia)
+
+
 def validar_fecha_hora_cita(fecha_cita: str, hora_cita: str) -> tuple[date, time]:
     try:
         fecha = datetime.strptime(str(fecha_cita), "%Y-%m-%d").date()
         hora = datetime.strptime(str(hora_cita), "%H:%M").time()
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Selecciona una fecha y una hora validas.")
-    if fecha < datetime.now(ZoneInfo("America/Bogota")).date():
+
+    hoy = datetime.now(ZoneInfo("America/Bogota")).date()
+    limite = fecha_maxima_cita(hoy, 2)
+
+    if fecha < hoy:
         raise HTTPException(status_code=400, detail="No puedes agendar una cita en una fecha pasada.")
+    if fecha > limite:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Solo puedes agendar una cita hasta dos meses hacia adelante. La fecha maxima permitida es {limite.strftime('%d/%m/%Y')}."
+        )
+
     return fecha, hora
 
 
@@ -4109,32 +4359,35 @@ async def eliminar_usuario(
     if not es_admin(usuario):
         return redirigir_sin_permiso()
 
-    try:
-        user_res = (
-            supabase.schema("dmi")
-            .table("usuarios")
-            .select("id")
-            .eq("idusuarios", usuario_id)
-            .execute()
+    if not supabase_admin:
+        return RedirectResponse(
+            url="/?error=No%20esta%20configurada%20la%20clave%20administrativa%20de%20Supabase",
+            status_code=302,
         )
 
+    try:
         with engine.connect() as conn:
-            conn.execute(
-                text(
-                    "DELETE FROM dmi.usuarios "
-                    "WHERE idusuarios = :id"
-                ),
-                {
-                    "id": usuario_id
-                },
+            target_user = conn.execute(
+                text("SELECT id FROM dmi.usuarios WHERE idusuarios = :id LIMIT 1"),
+                {"id": usuario_id},
+            ).mappings().fetchone()
+
+        if not target_user or not target_user.get("id"):
+            return RedirectResponse(
+                url="/?error=Usuario%20no%20encontrado",
+                status_code=302,
             )
 
-            conn.commit()
+        auth_user_id = str(target_user["id"])
+        supabase_admin.auth.admin.delete_user(auth_user_id)
 
-        if user_res.data and user_res.data[0].get("id"):
-            supabase.auth.admin.delete_user(
-                user_res.data[0]["id"]
+        with engine.begin() as conn:
+            deleted = conn.execute(
+                text("DELETE FROM dmi.usuarios WHERE idusuarios = :id"),
+                {"id": usuario_id},
             )
+            if not deleted.rowcount:
+                raise RuntimeError("No se pudo eliminar el perfil DMI del usuario")
 
         return RedirectResponse(
             url="/?success=Usuario eliminado correctamente",
@@ -4148,7 +4401,9 @@ async def eliminar_usuario(
         )
 # ===== API JSON PARA REACT =====
 @app.get("/api/vehiculos")
-async def api_vehiculos():
+async def api_vehiculos(request: Request, access_token: str = Cookie(None)):
+    if not obtener_usuario(access_token, request):
+        return JSONResponse({"error": "Debes iniciar sesion"}, status_code=401)
     try:
         with engine.connect() as conn:
             data = conn.execute(text("SELECT * FROM dmi.vehiculos ORDER BY idvehiculo")).mappings().fetchall()
@@ -4157,7 +4412,9 @@ async def api_vehiculos():
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/api/usuarios")
-async def api_usuarios():
+async def api_usuarios(request: Request, access_token: str = Cookie(None)):
+    if not es_admin(obtener_usuario(access_token, request)):
+        return JSONResponse({"error": "No tienes permiso"}, status_code=401)
     try:
         with engine.connect() as conn:
             data = conn.execute(text("""
@@ -4182,8 +4439,10 @@ async def api_usuarios():
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/api/citas")
-async def api_citas():
+async def api_citas(request: Request, access_token: str = Cookie(None)):
     """Entrega citas con tipos compatibles con JSON para el calendario React."""
+    if not obtener_usuario(access_token, request):
+        return JSONResponse({"error": "Debes iniciar sesion"}, status_code=401)
     try:
         with engine.connect() as conn:
             data = conn.execute(text("""
