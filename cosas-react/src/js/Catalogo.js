@@ -818,232 +818,1129 @@ function Catalogo({ onNeedLogin } = {}) {
       {/* CARRITO */}
       {showCart &&
         createPortal(
-          <div className="cart-panel">
-            <div className="cart-panel-header">
-              <div>
-                <span className="cart-panel-kicker">
-                  Pedido DMI
-                </span>
-                <h2>Carrito</h2>
-              </div>
+          <div
+            className="dmi-cart-overlay"
+            role="dialog"
+            style={{
+              position: "fixed",
+              inset: 0,
+              width: "100vw",
+              height: "100vh",
+              zIndex: 999999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "30px",
+              boxSizing: "border-box",
+              background: "rgba(0,0,0,0.82)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)"
+            }}
+            aria-modal="true"
+            aria-labelledby="cart-modal-title"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowCart(false);
+              }
+            }}
+          >
+            <style>{`
+              .dmi-cart-overlay{
+                position:fixed!important;
+                inset:0!important;
+                width:100vw!important;
+                height:100vh!important;
+                z-index:999999!important;
+                display:flex!important;
+                align-items:center!important;
+                justify-content:center!important;
+                padding:24px!important;
+                box-sizing:border-box!important;
+                background:rgba(0,0,0,.86)!important;
+                backdrop-filter:blur(10px)!important;
+                -webkit-backdrop-filter:blur(10px)!important;
+                font-family:"Roboto Condensed",Arial,sans-serif!important;
+              }
+              .dmi-cart-panel{
+                position:relative!important;
+                width:min(760px,92vw)!important;
+                max-width:760px!important;
+                max-height:88vh!important;
+                margin:0 auto!important;
+                padding:0!important;
+                overflow:hidden!important;
+                display:flex!important;
+                flex-direction:column!important;
+                background:
+                  radial-gradient(circle at 50% 0%,rgba(239,49,84,.14),transparent 38%),
+                  linear-gradient(145deg,#16070b 0%,#08090b 58%,#130509 100%)!important;
+                border:1px solid #ef3154!important;
+                border-radius:12px!important;
+                color:#fff!important;
+                box-shadow:0 30px 100px rgba(0,0,0,.95),0 0 55px rgba(239,49,84,.28)!important;
+              }
+              .dmi-cart-panel:before{
+                content:""!important;
+                position:absolute!important;
+                top:0!important;
+                left:0!important;
+                right:0!important;
+                height:3px!important;
+                background:linear-gradient(90deg,transparent,#ef3154,transparent)!important;
+                box-shadow:0 0 18px rgba(239,49,84,.8)!important;
+                z-index:5!important;
+              }
+              .dmi-cart-header{
+                display:flex!important;
+                align-items:center!important;
+                justify-content:space-between!important;
+                gap:20px!important;
+                padding:26px 30px 22px!important;
+                border-bottom:1px solid rgba(239,49,84,.28)!important;
+                background:rgba(0,0,0,.25)!important;
+              }
+              .dmi-cart-kicker{
+                display:block!important;
+                margin:0 0 7px!important;
+                color:#ef3154!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:10px!important;
+                font-weight:700!important;
+                letter-spacing:3px!important;
+                text-transform:uppercase!important;
+              }
+              .dmi-cart-heading h2{
+                margin:0!important;
+                color:#fff!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:28px!important;
+                line-height:1.15!important;
+                text-shadow:0 0 18px rgba(239,49,84,.2)!important;
+              }
+              .dmi-cart-subtitle{
+                margin:7px 0 0!important;
+                color:#aaa4a8!important;
+                font-size:14px!important;
+              }
+              .dmi-cart-close{
+                width:42px!important;
+                height:42px!important;
+                min-width:42px!important;
+                border:1px solid #ef3154!important;
+                border-radius:50%!important;
+                background:rgba(0,0,0,.45)!important;
+                color:#fff!important;
+                font-size:22px!important;
+                line-height:1!important;
+                cursor:pointer!important;
+              }
+              .dmi-cart-close:hover{
+                background:#ef3154!important;
+                box-shadow:0 0 22px rgba(239,49,84,.45)!important;
+              }
+              .dmi-cart-empty{
+                padding:54px 38px 42px!important;
+                text-align:center!important;
+              }
+              .dmi-cart-empty-icon{
+                width:64px!important;
+                height:64px!important;
+                margin:0 auto 18px!important;
+                display:grid!important;
+                place-items:center!important;
+                border:1px solid rgba(239,49,84,.55)!important;
+                border-radius:50%!important;
+                background:rgba(239,49,84,.08)!important;
+                font-size:28px!important;
+                box-shadow:0 0 25px rgba(239,49,84,.12)!important;
+              }
+              .dmi-cart-empty h3{
+                margin:0 0 10px!important;
+                color:#fff!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:23px!important;
+              }
+              .dmi-cart-empty p{
+                margin:0 auto 25px!important;
+                max-width:460px!important;
+                color:#aaa4a8!important;
+                font-size:15px!important;
+                line-height:1.5!important;
+              }
+              .dmi-cart-items{
+                max-height:390px!important;
+                overflow-y:auto!important;
+                padding:20px 24px 8px!important;
+                display:flex!important;
+                flex-direction:column!important;
+                gap:12px!important;
+                scrollbar-width:thin!important;
+                scrollbar-color:#ef3154 rgba(255,255,255,.04)!important;
+              }
+              .dmi-cart-item{
+                display:grid!important;
+                grid-template-columns:96px minmax(0,1fr) 38px!important;
+                gap:17px!important;
+                align-items:center!important;
+                min-height:128px!important;
+                padding:13px!important;
+                background:linear-gradient(135deg,rgba(239,49,84,.08),rgba(0,0,0,.32))!important;
+                border:1px solid rgba(239,49,84,.22)!important;
+                border-radius:8px!important;
+              }
+              .dmi-cart-image-wrap{
+                width:96px!important;
+                height:96px!important;
+                overflow:hidden!important;
+                border:1px solid rgba(239,49,84,.35)!important;
+                border-radius:6px!important;
+                background:#050505!important;
+              }
+              .dmi-cart-image-wrap img{
+                width:100%!important;
+                height:100%!important;
+                object-fit:cover!important;
+                display:block!important;
+              }
+              .dmi-cart-info{min-width:0!important;}
+              .dmi-cart-label{
+                display:block!important;
+                margin-bottom:5px!important;
+                color:#ef3154!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:9px!important;
+                font-weight:700!important;
+                letter-spacing:1.5px!important;
+              }
+              .dmi-cart-info h4{
+                margin:0 0 5px!important;
+                color:#fff!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:14px!important;
+                line-height:1.35!important;
+                overflow:hidden!important;
+                display:-webkit-box!important;
+                -webkit-line-clamp:2!important;
+                -webkit-box-orient:vertical!important;
+              }
+              .dmi-cart-code{
+                margin:0!important;
+                color:#ef3154!important;
+                font-size:13px!important;
+              }
+              .dmi-cart-bottom{
+                display:flex!important;
+                align-items:center!important;
+                justify-content:space-between!important;
+                gap:15px!important;
+                margin-top:12px!important;
+              }
+              .dmi-cart-quantity{
+                display:flex!important;
+                align-items:center!important;
+                height:34px!important;
+                border:1px solid rgba(239,49,84,.5)!important;
+                border-radius:5px!important;
+                overflow:hidden!important;
+                background:#080808!important;
+              }
+              .dmi-cart-quantity button{
+                width:34px!important;
+                height:34px!important;
+                border:0!important;
+                background:transparent!important;
+                color:#fff!important;
+                font-size:19px!important;
+                cursor:pointer!important;
+              }
+              .dmi-cart-quantity button:hover{background:rgba(239,49,84,.22)!important;}
+              .dmi-cart-quantity span{
+                width:32px!important;
+                text-align:center!important;
+                color:#fff!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:12px!important;
+              }
+              .dmi-cart-price{
+                display:flex!important;
+                flex-direction:column!important;
+                align-items:flex-end!important;
+                gap:3px!important;
+              }
+              .dmi-cart-price span{
+                color:#8f898d!important;
+                font-size:10px!important;
+                text-transform:uppercase!important;
+                letter-spacing:1px!important;
+              }
+              .dmi-cart-price strong{
+                color:#ff405d!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:15px!important;
+                white-space:nowrap!important;
+              }
+              .dmi-cart-item .remove-btn{
+                width:38px!important;
+                height:38px!important;
+                min-width:38px!important;
+                border:1px solid #ef3154!important;
+                border-radius:5px!important;
+                background:rgba(239,49,84,.08)!important;
+                color:#ef3154!important;
+                font-size:18px!important;
+                cursor:pointer!important;
+              }
+              .dmi-cart-item .remove-btn:hover{background:#ef3154!important;color:#fff!important;}
+              .dmi-cart-summary{
+                margin:0 24px!important;
+                padding:14px 0!important;
+                border-top:1px solid rgba(255,255,255,.10)!important;
+              }
+              .dmi-cart-summary-line{
+                display:flex!important;
+                align-items:center!important;
+                justify-content:space-between!important;
+                padding:5px 0!important;
+                color:#aaa4a8!important;
+                font-size:14px!important;
+              }
+              .dmi-cart-summary-line strong{color:#fff!important;}
+              .dmi-cart-summary-line.cart-total{
+                margin-top:5px!important;
+                padding-top:12px!important;
+                border-top:1px solid rgba(239,49,84,.22)!important;
+                color:#fff!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:15px!important;
+              }
+              .dmi-cart-summary-line.cart-total strong{
+                color:#ff405d!important;
+                font-size:20px!important;
+              }
+              .dmi-cart-actions{
+                display:grid!important;
+                grid-template-columns:1.35fr .65fr!important;
+                gap:10px!important;
+                padding:12px 24px 22px!important;
+              }
+              .dmi-cart-actions .checkout-btn{
+                min-height:52px!important;
+                border:0!important;
+                border-radius:5px!important;
+                background:linear-gradient(135deg,#ef3154,#d91535)!important;
+                color:#fff!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:11px!important;
+                font-weight:700!important;
+                text-transform:uppercase!important;
+                cursor:pointer!important;
+                box-shadow:0 0 22px rgba(239,49,84,.18)!important;
+              }
+              .dmi-cart-actions .checkout-btn span{margin-left:8px!important;}
+              .dmi-cart-actions .keep-shopping-btn{
+                min-height:52px!important;
+                border:1px solid #ef3154!important;
+                border-radius:5px!important;
+                background:transparent!important;
+                color:#fff!important;
+                font-family:"Orbitron",Arial,sans-serif!important;
+                font-size:10px!important;
+                font-weight:700!important;
+                text-transform:uppercase!important;
+                cursor:pointer!important;
+              }
+              @media(max-width:700px){
+                .dmi-cart-overlay{padding:12px!important;}
+                .dmi-cart-panel{width:96vw!important;max-height:94vh!important;}
+                .dmi-cart-header{padding:20px!important;}
+                .dmi-cart-items{padding:14px!important;max-height:50vh!important;}
+                .dmi-cart-item{grid-template-columns:72px minmax(0,1fr) 34px!important;gap:11px!important;padding:10px!important;}
+                .dmi-cart-image-wrap{width:72px!important;height:72px!important;}
+                .dmi-cart-info h4{font-size:11px!important;}
+                .dmi-cart-bottom{flex-direction:column!important;align-items:flex-start!important;gap:7px!important;}
+                .dmi-cart-price{align-items:flex-start!important;}
+                .dmi-cart-summary{margin:0 14px!important;}
+                .dmi-cart-actions{grid-template-columns:1fr!important;padding:10px 14px 16px!important;}
+              }
+            `}</style>
 
-              <button
-                className="cart-close-btn"
-                aria-label="Cerrar carrito"
-                onClick={() => setShowCart(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            {cart.length === 0 ? (
-              <p>El carrito está vacío</p>
-            ) : (
-              <>
-                {cart.map(item => (
-                  <div
-                    className="cart-item"
-                    key={item.id}
-                  >
-                    <img
-                      src={
-                        item.image ||
-                        DEFAULT_PRODUCT_IMAGE
-                      }
-                      alt={item.nombre}
-                    />
-
-                    <div className="cart-info">
-                      <h4>{item.nombre}</h4>
-                      <p>
-                        $
-                        {item.precioVenta.toLocaleString()}
-                      </p>
-                      <span>
-                        Cantidad: {item.quantity}
-                      </span>
-                    </div>
-
-                    <button
-                      className="remove-btn"
-                      onClick={() =>
-                        removeFromCart(item.id)
-                      }
-                    >
-                      X
-                    </button>
-                  </div>
-                ))}
-
-                <div className="cart-total">
-                  <h3>Total:</h3>
-                  <p>
-                    ${totalPrice.toLocaleString()}
+            <div
+              className="dmi-cart-panel"
+              style={{
+                position: "relative",
+                top: "auto",
+                right: "auto",
+                bottom: "auto",
+                left: "auto",
+                width: "min(850px, 90vw)",
+                maxWidth: "850px",
+                maxHeight: "88vh",
+                margin: "0 auto",
+                padding: 0,
+                boxSizing: "border-box",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                background: "linear-gradient(145deg,#18070c 0%,#09090b 55%,#130509 100%)",
+                border: "1px solid #ef3154",
+                borderRadius: "10px",
+                color: "#fff",
+                boxShadow: "0 30px 100px rgba(0,0,0,.9),0 0 70px rgba(239,49,84,.25)"
+              }}
+            >
+              <div className="dmi-cart-header">
+                <div className="dmi-cart-heading">
+                  <span className="dmi-cart-kicker">
+                    Pedido DMI
+                  </span>
+                  <h2 id="cart-modal-title">Mi carrito</h2>
+                  <p className="dmi-cart-subtitle">
+                    {totalProducts}{" "}
+                    {totalProducts === 1 ? "unidad" : "unidades"} ·{" "}
+                    {cart.length}{" "}
+                    {cart.length === 1 ? "referencia" : "referencias"}
                   </p>
                 </div>
 
                 <button
-                  className="checkout-btn"
-                  onClick={() => {
-                    setShowCart(false);
-                    setShowMisCompras(true);
-                  }}
-                >
-                  Ver Tus Compras - $
-                  {totalPrice.toLocaleString()}
-                </button>
-
-                <button
-                  className="keep-shopping-btn"
+                  className="dmi-cart-close"
+                  aria-label="Cerrar carrito"
                   onClick={() => setShowCart(false)}
                 >
-                  Seguir comprando
+                  ×
                 </button>
-              </>
-            )}
+              </div>
+
+              {cart.length === 0 ? (
+                <div className="dmi-cart-empty">
+                  <div className="dmi-cart-empty-icon">🛒</div>
+                  <h3>Tu carrito está vacío</h3>
+                  <p>
+                    Agrega repuestos desde el catálogo para verlos aquí.
+                  </p>
+                  <button
+                    className="keep-shopping-btn"
+                    onClick={() => setShowCart(false)}
+                  >
+                    Explorar catálogo
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="dmi-cart-items">
+                    {cart.map(item => (
+                      <div
+                        className="dmi-cart-item"
+                        key={item.id}
+                      >
+                        <div className="dmi-cart-image-wrap">
+                          <img
+                            src={
+                              item.image ||
+                              DEFAULT_PRODUCT_IMAGE
+                            }
+                            alt={item.nombre}
+                          />
+                        </div>
+
+                        <div className="dmi-cart-info">
+                          <span className="dmi-cart-label">
+                            REPUESTO DMI
+                          </span>
+                          <h4>{item.nombre}</h4>
+                          <p className="dmi-cart-code">
+                            Código: {item.codigo || "Sin código"}
+                          </p>
+
+                          <div className="dmi-cart-bottom">
+                            <div className="dmi-cart-quantity">
+                              <button
+                                type="button"
+                                aria-label={`Disminuir cantidad de ${item.nombre}`}
+                                onClick={() =>
+                                  updateQuantity(item.id, -1)
+                                }
+                              >
+                                −
+                              </button>
+                              <span>{item.quantity}</span>
+                              <button
+                                type="button"
+                                aria-label={`Aumentar cantidad de ${item.nombre}`}
+                                onClick={() =>
+                                  updateQuantity(item.id, 1)
+                                }
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <div className="dmi-cart-price">
+                              <span>Subtotal</span>
+                              <strong>
+                                $
+                                {(
+                                  item.precioVenta * item.quantity
+                                ).toLocaleString()}
+                              </strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="remove-btn"
+                          aria-label={`Eliminar ${item.nombre}`}
+                          title="Eliminar producto"
+                          onClick={() =>
+                            removeFromCart(item.id)
+                          }
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="dmi-cart-summary">
+                    <div className="dmi-cart-summary-line">
+                      <span>Productos</span>
+                      <strong>{totalProducts}</strong>
+                    </div>
+
+                    <div className="dmi-cart-summary-line cart-total">
+                      <span>Total del pedido</span>
+                      <strong>
+                        ${totalPrice.toLocaleString()}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="dmi-cart-actions">
+                    <button
+                      className="checkout-btn"
+                      onClick={() => {
+                        setShowCart(false);
+                        setShowMisCompras(true);
+                      }}
+                    >
+                      Ver tus compras
+                      <span>
+                        ${totalPrice.toLocaleString()}
+                      </span>
+                    </button>
+
+                    <button
+                      className="keep-shopping-btn"
+                      onClick={() => setShowCart(false)}
+                    >
+                      Seguir comprando
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>,
           document.body
         )}
 
-      {/* PANEL TUS COMPRAS */}
+      {/* PANEL TUS COMPRAS - MODAL CENTRADO */}
       {showMisCompras &&
         createPortal(
-          <div className="mis-compras-panel">
-            <div className="mis-compras-header">
-              <h2>
-                Tus Compras
-                <span className="mis-compras-sub">
-                  {cart.length}{" "}
-                  {cart.length === 1
-                    ? "producto"
-                    : "productos"}
-                </span>
-              </h2>
+          <div
+            className="dmi-compras-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mis-compras-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              width: "100vw",
+              height: "100vh",
+              zIndex: 999998,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "30px",
+              boxSizing: "border-box",
+              background: "rgba(0,0,0,0.84)",
+              backdropFilter: "blur(9px)",
+              WebkitBackdropFilter: "blur(9px)"
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowMisCompras(false);
+              }
+            }}
+          >
+            <style>{`
+              .dmi-compras-overlay {
+                font-family: "Orbitron", sans-serif;
+              }
 
-              <button
-                className="mis-compras-close"
-                onClick={() =>
-                  setShowMisCompras(false)
+              .dmi-compras-panel {
+                width: min(900px, 92vw);
+                max-width: 900px;
+                max-height: 88vh;
+                max-height: 88dvh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+                position: relative;
+                background:
+                  radial-gradient(circle at 50% 0%, rgba(239,49,84,.12), transparent 38%),
+                  linear-gradient(145deg, #17070b 0%, #08090b 58%, #120509 100%);
+                border: 1px solid rgba(239,49,84,.85);
+                border-radius: 12px;
+                color: #fff;
+                box-shadow:
+                  0 0 0 1px rgba(239,49,84,.08),
+                  0 0 70px rgba(239,49,84,.25),
+                  0 30px 100px rgba(0,0,0,.9);
+                animation: dmiComprasIn .22s ease-out;
+              }
+
+              .dmi-compras-panel::before {
+                content: "";
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, #ef3154, transparent);
+                box-shadow: 0 0 20px rgba(239,49,84,.8);
+              }
+
+              .dmi-compras-header {
+                min-height: 105px;
+                padding: 25px 30px;
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 20px;
+                flex-shrink: 0;
+                border-bottom: 1px solid rgba(255,255,255,.10);
+                background: rgba(0,0,0,.20);
+              }
+
+              .dmi-compras-heading {
+                min-width: 0;
+              }
+
+              .dmi-compras-kicker {
+                display: block;
+                margin: 0 0 7px;
+                color: #ef3154;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 3px;
+                text-transform: uppercase;
+              }
+
+              .dmi-compras-heading h2 {
+                margin: 0;
+                color: #fff;
+                font-size: clamp(1.45rem, 3vw, 2rem);
+                line-height: 1.15;
+              }
+
+              .dmi-compras-subtitle {
+                margin: 7px 0 0;
+                color: rgba(255,255,255,.55);
+                font-family: "Roboto Condensed", sans-serif;
+                font-size: 13px;
+              }
+
+              .dmi-compras-close {
+                width: 44px;
+                height: 44px;
+                min-width: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid #ef3154;
+                border-radius: 50%;
+                background: rgba(0,0,0,.35);
+                color: #fff;
+                font-family: "Orbitron", sans-serif;
+                font-size: 17px;
+                cursor: pointer;
+                transition: .2s ease;
+              }
+
+              .dmi-compras-close:hover {
+                background: #ef3154;
+                transform: rotate(90deg);
+                box-shadow: 0 0 25px rgba(239,49,84,.4);
+              }
+
+              .dmi-compras-list {
+                padding: 20px 30px 10px;
+                max-height: 390px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                box-sizing: border-box;
+                scrollbar-width: thin;
+                scrollbar-color: #ef3154 rgba(255,255,255,.05);
+              }
+
+              .dmi-compras-item {
+                min-height: 125px;
+                padding: 13px;
+                display: grid;
+                grid-template-columns: 92px minmax(0,1fr) 125px 42px;
+                align-items: center;
+                gap: 17px;
+                box-sizing: border-box;
+                background: rgba(0,0,0,.34);
+                border: 1px solid rgba(239,49,84,.22);
+                border-radius: 7px;
+                transition: .2s ease;
+              }
+
+              .dmi-compras-item:hover {
+                border-color: rgba(239,49,84,.60);
+                background: rgba(239,49,84,.06);
+              }
+
+              .dmi-compras-item img {
+                width: 92px;
+                height: 92px;
+                object-fit: cover;
+                display: block;
+                border: 1px solid rgba(239,49,84,.30);
+                border-radius: 5px;
+                background: #050505;
+              }
+
+              .dmi-compras-info {
+                min-width: 0;
+              }
+
+              .dmi-compras-info h4 {
+                margin: 0 0 6px;
+                color: #fff;
+                font-size: 13px;
+                line-height: 1.4;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                line-clamp: 2;
+                -webkit-box-orient: vertical;
+              }
+
+              .dmi-compras-code {
+                margin: 0 0 12px;
+                color: #ef3154;
+                font-family: "Roboto Condensed", sans-serif;
+                font-size: 12px;
+              }
+
+              .dmi-compras-qty {
+                width: 105px;
+                height: 34px;
+                display: inline-flex;
+                align-items: center;
+                border: 1px solid rgba(239,49,84,.48);
+                border-radius: 4px;
+                overflow: hidden;
+                background: rgba(0,0,0,.45);
+              }
+
+              .dmi-compras-qty button {
+                width: 34px;
+                height: 34px;
+                min-width: 34px;
+                padding: 0;
+                border: 0;
+                background: transparent;
+                color: #fff;
+                font-size: 17px;
+                cursor: pointer;
+              }
+
+              .dmi-compras-qty button:hover {
+                background: rgba(239,49,84,.20);
+                color: #ff4964;
+              }
+
+              .dmi-compras-qty span {
+                width: 37px;
+                text-align: center;
+                color: #fff;
+                font-size: 12px;
+              }
+
+              .dmi-compras-price {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 6px;
+              }
+
+              .dmi-compras-unit {
+                color: rgba(255,255,255,.42);
+                font-family: "Roboto Condensed", sans-serif;
+                font-size: 10px;
+              }
+
+              .dmi-compras-total {
+                color: #ff405d;
+                font-size: 15px;
+                font-weight: 700;
+                white-space: nowrap;
+              }
+
+              .dmi-compras-remove {
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                padding: 0;
+                border: 1px solid rgba(239,49,84,.65);
+                border-radius: 4px;
+                background: rgba(239,49,84,.08);
+                color: #ef3154;
+                cursor: pointer;
+                font-family: "Orbitron", sans-serif;
+              }
+
+              .dmi-compras-remove:hover {
+                background: #ef3154;
+                color: #fff;
+              }
+
+              .dmi-compras-summary {
+                margin: 0 30px;
+                padding: 14px 0;
+                border-top: 1px solid rgba(255,255,255,.10);
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+              }
+
+              .dmi-compras-summary-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 15px;
+                padding: 8px 12px;
+                background: rgba(255,255,255,.025);
+                border: 1px solid rgba(255,255,255,.06);
+                color: rgba(255,255,255,.58);
+                font-family: "Roboto Condensed", sans-serif;
+                font-size: 12px;
+              }
+
+              .dmi-compras-summary-row strong {
+                color: #fff;
+              }
+
+              .dmi-compras-total {
+                margin: 0 30px;
+                padding: 15px 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid rgba(239,49,84,.25);
+                border-bottom: 1px solid rgba(239,49,84,.12);
+              }
+
+              .dmi-compras-total span:first-child {
+                color: #fff;
+                font-size: 14px;
+              }
+
+              .dmi-compras-total-price {
+                color: #ff405d;
+                font-size: 22px;
+                font-weight: 700;
+              }
+
+              .dmi-compras-actions {
+                padding: 16px 30px 24px;
+                display: grid;
+                grid-template-columns: 1.45fr .75fr;
+                gap: 12px;
+                box-sizing: border-box;
+              }
+
+              .dmi-compras-pay,
+              .dmi-compras-keep {
+                min-height: 55px;
+                border-radius: 4px;
+                font-family: "Orbitron", sans-serif;
+                font-size: 11px;
+                font-weight: 700;
+                cursor: pointer;
+                text-transform: uppercase;
+              }
+
+              .dmi-compras-pay {
+                border: 1px solid #ef3154;
+                background: linear-gradient(135deg, #ef3154, #d91535);
+                color: #fff;
+                box-shadow: 0 0 25px rgba(239,49,84,.15);
+              }
+
+              .dmi-compras-pay:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 30px rgba(239,49,84,.28);
+              }
+
+              .dmi-compras-keep {
+                border: 1px solid rgba(239,49,84,.60);
+                background: transparent;
+                color: #fff;
+              }
+
+              .dmi-compras-keep:hover {
+                background: rgba(239,49,84,.10);
+              }
+
+              .dmi-compras-empty {
+                min-height: 300px;
+                padding: 35px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: rgba(255,255,255,.55);
+                text-align: center;
+              }
+
+              @keyframes dmiComprasIn {
+                from {
+                  opacity: 0;
+                  transform: translateY(12px) scale(.97);
                 }
-              >
-                X
-              </button>
-            </div>
+                to {
+                  opacity: 1;
+                  transform: translateY(0) scale(1);
+                }
+              }
 
-            {cart.length === 0 ? (
-              <p className="mis-compras-empty">
-                No tienes productos agregados
-              </p>
-            ) : (
-              <>
-                <div className="mis-compras-list">
-                  {cart.map(item => (
-                    <div className="mc-item" key={item.id}>
-                      <img
-                        src={
-                          item.image || DEFAULT_PRODUCT_IMAGE
-                        }
-                        alt={item.nombre}
-                      />
+              @media (max-width: 700px) {
+                .dmi-compras-overlay {
+                  padding: 12px !important;
+                }
 
-                      <div className="mc-info">
-                        <h4>{item.nombre}</h4>
+                .dmi-compras-panel {
+                  width: 96vw;
+                  max-height: 94vh;
+                  max-height: 94dvh;
+                }
 
-                        <p className="mc-code">
-                          Cod: {item.codigo}
-                        </p>
+                .dmi-compras-header {
+                  padding: 20px;
+                }
 
-                        <div className="mc-qty">
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, -1)
-                            }
-                          >
-                            -
-                          </button>
+                .dmi-compras-list {
+                  padding: 15px;
+                }
 
-                          <span>{item.quantity}</span>
+                .dmi-compras-item {
+                  grid-template-columns: 70px minmax(0,1fr) 38px;
+                  gap: 11px;
+                }
 
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, +1)
-                            }
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
+                .dmi-compras-item img {
+                  width: 70px;
+                  height: 70px;
+                }
 
-                      <div className="mc-price">
-                        <span className="mc-unit">
-                          c/u $
-                          {item.precioVenta.toLocaleString()}
-                        </span>
+                .dmi-compras-price {
+                  grid-column: 2;
+                  align-items: flex-start;
+                }
 
-                        <span className="mc-total">
-                          $
-                          {(
-                            item.precioVenta *
-                            item.quantity
-                          ).toLocaleString()}
-                        </span>
-                      </div>
+                .dmi-compras-remove {
+                  grid-column: 3;
+                  grid-row: 1;
+                }
 
-                      <button
-                        className="mc-remove"
-                        onClick={() =>
-                          removeFromCart(item.id)
-                        }
-                      >
-                        X
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                .dmi-compras-summary {
+                  margin: 0 15px;
+                  grid-template-columns: 1fr;
+                  gap: 7px;
+                }
 
-                <div className="mc-summary">
-                  <div className="mc-summary-row">
-                    <span>Unidades</span>
-                    <span>{totalProducts}</span>
-                  </div>
+                .dmi-compras-total {
+                  margin: 0 15px;
+                }
 
-                  <div className="mc-summary-row">
-                    <span>Referencias</span>
-                    <span>{cart.length}</span>
-                  </div>
-                </div>
+                .dmi-compras-actions {
+                  padding: 12px 15px 18px;
+                  grid-template-columns: 1fr;
+                }
+              }
+            `}</style>
 
-                <div className="mc-total-block">
-                  <h3>Total:</h3>
-                  <p>
-                    ${totalPrice.toLocaleString()}
+            <div className="dmi-compras-panel">
+              <div className="dmi-compras-header">
+                <div className="dmi-compras-heading">
+                  <span className="dmi-compras-kicker">
+                    PEDIDO DMI
+                  </span>
+
+                  <h2 id="mis-compras-title">
+                    Tus Compras
+                  </h2>
+
+                  <p className="dmi-compras-subtitle">
+                    {cart.length}{" "}
+                    {cart.length === 1
+                      ? "producto"
+                      : "productos"}{" "}
+                    · {totalProducts} unidades
                   </p>
                 </div>
 
                 <button
-                  className="mc-pay-btn"
-                  onClick={() =>
-                    setShowConfirmModal(true)
-                  }
-                >
-                  Realizar pago
-                </button>
-
-                <button
-                  className="mc-keep-btn"
+                  className="dmi-compras-close"
                   onClick={() =>
                     setShowMisCompras(false)
                   }
+                  aria-label="Cerrar tus compras"
                 >
-                  Seguir comprando
+                  X
                 </button>
-              </>
-            )}
+              </div>
+
+              {cart.length === 0 ? (
+                <div className="dmi-compras-empty">
+                  No tienes productos agregados
+                </div>
+              ) : (
+                <>
+                  <div className="dmi-compras-list">
+                    {cart.map(item => (
+                      <div
+                        className="dmi-compras-item"
+                        key={item.id}
+                      >
+                        <img
+                          src={
+                            item.image ||
+                            DEFAULT_PRODUCT_IMAGE
+                          }
+                          alt={item.nombre}
+                        />
+
+                        <div className="dmi-compras-info">
+                          <h4>{item.nombre}</h4>
+
+                          <p className="dmi-compras-code">
+                            Código: {item.codigo}
+                          </p>
+
+                          <div className="dmi-compras-qty">
+                            <button
+                              onClick={() =>
+                                updateQuantity(
+                                  item.id,
+                                  -1
+                                )
+                              }
+                              aria-label="Disminuir cantidad"
+                            >
+                              −
+                            </button>
+
+                            <span>
+                              {item.quantity}
+                            </span>
+
+                            <button
+                              onClick={() =>
+                                updateQuantity(
+                                  item.id,
+                                  +1
+                                )
+                              }
+                              aria-label="Aumentar cantidad"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="dmi-compras-price">
+                          <span className="dmi-compras-unit">
+                            C/U $
+                            {item.precioVenta.toLocaleString()}
+                          </span>
+
+                          <span className="dmi-compras-total">
+                            $
+                            {(
+                              item.precioVenta *
+                              item.quantity
+                            ).toLocaleString()}
+                          </span>
+                        </div>
+
+                        <button
+                          className="dmi-compras-remove"
+                          onClick={() =>
+                            removeFromCart(item.id)
+                          }
+                          aria-label={`Eliminar ${item.nombre}`}
+                        >
+                          X
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="dmi-compras-summary">
+                    <div className="dmi-compras-summary-row">
+                      <span>Unidades</span>
+                      <strong>{totalProducts}</strong>
+                    </div>
+
+                    <div className="dmi-compras-summary-row">
+                      <span>Referencias</span>
+                      <strong>{cart.length}</strong>
+                    </div>
+                  </div>
+
+                  <div className="dmi-compras-total">
+                    <span>Total del pedido</span>
+
+                    <span className="dmi-compras-total-price">
+                      ${totalPrice.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="dmi-compras-actions">
+                    <button
+                      className="dmi-compras-pay"
+                      onClick={() =>
+                        setShowConfirmModal(true)
+                      }
+                    >
+                      Realizar pago
+                    </button>
+
+                    <button
+                      className="dmi-compras-keep"
+                      onClick={() =>
+                        setShowMisCompras(false)
+                      }
+                    >
+                      Seguir comprando
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>,
           document.body
         )}
 
-      {/* MENSAJE DEL CATÁLOGO */}
+      /* MENSAJE DEL CATÁLOGO */
       {catalogMessage &&
         createPortal(
           <div className="mc-modal-overlay">
