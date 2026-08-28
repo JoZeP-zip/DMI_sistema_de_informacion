@@ -1940,7 +1940,7 @@ function Catalogo({ onNeedLogin } = {}) {
           document.body
         )}
 
-      /* MENSAJE DEL CATÁLOGO */
+      
       {catalogMessage &&
         createPortal(
           <div className="mc-modal-overlay">
