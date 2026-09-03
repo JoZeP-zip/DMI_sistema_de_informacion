@@ -2,23 +2,26 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/ui',
+  // Carpeta dedicada para almacenar las capturas de pantalla y evidencias del navegador
+  outputDir: './screenshots',
   timeout: 45_000,
   expect: { timeout: 10_000 },
-  // Ejecución secuencial en un solo worker para abrir una sola ventana a la vez
+  // Ejecución en una sola ventana / secuencial
   fullyParallel: false,
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    // Vistas y frontend en el puerto 3000 (React)
+    // Vistas en puerto 3000 (React)
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
     browserName: 'chromium',
-    headless: false, // Abre la ventana del navegador directamente
+    headless: false,
     viewport: { width: 1280, height: 720 },
     video: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    // 'on': Captura evidencia gráfica en todas las pruebas (tanto exitosas como fallidas)
+    screenshot: 'on',
     trace: 'on-first-retry',
   },
-  // Un solo proyecto para evitar abrir múltiples navegadores simultáneos
+  // Un solo navegador Desktop Chrome
   projects: [
     {
       name: 'Desktop Chrome',

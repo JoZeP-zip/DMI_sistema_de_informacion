@@ -135,6 +135,9 @@ test.describe('Agendar Cita Flow', () => {
       await obsTextarea.fill('Prueba automatizada de agendamiento Playwright con credenciales reales.');
     }
 
+    // Captura de evidencia 4: Formulario de cita completamente diligenciado
+    await page.screenshot({ path: 'screenshots/04_cita_formulario_diligenciado.png', fullPage: true });
+
     // ==========================================
     // PASO 5: ENVIAR FORMULARIO
     // ==========================================
@@ -153,6 +156,9 @@ test.describe('Agendar Cita Flow', () => {
 
     await expect(successTitle).toBeVisible({ timeout: 25000 });
     await expect(successMessage).toBeVisible();
+
+    // Captura de evidencia 5: Pantalla de confirmación de cita agendada
+    await page.screenshot({ path: 'screenshots/05_cita_agendada_confirmada.png', fullPage: true });
 
     // Verifica que el botón de agendar otra cita se encuentre disponible
     const agendarOtraBtn = page.locator('button:has-text("Agendar otra")');
