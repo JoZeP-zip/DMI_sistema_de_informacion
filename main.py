@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Form, Request, Cookie, Header, HTTPException
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -99,6 +100,10 @@ def obtener_url_recuperacion_segura(candidate_url: str) -> str:
     return PASSWORD_RECOVERY_REDIRECT_URL
 
 app = FastAPI()
+
+class BotBuscarClienteRequest(BaseModel):
+    tipoDocumento: str
+    numeroDocumento: str
 
 app.add_middleware(
     CORSMiddleware,
@@ -4398,6 +4403,196 @@ async def eliminar_usuario(
         return RedirectResponse(
             url=f"/?error={str(e)}",
             status_code=302
+        )
+
+    # ==================== API BOT DISOL MOTORS ====================
+
+class BotBuscarClienteRequest(BaseModel):
+    tipoDocumento: str
+    numeroDocumento: str
+
+
+@app.post("/api/bot/buscar-cliente")
+async def bot_buscar_cliente(
+    datos: BotBuscarClienteRequest,
+    x_bot_key: Optional[str] = Header(None),
+):
+    """
+    Endpoint utilizado exclusivamente por el asistente de DISOL MOTORS.
+    Busca un cliente por tipo y número de documento y devuelve sus vehículos.
+    """
+
+    bot_api_key = os.getenv("BOT_API_KEY")
+
+    # Protegemos el endpoint para evitar consultas públicas de clientes.
+    if not bot_api_key:
+        return JSONResponse(
+            {"error": "BOT_API_KEY no está configurada en el servidor."},
+            status_code=503,
+        )
+
+    if x_bot_key != bot_api_key:
+        return JSONResponse(
+            {"error": "No autorizado."},
+            status_code=401,
+        )
+
+    tipo_documento = str(datos.tipoDocumento or "").strip()
+    numero_documento = str(datos.numeroDocumento or "").strip()
+
+    if not tipo_documento or not numero_documento:
+        return JSONResponse(
+            {"error": "Tipo y número de documento son obligatorios."},
+            status_code=400,
+        )
+
+    # Convertimos lo que selecciona el usuario en Botpress
+    # al valor que normalmente manejamos en la base de datos.
+    mapa_tipos_documento = {
+        "Cédula de ciudadanía": "CC",
+        "Cedula de ciudadania": "CC",
+        "CC": "CC",
+
+        "Cédula de extranjería": "CE",
+        "Cedula de extranjeria": "CE",
+        "CE": "CE",
+
+        "Pasaporte": "PAS",
+        "PAS": "PAS",
+    }
+
+    tipo_bd = mapa_tipos_documento.get(
+        tipo_documento,
+        tipo_documento
+    )
+
+    try:
+        with engine.connect() as conn:
+
+            # -------------------------------------------------
+            # 1. BUSCAR CLIENTE
+            # -------------------------------------------------
+
+            cliente = conn.execute(
+                text("""
+                    SELECT
+                        idusuarios,
+                        id,
+                        nombre,
+                        apellidos,
+                        documento,
+                        tipodedocumento,
+                        email,
+                        telefono,
+                        usuarionombre,
+                        vehiculos_idvehiculo
+                    FROM dmi.usuarios
+                    WHERE documento::text = :documento
+                      AND (
+                            UPPER(TRIM(COALESCE(tipodedocumento, ''))) = UPPER(:tipo)
+                            OR UPPER(TRIM(COALESCE(tipodedocumento, ''))) = UPPER(:tipo_original)
+                          )
+                    LIMIT 1
+                """),
+                {
+                    "documento": numero_documento,
+                    "tipo": tipo_bd,
+                    "tipo_original": tipo_documento,
+                },
+            ).mappings().fetchone()
+
+            # -------------------------------------------------
+            # 2. SI NO EXISTE
+            # -------------------------------------------------
+
+            if not cliente:
+                return JSONResponse({
+                    "encontrado": False,
+                    "cliente": None,
+                    "vehiculos": [],
+                    "message": "No encontramos un cliente con esos datos."
+                })
+
+            cliente = dict(cliente)
+
+            # -------------------------------------------------
+            # 3. BUSCAR VEHÍCULOS
+            # -------------------------------------------------
+
+            vehiculo_columnas = table_columns(
+                conn,
+                "dmi",
+                "vehiculos"
+            )
+
+            condiciones = []
+            parametros = {
+                "cliente_id": cliente["idusuarios"]
+            }
+
+            # Relación moderna
+            if "cliente_id" in vehiculo_columnas:
+                condiciones.append(
+                    "v.cliente_id = :cliente_id"
+                )
+
+            # Relación antigua que también utiliza tu sistema
+            if cliente.get("vehiculos_idvehiculo"):
+                condiciones.append(
+                    "v.idvehiculo = :vehiculo_principal"
+                )
+                parametros["vehiculo_principal"] = (
+                    cliente["vehiculos_idvehiculo"]
+                )
+
+            vehiculos = []
+
+            if condiciones:
+                vehiculos = [
+                    dict(row)
+                    for row in conn.execute(
+                        text(f"""
+                            SELECT DISTINCT
+                                v.idvehiculo,
+                                v.placa,
+                                v.marca,
+                                v.modelo,
+                                v.codigovehiculo
+                            FROM dmi.vehiculos v
+                            WHERE {" OR ".join(condiciones)}
+                            ORDER BY v.idvehiculo
+                        """),
+                        parametros,
+                    ).mappings().fetchall()
+                ]
+
+            # -------------------------------------------------
+            # 4. RESPUESTA PARA BOTPRESS
+            # -------------------------------------------------
+
+            return JSONResponse({
+                "encontrado": True,
+                "cliente": {
+                    "idusuarios": cliente.get("idusuarios"),
+                    "nombre": cliente.get("nombre"),
+                    "apellidos": cliente.get("apellidos"),
+                    "documento": str(cliente.get("documento") or ""),
+                    "tipoDocumento": cliente.get("tipodedocumento"),
+                    "email": cliente.get("email"),
+                    "telefono": cliente.get("telefono"),
+                },
+                "vehiculos": vehiculos,
+                "message": "Cliente encontrado correctamente."
+            })
+
+    except Exception as e:
+        print("ERROR bot_buscar_cliente:", e)
+
+        return JSONResponse(
+            {
+                "error": "No fue posible consultar la información del cliente."
+            },
+            status_code=500,
         )
 # ===== API JSON PARA REACT =====
 @app.get("/api/vehiculos")
