@@ -1334,6 +1334,106 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
     )
 
 
+@app.get("/api/mecanico/panel")
+async def api_panel_mecanico(
+    request: Request,
+    access_token: str = Cookie(None),
+    authorization: Optional[str] = Header(None),
+):
+    """Devuelve únicamente la jornada asignada al mecánico autenticado."""
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+
+    usuario = obtener_usuario(access_token, request) if access_token else None
+    if not es_mecanico(usuario):
+        return JSONResponse({"error": "No tienes permiso para ver el panel mecánico."}, status_code=403)
+
+    try:
+        with engine.connect() as conn:
+            empleado = obtener_empleado_actual(conn, usuario)
+            orden_col = empleado_orden_column(conn)
+            if not empleado or not orden_col:
+                return JSONResponse(
+                    {
+                        "error": "Tu cuenta de mecánico no está enlazada a un empleado activo con el mismo correo.",
+                        "code": "MECHANIC_EMPLOYEE_NOT_LINKED",
+                    },
+                    status_code=409,
+                )
+
+            empleado_id = empleado["idempleado"]
+
+            # Reutilizamos las consultas que ya alimentan el panel web del
+            # mecánico. Así se respetan los nombres reales de las columnas de
+            # esta base de datos y no se rompe el panel móvil por una columna
+            # opcional (por ejemplo, notas o cliente_id) que no exista.
+            ordenes = obtener_ordenes_mecanico(conn, empleado_id)
+            citas_origen = obtener_citas_programadas_hoy(conn, empleado_id)
+            citas = [
+                {
+                    "idcita": cita.get("idcita"),
+                    "fecha": cita.get("fecha"),
+                    "hora": cita.get("hora"),
+                    "servicio": cita.get("motivo") or "Servicio por definir",
+                    "vehiculo": cita.get("vehiculo") or cita.get("placa") or "Vehículo",
+                    "cliente": cita.get("cliente") or "Cliente",
+                    "observaciones": "",
+                }
+                for cita in citas_origen
+            ]
+
+            # Las notificaciones no deben impedir que se carguen las citas y
+            # órdenes. Algunas instalaciones antiguas no tienen las mismas
+            # columnas en esta tabla.
+            notificaciones = []
+            if table_exists(conn, "dmi", "notificaciones"):
+                try:
+                    notificaciones = conn.execute(
+                        text("""
+                            SELECT *
+                            FROM dmi.notificaciones
+                            WHERE empleado_id = :empleado_id
+                            ORDER BY creado_en DESC
+                            LIMIT 30
+                        """),
+                        {"empleado_id": empleado_id},
+                    ).mappings().fetchall()
+                except Exception as notification_error:
+                    print("AVISO: no fue posible cargar notificaciones del mecánico:", notification_error)
+
+            ordenes_panel = []
+            for orden in ordenes:
+                orden = dict(orden)
+                vehiculo = " ".join(
+                    str(orden.get(campo) or "").strip()
+                    for campo in ("marca", "modelo", "placa")
+                ).strip() or "Vehículo"
+                ordenes_panel.append(
+                    {
+                        **orden,
+                        "servicio": orden.get("motivo_ingreso") or orden.get("codigo_orden") or "Orden de trabajo",
+                        "vehiculo": vehiculo,
+                        "cliente": orden.get("cliente"),
+                        "observaciones": orden.get("observaciones_cliente"),
+                    }
+                )
+
+            return JSONResponse(
+                {
+                    "success": True,
+                    "data": {
+                        "empleado": json_row(empleado),
+                        "citas": [json_row(cita) for cita in citas],
+                        "ordenes": [json_row(orden) for orden in ordenes_panel],
+                        "notificaciones": [json_row(notificacion) for notificacion in notificaciones],
+                    },
+                }
+            )
+    except Exception as e:
+        print("ERROR GET /api/mecanico/panel:", e)
+        return JSONResponse({"error": "No fue posible cargar el panel del mecánico."}, status_code=500)
+
+
 @app.get("/mecanico/ordenes/{orden_id}", response_class=HTMLResponse)
 async def mecanico_orden_detalle(orden_id: int, request: Request, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token, request)
