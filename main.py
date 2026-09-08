@@ -1455,7 +1455,7 @@ async def api_panel_mecanico(
                         "citas": [json_row(cita) for cita in citas],
                         "ordenes": [json_row(orden) for orden in ordenes_panel],
                         "notificaciones": (
-                            recordatorios_citas
+                            [json_row(recordatorio) for recordatorio in recordatorios_citas]
                             + [json_row(notificacion) for notificacion in notificaciones]
                         ),
                     },
