@@ -105,12 +105,25 @@ def obtener_url_recuperacion_segura(candidate_url: str) -> str:
 
 app = FastAPI()
 
+# Orígenes autorizados para la aplicación web/Flutter publicada. En Railway
+# configura FRONTEND_ORIGINS con una lista separada por comas si agregas otros
+# dominios en el futuro.
+FRONTEND_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "FRONTEND_ORIGINS",
+        "https://dmi-sistema-de-informacion.vercel.app",
+    ).split(",")
+    if origin.strip()
+]
+
 class BotBuscarClienteRequest(BaseModel):
     tipoDocumento: str
     numeroDocumento: str
 
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=FRONTEND_ORIGINS,
     allow_origin_regex=r"https://.*\.app\.github\.dev|http://localhost:3000|http://127\.0\.0\.1:3000|http://(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):3000|https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
@@ -1418,6 +1431,22 @@ async def api_panel_mecanico(
                     }
                 )
 
+            recordatorios_citas = [
+                {
+                    "tipo": "recordatorio_cita",
+                    "titulo": "Cita pendiente",
+                    "mensaje": (
+                        f"Tienes la cita de {cita.get('vehiculo') or 'un vehículo'} "
+                        f"para {cita.get('fecha') or 'una fecha próxima'} "
+                        f"a las {cita.get('hora') or 'hora pendiente'}."
+                    ),
+                    "fecha": cita.get("fecha"),
+                    "hora": cita.get("hora"),
+                    "idcita": cita.get("idcita"),
+                }
+                for cita in citas
+            ]
+
             return JSONResponse(
                 {
                     "success": True,
@@ -1425,13 +1454,85 @@ async def api_panel_mecanico(
                         "empleado": json_row(empleado),
                         "citas": [json_row(cita) for cita in citas],
                         "ordenes": [json_row(orden) for orden in ordenes_panel],
-                        "notificaciones": [json_row(notificacion) for notificacion in notificaciones],
+                        "notificaciones": (
+                            recordatorios_citas
+                            + [json_row(notificacion) for notificacion in notificaciones]
+                        ),
                     },
                 }
             )
     except Exception as e:
         print("ERROR GET /api/mecanico/panel:", e)
         return JSONResponse({"error": "No fue posible cargar el panel del mecánico."}, status_code=500)
+
+
+@app.post("/api/mecanico/ordenes/{orden_id}/estado")
+async def actualizar_estado_orden_mecanico_api(
+    orden_id: int,
+    request: Request,
+    access_token: str = Cookie(None),
+    authorization: Optional[str] = Header(None),
+):
+    """Permite al mecánico actualizar únicamente una orden que le pertenece."""
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+
+    usuario = obtener_usuario(access_token, request) if access_token else None
+    if not es_mecanico(usuario):
+        return JSONResponse({"error": "No tienes permiso para actualizar órdenes."}, status_code=403)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    estado = str(body.get("estado") or "").strip().lower()
+    estados_permitidos = {"diagnostico", "en_reparacion", "finalizada"}
+    if estado not in estados_permitidos:
+        return JSONResponse({"error": "Estado no válido para el mecánico."}, status_code=400)
+
+    try:
+        with engine.connect() as conn:
+            if not usuario_puede_gestionar_orden(conn, usuario, orden_id):
+                return JSONResponse(
+                    {"error": "Esta orden no está asignada a tu cuenta."},
+                    status_code=403,
+                )
+
+            orden = conn.execute(
+                text("SELECT cita_id FROM dmi.orden_trabajo WHERE idorden = :id"),
+                {"id": orden_id},
+            ).mappings().fetchone()
+            if not orden:
+                return JSONResponse({"error": "La orden no existe."}, status_code=404)
+
+            cambios = {"estado": estado}
+            if estado == "finalizada":
+                cambios["fecha_finalizacion"] = datetime.now()
+            update_dynamic(conn, "orden_trabajo", "idorden", orden_id, cambios)
+
+            # Al finalizar el trabajo, la cita deja de figurar como pendiente.
+            if estado == "finalizada" and orden.get("cita_id"):
+                update_dynamic(
+                    conn,
+                    "citas",
+                    "idcita",
+                    orden["cita_id"],
+                    {"estado": "completada"},
+                )
+
+            conn.commit()
+
+        return JSONResponse(
+            {
+                "success": True,
+                "message": "Orden marcada como terminada." if estado == "finalizada" else "Estado de la orden actualizado.",
+                "data": {"idorden": orden_id, "estado": estado},
+            }
+        )
+    except Exception as e:
+        print("ERROR POST /api/mecanico/ordenes/{orden_id}/estado:", e)
+        return JSONResponse({"error": "No fue posible actualizar la orden."}, status_code=500)
 
 
 @app.get("/mecanico/ordenes/{orden_id}", response_class=HTMLResponse)
