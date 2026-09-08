@@ -27,7 +27,6 @@ import hashlib
 import unicodedata
 from sqlalchemy import text
 from datetime import datetime
-from urllib.parse import urlencode
 
 load_dotenv()
 
@@ -1191,44 +1190,6 @@ def generar_codigo_documento(conn, table: str, column: str, prefix: str):
         {"base": f"{base}%"},
     ).scalar() or 0
     return f"{base}-{int(total_dia) + 1:04d}"
-def generar_firma_integridad_wompi(referencia: str, amount_in_cents: int) -> str:
-    texto = f"{referencia}{amount_in_cents}COP{WOMPI_INTEGRITY_SECRET}"
-    return hashlib.sha256(texto.encode("utf-8")).hexdigest()
-
-def generar_checkout_wompi_pedido(
-    referencia: str,
-    amount_in_cents: int,
-    email: Optional[str] = None,
-) -> str:
-    # Genera un Checkout Web de Wompi asociado a un pedido concreto.
-    if not WOMPI_PUBLIC_KEY:
-        raise RuntimeError("Falta configurar WOMPI_PUBLIC_KEY")
-    if not WOMPI_INTEGRITY_SECRET:
-        raise RuntimeError("Falta configurar WOMPI_INTEGRITY_SECRET")
-    if amount_in_cents <= 0:
-        raise ValueError("El monto del pedido debe ser mayor que cero")
-
-    firma = generar_firma_integridad_wompi(
-        referencia,
-        amount_in_cents,
-    )
-
-    parametros = {
-        "public-key": WOMPI_PUBLIC_KEY,
-        "currency": "COP",
-        "amount-in-cents": str(amount_in_cents),
-        "reference": referencia,
-        "signature:integrity": firma,
-        "redirect-url": "https://dmi-sistema-de-informacion.vercel.app/",
-    }
-
-    if email:
-        parametros["customer-data:email"] = email
-
-    return "https://checkout.wompi.co/p/?" + urlencode(parametros)
-
-
-
 
 
 def obtener_factura_orden(conn, orden_id: int):
@@ -6739,9 +6700,6 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS barrio text"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS codigo_postal text"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS referencia_envio text"))
-            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS referencia_wompi varchar(120)"))
-            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS wompi_transaction_id varchar(120)"))
-            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS wompi_estado varchar(40)"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS repartidor_nombre text"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS repartidor_telefono text"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS orden_envio varchar(60)"))
@@ -6760,10 +6718,6 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
                 "wompi": "pendiente_pago_wompi",
             }[tipo_pago]
             codigo_pedido = f"PED-{datetime.now().strftime('%Y%m%d')}-{int(datetime.now().timestamp() * 1000) % 1000000:06d}"
-            referencia_wompi = (
-               f"DMI-PEDIDO-{codigo_pedido}-"
-               f"{int(datetime.now().timestamp() * 1000)}"
-              ) if tipo_pago == "wompi" else None
             valores = {
                 "nombre": datos.get("nombre"), "telefono": datos.get("telefono"),
                 "email": usuario.get("email") or datos.get("email"), "direccion": datos.get("direccion"),
@@ -6772,11 +6726,7 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
                 "metodo_pago": datos.get("metodoPago") or datos.get("metodo_pago"),
                 "total": total_calculado, "productos": json.dumps(productos),
                 "usuarios_idusuarios": usuario.get("idusuarios"), "activo": True, "estado": estado_pedido,
-                "codigo_pedido": codigo_pedido,
-                "tipo_pago": tipo_pago,
-                "referencia_wompi": referencia_wompi,
-                "wompi_transaction_id": None,
-                "wompi_estado": None,
+                "codigo_pedido": codigo_pedido, "tipo_pago": tipo_pago,
                 "novedad": "Pedido recibido. Estamos validando la disponibilidad de los productos.",
             }
             campos = [campo for campo in valores if campo in columnas]
@@ -6790,28 +6740,14 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
             )
             pedido_id = resultado.scalar() if id_column else None
             conn.commit()
-
-        checkout_url = None
-        if tipo_pago == "wompi":
-            monto_en_centavos = int(round(total_calculado * 100))
-            checkout_url = generar_checkout_wompi_pedido(
-                referencia=referencia_wompi,
-                amount_in_cents=monto_en_centavos,
-                email=str(
-                    usuario.get("email")
-                    or datos.get("email")
-                    or ""
-                ).strip(),
-            )
-
         return JSONResponse({
             "ok": True,
             "pedido_id": pedido_id,
             "codigo_pedido": codigo_pedido,
             "total": total_calculado,
             "estado": estado_pedido,
-            "referencia_wompi": referencia_wompi,
-            "checkout_url": checkout_url,
+            # Enlace temporal hasta terminar el Checkout dinamico por pedido.
+            "checkout_url": WOMPI_PAYMENT_LINK if tipo_pago == "wompi" else None,
         })
     except (TypeError, ValueError):
         return JSONResponse({"error": "Revisa las cantidades y precios del carrito"}, status_code=400)
@@ -6959,115 +6895,15 @@ async def recibir_evento_wompi(request: Request):
 
         referencia = str(transaccion.get("reference") or "")
         partes = referencia.split("-")
-
-        # ============================================================
-        # PEDIDO DE REPUESTOS DEL CATALOGO
-        # ============================================================
-        if len(partes) >= 4 and partes[0] == "DMI" and partes[1] == "PEDIDO":
-            monto_recibido = int(transaccion.get("amount_in_cents") or 0)
-
-            if monto_recibido <= 0:
-                return JSONResponse(
-                    {"error": "Monto de transaccion invalido"},
-                    status_code=400,
-                )
-
-            with engine.connect() as conn:
-                pedido = conn.execute(
-                    text("""
-                        SELECT *
-                        FROM public.pedidos
-                        WHERE referencia_wompi = :referencia
-                        LIMIT 1
-                    """),
-                    {"referencia": referencia},
-                ).mappings().fetchone()
-
-                if not pedido:
-                    return JSONResponse({
-                        "ok": True,
-                        "ignored": True,
-                        "reason": "Pedido DMI no encontrado",
-                    })
-
-                monto_esperado = int(
-                    round(float(pedido.get("total") or 0) * 100)
-                )
-
-                if monto_recibido != monto_esperado:
-                    return JSONResponse(
-                        {
-                            "error": "El monto de Wompi no coincide con el pedido",
-                        },
-                        status_code=400,
-                    )
-
-                transaccion_id = str(
-                    transaccion.get("id") or referencia
-                )
-
-                ya_procesado = conn.execute(
-                    text("""
-                        SELECT 1
-                        FROM public.pedidos
-                        WHERE wompi_transaction_id = :transaction_id
-                        LIMIT 1
-                    """),
-                    {"transaction_id": transaccion_id},
-                ).fetchone()
-
-                if ya_procesado:
-                    return JSONResponse({
-                        "ok": True,
-                        "duplicado": True,
-                        "pedido_id": pedido.get("id"),
-                    })
-
-                conn.execute(
-                    text("""
-                        UPDATE public.pedidos
-                        SET
-                            wompi_transaction_id = :transaction_id,
-                            wompi_estado = 'APPROVED',
-                            estado = 'pedido_aceptado',
-                            novedad = 'Pago Wompi aprobado. Pedido aceptado para preparacion.'
-                        WHERE referencia_wompi = :referencia
-                    """),
-                    {
-                        "transaction_id": transaccion_id,
-                        "referencia": referencia,
-                    },
-                )
-                conn.commit()
-
-            return JSONResponse({
-                "ok": True,
-                "pedido_id": pedido.get("id"),
-                "codigo_pedido": pedido.get("codigo_pedido"),
-                "estado": "pedido_aceptado",
-                "wompi_estado": "APPROVED",
-                "transaction_id": transaccion_id,
-            })
-
-        # ============================================================
-        # FACTURA DE SERVICIO
-        # ============================================================
         if len(partes) < 4 or partes[0] != "DMI" or partes[1] != "FACTURA":
             # Los links fijos tienen una referencia propia de Wompi. No se les
             # asigna una factura para impedir acreditar un pago equivocado.
-            return JSONResponse({
-                "ok": True,
-                "ignored": True,
-                "reason": "Referencia no asociada a DMI",
-            })
+            return JSONResponse({"ok": True, "ignored": True, "reason": "Referencia no asociada a DMI"})
 
         factura_id = int(partes[2])
         valor_pagado = float(transaccion.get("amount_in_cents") or 0) / 100
         if valor_pagado <= 0:
-            return JSONResponse(
-                {"error": "Monto de transaccion invalido"},
-                status_code=400,
-            )
+            return JSONResponse({"error": "Monto de transaccion invalido"}, status_code=400)
 
         with engine.connect() as conn:
             factura = conn.execute(text("SELECT * FROM dmi.facturas WHERE idfactura = :id"), {"id": factura_id}).mappings().fetchone()
