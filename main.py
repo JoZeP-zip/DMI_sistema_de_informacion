@@ -3500,12 +3500,6 @@ async def crear_cita(
     request: Request,
     access_token: str = Cookie(None),
     authorization: Optional[str] = Header(None),
-    vehiculos_idvehiculo: Optional[str] = Form(None),
-    fecha_cita: str = Form(...),
-    hora_cita: str = Form(...),
-    motivo: str = Form(...),
-    observaciones: Optional[str] = Form(None),
-    descripcion_vehiculo: Optional[str] = Form(None),
 ):
     if not access_token and authorization and authorization.startswith("Bearer "):
         access_token = authorization.split(" ", 1)[1]
@@ -3513,6 +3507,46 @@ async def crear_cita(
     usuario = obtener_usuario(access_token, request) if access_token else None
 
     try:
+        # La web histórica envía un formulario; Flutter envía JSON.
+        # Aceptamos ambos formatos para que las dos interfaces funcionen.
+        content_type = request.headers.get("content-type", "").lower()
+        if "application/json" in content_type:
+            payload = await request.json()
+            if not isinstance(payload, dict):
+                return JSONResponse(
+                    {"error": "Los datos de la cita deben enviarse como un objeto JSON."},
+                    status_code=400,
+                )
+        else:
+            form = await request.form()
+            payload = dict(form)
+
+        vehiculos_idvehiculo = str(
+            payload.get("vehiculos_idvehiculo") or ""
+        ).strip() or None
+        fecha_cita = str(payload.get("fecha_cita") or "").strip()
+        hora_cita = str(payload.get("hora_cita") or "").strip()
+        motivo = str(payload.get("motivo") or "").strip()
+        observaciones = str(payload.get("observaciones") or "").strip()
+        descripcion_vehiculo = str(
+            payload.get("descripcion_vehiculo") or ""
+        ).strip()
+
+        faltantes = [
+            campo
+            for campo, valor in {
+                "fecha_cita": fecha_cita,
+                "hora_cita": hora_cita,
+                "motivo": motivo,
+            }.items()
+            if not valor
+        ]
+        if faltantes:
+            return JSONResponse(
+                {"error": "Faltan campos obligatorios: " + ", ".join(faltantes) + "."},
+                status_code=400,
+            )
+
         # Validamos la fecha en el backend para que la regla de los dos meses
         # no pueda saltarse manipulando el calendario del navegador.
         fecha_cita_validada, hora_cita_validada = validar_fecha_hora_cita(fecha_cita, hora_cita)
@@ -3520,8 +3554,6 @@ async def crear_cita(
         hora_cita = hora_cita_validada.strftime("%H:%M")
 
         notas = observaciones or ""
-
-        descripcion_vehiculo = (descripcion_vehiculo or "").strip()
 
         if descripcion_vehiculo:
             notas = (
@@ -4846,6 +4878,12 @@ async def crear_mi_vehiculo(
     try:
         body = await request.json()
 
+        if not isinstance(body, dict):
+            return JSONResponse(
+                {"error": "El cuerpo de la solicitud debe ser un objeto JSON."},
+                status_code=400,
+            )
+
         marca = str(body.get("marca", "")).strip()
         modelo = str(body.get("modelo", "")).strip()
         placa = str(body.get("placa", "")).strip().upper()
@@ -4856,20 +4894,34 @@ async def crear_mi_vehiculo(
         capacidad = str(
             body.get("capacidad", "")
         ).strip()
+        # Se aceptan los nombres históricos de la web y los usados por Flutter.
         descripcion = str(
-            body.get("descripcionvehiculo", "")
+            body.get("descripcionvehiculo")
+            or body.get("descripcion")
+            or ""
         ).strip()
-
-        tipo_id = body.get(
-            "tipovehiculos_idtipovehiculos"
+        tipo_id = (
+            body.get("tipovehiculos_idtipovehiculos")
+            or body.get("tipo_vehiculo_id")
         )
 
-        vin = body.get("vin")
-        kilometraje = body.get(
-            "kilometraje_actual",
-            0,
-        )
-        combustible = body.get("combustible")
+        try:
+            tipo_id = int(tipo_id) if tipo_id is not None else None
+        except (TypeError, ValueError):
+            tipo_id = None
+
+        vin = str(body.get("vin") or "").strip() or None
+        combustible = str(body.get("combustible") or "").strip() or None
+
+        try:
+            kilometraje = int(body.get("kilometraje_actual") or 0)
+            if kilometraje < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return JSONResponse(
+                {"error": "El kilometraje debe ser un número positivo."},
+                status_code=400,
+            )
 
         # --------------------------------------------------------
         # VALIDACIONES
@@ -4882,7 +4934,6 @@ async def crear_mi_vehiculo(
             "motor": motor,
             "cantidad_asientos": cantidad_asientos,
             "capacidad": capacidad,
-            "descripcionvehiculo": descripcion,
         }
 
         faltantes = [
@@ -4899,7 +4950,7 @@ async def crear_mi_vehiculo(
         if faltantes:
             return JSONResponse(
                 {
-                    "error": "Faltan campos obligatorios.",
+                    "error": "Faltan campos obligatorios: " + ", ".join(faltantes) + ".",
                     "campos": faltantes,
                 },
                 status_code=400,
@@ -5023,7 +5074,7 @@ async def crear_mi_vehiculo(
                 """),
                 {
                     "codigo": codigo,
-                    "descripcion": descripcion[:45],
+                    "descripcion": (descripcion or "Sin descripción")[:45],
                     "motor": motor[:45],
                     "cantidad_asientos":
                         cantidad_asientos[:45],
@@ -5033,17 +5084,9 @@ async def crear_mi_vehiculo(
                     "tipo_id": tipo_id,
                     "modelo": modelo,
                     "cliente_id": cliente_id,
-                    "vin": (
-                        str(vin).strip()[:80]
-                        if vin
-                        else None
-                    ),
+                    "vin": vin[:80] if vin else None,
                     "kilometraje": kilometraje,
-                    "combustible": (
-                        str(combustible).strip()[:50]
-                        if combustible
-                        else None
-                    ),
+                    "combustible": combustible[:50] if combustible else None,
                 },
             ).scalar()
 
@@ -5104,7 +5147,6 @@ async def crear_mi_vehiculo(
             {
                 "error":
                     "No fue posible registrar el vehículo.",
-                "detail": str(e),
             },
             status_code=500,
         )
@@ -5441,11 +5483,6 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
                         pass
                     return []
 
-            try:
-                asegurar_servicios_base(conn)
-            except Exception as e:
-                load_errors.append("servicios base: " + str(e))
-                conn.rollback()
             ctx["ciudades"]         = fetch("SELECT * FROM dmi.ciudades ORDER BY idciudades", "ciudades")
             ctx["tipovehiculos"]    = fetch("SELECT * FROM dmi.tipovehiculos ORDER BY idtipovehiculos", "tipos de vehiculo")
             ctx["metodospago"]      = fetch("SELECT * FROM dmi.metodopago ORDER BY idmetodopago", "metodos de pago")
@@ -5488,12 +5525,12 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
             """, "oficinas")
             ctx["servicios"] = fetch("""
                 SELECT
-                    s.*,
+                    s.idservicios,
+                    s.codigoservicio,
+                    s.descripcionservicio,
                     NULL::varchar AS descripcionserviciosprecio,
-                    NULL::varchar AS precioserviciosprecio,
-                    pe.codigopedido
+                    NULL::varchar AS precioserviciosprecio
                 FROM dmi.servicios s
-                LEFT JOIN dmi.pedido pe ON pe.idpedido = s.pedido_idpedido
                 ORDER BY s.idservicios
             """, "servicios")
             ctx["tiporeparacion"] = fetch("""
@@ -6236,7 +6273,7 @@ CONFIG_TABLES = {
     "servicios": {
         "table": "servicios",
         "pk": "idservicios",
-        "fields": ["codigoservicio", "descripcionservicio", "pedido_idpedido", "serviciosprecio_idserviciosprecio"],
+        "fields": ["codigoservicio", "descripcionservicio", "serviciosprecio_idserviciosprecio"],
     },
     "tiporeparacion": {
         "table": "tiporeparacion",
@@ -7569,8 +7606,6 @@ async def config_crear_generico(entity: str, request: Request, access_token: str
                         return config_redirect(entity, "Selecciona un inventario valido registrado en Supabase", False)
 
                 if entity == "servicios":
-                    if not exists("pedido", "idpedido", values.get("pedido_idpedido")):
-                        return config_redirect(entity, "Selecciona un pedido valido registrado en Supabase", False)
                     if not exists("serviciosprecio", "idserviciosprecio", values.get("serviciosprecio_idserviciosprecio")):
                         return config_redirect(entity, "Selecciona un precio de servicio valido o deja el campo en blanco", False)
 
@@ -7637,8 +7672,6 @@ async def config_editar_generico(entity: str, record_id: int, request: Request, 
                         return config_redirect(entity, "Selecciona un inventario valido registrado en Supabase", False)
 
                 if entity == "servicios":
-                    if not exists("pedido", "idpedido", values.get("pedido_idpedido")):
-                        return config_redirect(entity, "Selecciona un pedido valido registrado en Supabase", False)
                     if not exists("serviciosprecio", "idserviciosprecio", values.get("serviciosprecio_idserviciosprecio")):
                         return config_redirect(entity, "Selecciona un precio de servicio valido o deja el campo en blanco", False)
 
