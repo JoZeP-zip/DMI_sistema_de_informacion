@@ -1447,6 +1447,24 @@ async def api_panel_mecanico(
                 for cita in citas
             ]
 
+            # Respaldo para órdenes creadas desde flujos antiguos: aunque no
+            # exista una fila histórica en notificaciones, el mecánico verá la
+            # alerta de la orden que ya tiene asignada en su campana/panel.
+            recordatorios_ordenes = [
+                {
+                    "tipo": "orden_asignada",
+                    "titulo": "Orden de trabajo asignada",
+                    "mensaje": (
+                        f"Tienes asignada la orden {orden.get('codigo_orden') or '#' + str(orden.get('idorden') or '')} "
+                        f"para {orden.get('vehiculo') or 'un vehículo'}."
+                    ),
+                    "idorden": orden.get("idorden"),
+                    "estado": orden.get("estado"),
+                }
+                for orden in ordenes_panel
+                if str(orden.get("estado") or "").lower() not in {"finalizada", "finalizado", "entregada", "cancelada"}
+            ]
+
             return JSONResponse(
                 {
                     "success": True,
@@ -1456,6 +1474,7 @@ async def api_panel_mecanico(
                         "ordenes": [json_row(orden) for orden in ordenes_panel],
                         "notificaciones": (
                             [json_row(recordatorio) for recordatorio in recordatorios_citas]
+                            + [json_row(recordatorio) for recordatorio in recordatorios_ordenes]
                             + [json_row(notificacion) for notificacion in notificaciones]
                         ),
                     },
@@ -4595,6 +4614,53 @@ async def aprobar_solicitud_reprogramacion(solicitud_id: int, request: Request, 
     except Exception as e:
         print("ERROR aprobar_solicitud_reprogramacion:", e)
         return JSONResponse({"error": "No fue posible aprobar la solicitud."}, status_code=500)
+
+
+@app.post("/api/solicitudes-reprogramacion/{solicitud_id}/rechazar")
+async def rechazar_solicitud_reprogramacion(solicitud_id: int, request: Request, access_token: str = Cookie(None), authorization: Optional[str] = Header(None)):
+    """El administrador rechaza la propuesta sin alterar la cita original."""
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+    usuario = obtener_usuario(access_token, request)
+    if not usuario or not es_admin(usuario):
+        return JSONResponse({"error": "Solo un administrador puede rechazar esta solicitud."}, status_code=403)
+    try:
+        body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else dict(await request.form())
+        comentario = str(body.get("comentario") or body.get("motivo") or "").strip()[:1000]
+        with engine.connect() as conn:
+            solicitud = conn.execute(text("""
+                SELECT * FROM dmi.solicitudes_reprogramacion
+                WHERE idsolicitud_reprogramacion = :solicitud_id
+            """), {"solicitud_id": solicitud_id}).mappings().fetchone()
+            if not solicitud:
+                return JSONResponse({"error": "La solicitud no existe."}, status_code=404)
+            if solicitud.get("estado") != "pendiente":
+                return JSONResponse({"error": "Esta solicitud ya fue resuelta."}, status_code=400)
+
+            conn.execute(text("""
+                UPDATE dmi.solicitudes_reprogramacion
+                SET estado = 'rechazada', administrador_usuario_id = :administrador_id,
+                    resuelta_en = now()
+                WHERE idsolicitud_reprogramacion = :solicitud_id
+            """), {"administrador_id": usuario.get("idusuarios"), "solicitud_id": solicitud_id})
+            registrar_historial_cita(
+                conn, solicitud["cita_id"], "reprogramacion_rechazada", usuario,
+                comentario or "Solicitud rechazada por el administrador.", {},
+                {"estado_solicitud": "rechazada"},
+            )
+            mensaje = "Tu solicitud de reprogramación fue rechazada. La fecha original de tu cita se mantiene."
+            if comentario:
+                mensaje += " Motivo: " + comentario
+            crear_notificacion(
+                conn, "Solicitud de reprogramación rechazada", mensaje,
+                "reprogramacion_rechazada", "solicitud_reprogramacion", solicitud_id,
+                usuario_id=solicitud.get("solicitante_usuario_id"), accion_url="/citas",
+            )
+            conn.commit()
+        return JSONResponse({"success": True, "message": "Solicitud rechazada. El cliente fue notificado."})
+    except Exception as e:
+        print("ERROR rechazar_solicitud_reprogramacion:", e)
+        return JSONResponse({"error": "No fue posible rechazar la solicitud."}, status_code=500)
 
 
 @app.post("/api/citas/{cita_id}/cancelar")
