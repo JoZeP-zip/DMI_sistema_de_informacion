@@ -3060,6 +3060,18 @@ async def login_react(request: Request):
                 status_code=401,
             )
 
+        # El panel administrativo se gestiona desde la web de administración;
+        # la aplicación móvil solo está habilitada para clientes y mecánicos.
+        rol_movil = str(usuario.get("rol") or "").strip().lower()
+        if rol_movil in {"admin", "administrador", "administrator"}:
+            return JSONResponse(
+                {
+                    "message": "El acceso móvil está disponible únicamente para clientes y mecánicos.",
+                    "code": "mobile_role_not_allowed",
+                },
+                status_code=403,
+            )
+
         response = JSONResponse({
             "access_token": res.session.access_token,
             "token": res.session.access_token,
