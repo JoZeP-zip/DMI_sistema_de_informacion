@@ -29,6 +29,14 @@ from sqlalchemy import text
 from datetime import datetime
 from urllib.parse import urlencode
 
+try:
+    import firebase_admin
+    from firebase_admin import credentials as firebase_credentials, messaging as firebase_messaging
+except ImportError:
+    firebase_admin = None
+    firebase_credentials = None
+    firebase_messaging = None
+
 load_dotenv()
 
 
@@ -62,6 +70,8 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USERNAME)
+# Se configura como secreto en Render. Nunca se expone al APK ni al navegador.
+FIREBASE_SERVICE_ACCOUNT_JSON = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "")
 
 # Forzamos a SQLAlchemy a buscar directamente en el esquema dmi
 engine = create_engine(
@@ -4269,17 +4279,79 @@ def registrar_historial_cita(conn, cita_id: int, evento: str, usuario: Optional[
     )
 
 
+def obtener_cliente_firebase():
+    """Inicializa Firebase Admin una sola vez usando el secreto de Render."""
+    if not firebase_admin or not firebase_messaging or not FIREBASE_SERVICE_ACCOUNT_JSON:
+        return None
+    try:
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(
+                firebase_credentials.Certificate(json.loads(FIREBASE_SERVICE_ACCOUNT_JSON))
+            )
+        return firebase_messaging
+    except Exception as error:
+        print("AVISO: Firebase push no está disponible:", error)
+        return None
+
+
+def enviar_notificacion_push(conn, titulo: str, mensaje: str, tipo: str,
+                             referencia_tipo: str = None, referencia_id: int = None,
+                             usuario_id: int = None, empleado_id: int = None):
+    """Envía una alerta de sistema sin interrumpir la operación principal."""
+    if not table_exists(conn, "dmi", "dispositivos_push"):
+        return
+    cliente = obtener_cliente_firebase()
+    if not cliente:
+        return
+    filtros, params = ["activo = TRUE"], {}
+    destinatarios = []
+    if usuario_id:
+        destinatarios.append("usuario_id = :usuario_id")
+        params["usuario_id"] = usuario_id
+    if empleado_id:
+        destinatarios.append("empleado_id = :empleado_id")
+        params["empleado_id"] = empleado_id
+    if not destinatarios:
+        return
+    try:
+        filas = conn.execute(text(f"""
+            SELECT iddispositivo_push, token FROM dmi.dispositivos_push
+            WHERE {' AND '.join(filtros)} AND ({' OR '.join(destinatarios)})
+        """), params).mappings().fetchall()
+        tokens = [(row["iddispositivo_push"], row["token"]) for row in filas if row.get("token")]
+        for inicio in range(0, len(tokens), 500):
+            lote = tokens[inicio:inicio + 500]
+            respuesta = cliente.send_each_for_multicast(cliente.MulticastMessage(
+                tokens=[token for _, token in lote],
+                notification=cliente.Notification(title=titulo, body=mensaje),
+                data={
+                    "tipo": str(tipo or "notificacion"),
+                    "referencia_tipo": str(referencia_tipo or ""),
+                    "referencia_id": str(referencia_id or ""),
+                },
+                android=cliente.AndroidConfig(priority="high"),
+            ))
+            for indice, resultado in enumerate(respuesta.responses):
+                codigo = getattr(getattr(resultado, "exception", None), "code", "")
+                if not resultado.success and codigo in {"registration-token-not-registered", "invalid-registration-token"}:
+                    conn.execute(text("UPDATE dmi.dispositivos_push SET activo = FALSE, actualizado_en = now() WHERE iddispositivo_push = :id"), {"id": lote[indice][0]})
+    except Exception as error:
+        print("AVISO: no fue posible enviar push:", error)
+
+
 def crear_notificacion(conn, titulo: str, mensaje: str, tipo: str, referencia_tipo: str = None,
                        referencia_id: int = None, usuario_id: int = None, empleado_id: int = None,
                        accion_url: str = None):
     """Registra una notificacion persistente para una cuenta o empleado."""
     if not table_exists(conn, "dmi", "notificaciones") or (not usuario_id and not empleado_id):
         return
-    insert_dynamic_returning(conn, "notificaciones", {
+    notificacion_id = insert_dynamic_returning(conn, "notificaciones", {
         "usuario_id": usuario_id, "empleado_id": empleado_id, "tipo": tipo,
         "titulo": titulo[:180], "mensaje": mensaje, "referencia_tipo": referencia_tipo,
         "referencia_id": referencia_id, "accion_url": accion_url,
-    })
+    }, "idnotificacion")
+    enviar_notificacion_push(conn, titulo, mensaje, tipo, referencia_tipo, referencia_id, usuario_id, empleado_id)
+    return notificacion_id
 
 
 def notificar_administradores(conn, titulo: str, mensaje: str, tipo: str,
@@ -4856,6 +4928,64 @@ async def listar_notificaciones(request: Request, access_token: str = Cookie(Non
     except Exception as e:
         print("ERROR listar_notificaciones:", e)
         return JSONResponse({"error": "No fue posible cargar las notificaciones."}, status_code=500)
+
+
+@app.post("/api/dispositivos-push/registrar")
+async def registrar_dispositivo_push(
+    request: Request,
+    access_token: str = Cookie(None),
+    authorization: Optional[str] = Header(None),
+):
+    """Vincula el token FCM del APK al cliente o mecánico autenticado."""
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+    usuario = obtener_usuario(access_token, request) if access_token else None
+    if not usuario:
+        return JSONResponse({"error": "Debes iniciar sesión."}, status_code=401)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    token = str(body.get("token") or "").strip()
+    plataforma = str(body.get("platform") or "android").strip().lower()[:30]
+    if len(token) < 20:
+        return JSONResponse({"error": "Token de notificaciones no válido."}, status_code=400)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS dmi.dispositivos_push (
+                    iddispositivo_push BIGSERIAL PRIMARY KEY,
+                    token TEXT UNIQUE NOT NULL,
+                    usuario_id BIGINT NULL,
+                    empleado_id BIGINT NULL,
+                    plataforma VARCHAR(30) NOT NULL DEFAULT 'android',
+                    activo BOOLEAN NOT NULL DEFAULT TRUE,
+                    creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            """))
+            empleado = obtener_empleado_actual(conn, usuario) if es_mecanico(usuario) else None
+            conn.execute(text("""
+                INSERT INTO dmi.dispositivos_push
+                    (token, usuario_id, empleado_id, plataforma, activo, actualizado_en)
+                VALUES (:token, :usuario_id, :empleado_id, :plataforma, TRUE, now())
+                ON CONFLICT (token) DO UPDATE SET
+                    usuario_id = EXCLUDED.usuario_id,
+                    empleado_id = EXCLUDED.empleado_id,
+                    plataforma = EXCLUDED.plataforma,
+                    activo = TRUE,
+                    actualizado_en = now()
+            """), {
+                "token": token,
+                "usuario_id": usuario.get("idusuarios"),
+                "empleado_id": empleado.get("idempleado") if empleado else None,
+                "plataforma": plataforma,
+            })
+            conn.commit()
+        return JSONResponse({"success": True})
+    except Exception as error:
+        print("ERROR registrar dispositivo push:", error)
+        return JSONResponse({"error": "No fue posible registrar este celular."}, status_code=500)
 
 
 @app.post("/api/notificaciones/{notificacion_id}/leer")
