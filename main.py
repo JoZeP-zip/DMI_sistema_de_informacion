@@ -4988,6 +4988,37 @@ async def registrar_dispositivo_push(
         return JSONResponse({"error": "No fue posible registrar este celular."}, status_code=500)
 
 
+@app.post("/api/notificaciones/prueba-push")
+async def probar_notificacion_push(
+    request: Request,
+    access_token: str = Cookie(None),
+    authorization: Optional[str] = Header(None),
+):
+    """Prueba segura: envía una alerta únicamente al celular de esta sesión."""
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+    usuario = obtener_usuario(access_token, request) if access_token else None
+    if not usuario:
+        return JSONResponse({"error": "Debes iniciar sesión."}, status_code=401)
+    try:
+        with engine.connect() as conn:
+            empleado = obtener_empleado_actual(conn, usuario) if es_mecanico(usuario) else None
+            crear_notificacion(
+                conn,
+                "Notificaciones activas",
+                "Esta es una prueba de alerta para DMI Motors.",
+                "prueba_push",
+                usuario_id=None if empleado else usuario.get("idusuarios"),
+                empleado_id=empleado.get("idempleado") if empleado else None,
+                accion_url="/mi-cuenta",
+            )
+            conn.commit()
+        return JSONResponse({"success": True, "message": "Prueba enviada."})
+    except Exception as error:
+        print("ERROR prueba push:", error)
+        return JSONResponse({"error": "No fue posible enviar la prueba."}, status_code=500)
+
+
 @app.post("/api/notificaciones/{notificacion_id}/leer")
 async def marcar_notificacion_leida(notificacion_id: int, request: Request, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token, request)
@@ -5894,8 +5925,9 @@ async def api_usuarios(request: Request, access_token: str = Cookie(None)):
 
 @app.get("/api/citas")
 async def api_citas(request: Request, access_token: str = Cookie(None)):
-    """Entrega citas con tipos compatibles con JSON para el calendario React."""
-    if not obtener_usuario(access_token, request):
+    """Entrega exclusivamente las citas del cliente autenticado."""
+    usuario = obtener_usuario(access_token, request)
+    if not usuario or not usuario.get("idusuarios"):
         return JSONResponse({"error": "Debes iniciar sesion"}, status_code=401)
     try:
         with engine.connect() as conn:
@@ -5912,9 +5944,10 @@ async def api_citas(request: Request, access_token: str = Cookie(None)):
                     COALESCE(v.marca, '') AS marca,
                     COALESCE(v.codigovehiculo, '') AS codigovehiculo
                 FROM dmi.citas c
-                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+                JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+                WHERE v.cliente_id = :usuario_id
                 ORDER BY c.fecha DESC, c.hora DESC, c.idcita DESC
-            """)).mappings().fetchall()
+            """), {"usuario_id": usuario["idusuarios"]}).mappings().fetchall()
             result = [
                 {
                     **dict(r),
@@ -7848,10 +7881,10 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     tv.vehiculo AS tipo_vehiculo
                 FROM dmi.vehiculos v
                 LEFT JOIN dmi.tipovehiculos tv ON tv.idtipovehiculos = v.tipovehiculos_idtipovehiculos
-                WHERE v.cliente_id = :usuario_id OR v.idvehiculo = :vehiculo_legacy_id
+                WHERE v.cliente_id = :usuario_id
                 ORDER BY v.idvehiculo DESC
                 """,
-                {"usuario_id": usuario_id, "vehiculo_legacy_id": vehiculo_legacy_id},
+                {"usuario_id": usuario_id},
             )
 
             citas = query_rows(
@@ -7869,10 +7902,10 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     COALESCE(v.marca, '') || ' ' || COALESCE(v.modelo, '') AS vehiculo
                 FROM dmi.citas c
                 LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
-                WHERE v.cliente_id = :usuario_id OR c.vehiculos_idvehiculo = :vehiculo_legacy_id
+                WHERE v.cliente_id = :usuario_id
                 ORDER BY c.fecha DESC, c.hora DESC
                 """,
-                {"usuario_id": usuario_id, "vehiculo_legacy_id": vehiculo_legacy_id},
+                {"usuario_id": usuario_id},
             )
 
             ordenes = query_rows(
