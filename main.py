@@ -4313,15 +4313,15 @@ def validar_fecha_hora_cita(fecha_cita: str, hora_cita: str) -> tuple[date, time
         raise HTTPException(status_code=400, detail="Selecciona una fecha y una hora validas.")
 
     hoy = datetime.now(ZoneInfo("America/Bogota")).date()
-    # Política de citas DMI: máximo 30 días, lunes a sábado, 9 AM a 6 PM.
-    limite = hoy + timedelta(days=30)
+    # Política de citas DMI: máximo dos meses, lunes a sábado, 9 AM a 6 PM.
+    limite = fecha_maxima_cita(hoy, 2)
 
     if fecha < hoy:
         raise HTTPException(status_code=400, detail="No puedes agendar una cita en una fecha pasada.")
     if fecha > limite:
         raise HTTPException(
             status_code=400,
-            detail=f"Solo puedes agendar una cita hasta 30 días hacia adelante. La fecha máxima permitida es {limite.strftime('%d/%m/%Y')}."
+            detail=f"Solo puedes agendar una cita hasta dos meses hacia adelante. La fecha máxima permitida es {limite.strftime('%d/%m/%Y')}."
         )
 
     if fecha.weekday() == 6:
