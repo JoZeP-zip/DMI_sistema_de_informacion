@@ -1417,7 +1417,31 @@ async def api_panel_mecanico(
             # esta base de datos y no se rompe el panel móvil por una columna
             # opcional (por ejemplo, notas o cliente_id) que no exista.
             ordenes = obtener_ordenes_mecanico(conn, empleado_id)
-            citas_origen = obtener_citas_programadas_hoy(conn, empleado_id)
+            # La app necesita el mes completo (incluidas las citas ya
+            # terminadas) para pintar la agenda por días.  La consulta de
+            # "hoy" usada por la web solo mostraba las próximas diez citas.
+            citas_origen = [dict(row) for row in conn.execute(text(f"""
+                SELECT c.idcita, c.fecha, c.hora, c.motivo, c.estado,
+                       COALESCE(u.nombre, 'Cliente') AS cliente,
+                       COALESCE(v.placa, 'Sin placa') AS placa,
+                       COALESCE(v.marca, '') || ' ' || COALESCE(v.modelo, '') AS vehiculo,
+                       ot.idorden
+                FROM dmi.citas c
+                JOIN dmi.orden_trabajo ot ON ot.cita_id = c.idcita
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+                LEFT JOIN dmi.usuarios u
+                    ON u.idusuarios = v.cliente_id
+                    OR u.vehiculos_idvehiculo = v.idvehiculo
+                WHERE ot.{orden_col} = :empleado_id
+                  AND c.fecha >= :inicio
+                  AND c.fecha < :fin
+                  AND lower(COALESCE(c.estado, 'pendiente')) NOT IN ('cancelada', 'cancelado')
+                ORDER BY c.fecha ASC, c.hora ASC, c.idcita ASC
+            """), {
+                "empleado_id": empleado_id,
+                "inicio": date.today() - timedelta(days=31),
+                "fin": date.today() + timedelta(days=93),
+            }).mappings().fetchall()]
             citas = [
                 {
                     "idcita": cita.get("idcita"),
@@ -1427,6 +1451,7 @@ async def api_panel_mecanico(
                     "vehiculo": cita.get("vehiculo") or cita.get("placa") or "Vehículo",
                     "cliente": cita.get("cliente") or "Cliente",
                     "observaciones": "",
+                    "estado": cita.get("estado") or "pendiente",
                 }
                 for cita in citas_origen
             ]
@@ -1519,6 +1544,57 @@ async def api_panel_mecanico(
     except Exception as e:
         print("ERROR GET /api/mecanico/panel:", e)
         return JSONResponse({"error": "No fue posible cargar el panel del mecánico."}, status_code=500)
+
+
+@app.post("/api/mecanico/citas/{cita_id}/terminar")
+async def terminar_cita_mecanico_api(
+    cita_id: int,
+    request: Request,
+    access_token: str = Cookie(None),
+    authorization: Optional[str] = Header(None),
+):
+    """Marca una cita como terminada solo si pertenece al mecánico autenticado."""
+    if not access_token and authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ", 1)[1]
+
+    usuario = obtener_usuario(access_token, request) if access_token else None
+    if not es_mecanico(usuario):
+        return JSONResponse({"error": "No tienes permiso para terminar citas."}, status_code=403)
+
+    try:
+        with engine.connect() as conn:
+            empleado = obtener_empleado_actual(conn, usuario)
+            orden_col = empleado_orden_column(conn)
+            if not empleado or not orden_col:
+                return JSONResponse({"error": "Tu cuenta no está enlazada a un empleado mecánico."}, status_code=409)
+
+            cita = conn.execute(text(f"""
+                SELECT c.idcita, c.estado
+                FROM dmi.citas c
+                JOIN dmi.orden_trabajo ot ON ot.cita_id = c.idcita
+                WHERE c.idcita = :cita_id AND ot.{orden_col} = :empleado_id
+                LIMIT 1
+            """), {
+                "cita_id": cita_id,
+                "empleado_id": empleado["idempleado"],
+            }).mappings().fetchone()
+
+            if not cita:
+                return JSONResponse({"error": "Esta cita no está asignada a tu cuenta."}, status_code=403)
+            if str(cita.get("estado") or "").lower() in {"cancelada", "cancelado"}:
+                return JSONResponse({"error": "No se puede terminar una cita cancelada."}, status_code=400)
+
+            update_dynamic(conn, "citas", "idcita", cita_id, {"estado": "completada"})
+            conn.commit()
+
+        return JSONResponse({
+            "success": True,
+            "message": "Cita marcada como terminada.",
+            "data": {"idcita": cita_id, "estado": "completada"},
+        })
+    except Exception as e:
+        print("ERROR POST /api/mecanico/citas/{cita_id}/terminar:", e)
+        return JSONResponse({"error": "No fue posible terminar la cita."}, status_code=500)
 
 
 @app.post("/api/mecanico/ordenes/{orden_id}/estado")
