@@ -822,6 +822,7 @@ async def admin_citas(request: Request, access_token: str = Cookie(None)):
     total_completadas = 0
     citas_hoy = []
     empleados = []
+    solicitudes_reprogramacion = []
 
     try:
         with engine.connect() as conn:
@@ -866,6 +867,39 @@ async def admin_citas(request: Request, access_token: str = Cookie(None)):
                 {"hoy": hoy},
             ).mappings().fetchall()]
 
+            # Bandeja operativa para que el administrador pueda decidir cada
+            # solicitud desde la sección Citas, sin tener que buscarla solo en
+            # las notificaciones.
+            if table_exists(conn, "dmi", "solicitudes_reprogramacion"):
+                solicitudes_reprogramacion = [
+                    dict(row) for row in conn.execute(text("""
+                        SELECT
+                            sr.idsolicitud_reprogramacion,
+                            sr.cita_id,
+                            sr.fecha_solicitada,
+                            sr.hora_solicitada,
+                            COALESCE(sr.motivo, '') AS motivo,
+                            sr.creado_en,
+                            c.fecha AS fecha_actual,
+                            c.hora AS hora_actual,
+                            COALESCE(c.motivo, 'Servicio DMI') AS servicio,
+                            COALESCE(v.marca, '') || ' ' || COALESCE(v.modelo, '') AS vehiculo,
+                            COALESCE(v.placa, 'Sin placa') AS placa,
+                            COALESCE(u.nombre, '') || ' ' || COALESCE(u.apellidos, '') AS cliente
+                        FROM dmi.solicitudes_reprogramacion sr
+                        JOIN dmi.citas c ON c.idcita = sr.cita_id
+                        LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
+                        LEFT JOIN dmi.usuarios u ON u.idusuarios = sr.solicitante_usuario_id
+                        WHERE lower(COALESCE(sr.estado, 'pendiente')) = 'pendiente'
+                        ORDER BY sr.creado_en ASC
+                        LIMIT 100
+                    """)).mappings().fetchall()
+                ]
+                for solicitud in solicitudes_reprogramacion:
+                    for campo in ("fecha_solicitada", "hora_solicitada", "creado_en", "fecha_actual", "hora_actual"):
+                        if solicitud.get(campo) is not None:
+                            solicitud[campo] = str(solicitud[campo])
+
             if table_exists(conn, "dmi", "empleados"):
                 empleados_cols = table_columns(conn, "dmi", "empleados")
                 empleado_pk = resolve_table_pk(conn, "empleados", "idempleado") or "id"
@@ -906,6 +940,8 @@ async def admin_citas(request: Request, access_token: str = Cookie(None)):
             "citas": citas,
             "citas_hoy": citas_hoy,
             "empleados": empleados,
+            "solicitudes_reprogramacion": solicitudes_reprogramacion,
+            "total_solicitudes_reprogramacion": len(solicitudes_reprogramacion),
             "total_citas": len(citas),
             "total_pendientes": total_pendientes,
             "total_confirmadas": total_confirmadas,

@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -33,6 +34,15 @@
     .ot-mini-select { min-height: 38px; max-width: 190px; border: 1px solid rgba(255,47,85,.62); background: #090909; color: #fff; padding: 0 10px; font-family: inherit; font-size: .78rem; }
     .cita-modal-actions .ot-order-form { flex-wrap: wrap; }
     .cita-modal-actions .ot-mini-select { max-width: 260px; min-height: 46px; }
+    .reprogramacion-card { border: 1px solid rgba(255, 47, 85, .45); background: rgba(255,47,85,.045); padding: 18px; margin-bottom: 14px; }
+    .reprogramacion-card h3 { margin: 4px 0 10px; color: #fff; text-transform: uppercase; }
+    .reprogramacion-card p { margin: 7px 0; color: rgba(255,255,255,.76); }
+    .reprogramacion-card strong { color: #fff; }
+    .reprogramacion-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 16px 0; }
+    .reprogramacion-dates div { padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.22); }
+    .reprogramacion-dates span { display:block; color: var(--ot-red); font-size:.72rem; font-weight:900; letter-spacing:.12em; text-transform:uppercase; margin-bottom:5px; }
+    .reprogramacion-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .btn-reject { border: 1px solid rgba(255,255,255,.38); background: transparent; color:#fff; padding: 12px 16px; font: inherit; font-weight: 800; cursor: pointer; }
     @media (max-width: 720px) { .cita-modal-actions .ot-main-btn, .cita-modal-actions .ot-outline-btn, .cita-modal-actions .ot-mini-select { width: 100%; max-width: 100%; justify-content: center; } .ot-order-form { flex-wrap: wrap; } }
   </style>
 </head>
@@ -62,6 +72,37 @@
       <article><i class="bi bi-hourglass-split"></i><span>Pendientes</span><strong>{{ total_pendientes or 0 }}</strong></article>
       <article><i class="bi bi-clipboard2-plus-fill"></i><span>Confirmadas</span><strong>{{ total_confirmadas or 0 }}</strong></article>
       <article><i class="bi bi-check2-circle"></i><span>Completadas</span><strong>{{ total_completadas or 0 }}</strong></article>
+    </section>
+
+    <section class="ot-card" id="solicitudes-reprogramacion">
+      <div class="ot-card-head">
+        <div>
+          <h2><i class="bi bi-calendar2-week"></i> Solicitudes de reprogramación</h2>
+          <p>Revisa cada propuesta del cliente antes de cambiar la cita original.</p>
+        </div>
+        <strong class="ot-today-count">{{ total_solicitudes_reprogramacion or 0 }} pendientes</strong>
+      </div>
+      {% if solicitudes_reprogramacion %}
+        {% for solicitud in solicitudes_reprogramacion %}
+        <article class="reprogramacion-card" id="solicitud-{{ solicitud.idsolicitud_reprogramacion }}">
+          <p class="ot-status pendiente">SOLICITUD #{{ solicitud.idsolicitud_reprogramacion }}</p>
+          <h3>{{ solicitud.cliente or 'Cliente DMI' }}</h3>
+          <p>{{ solicitud.vehiculo or 'Vehículo' }} · <span class="ot-plate">{{ solicitud.placa }}</span></p>
+          <p><strong>Servicio:</strong> {{ solicitud.servicio }}</p>
+          <div class="reprogramacion-dates">
+            <div><span>Cita actual</span><strong>{{ solicitud.fecha_actual }} · {{ solicitud.hora_actual }}</strong></div>
+            <div><span>Nueva propuesta</span><strong>{{ solicitud.fecha_solicitada }} · {{ solicitud.hora_solicitada }}</strong></div>
+          </div>
+          {% if solicitud.motivo %}<p><strong>Motivo del cliente:</strong> {{ solicitud.motivo }}</p>{% endif %}
+          <div class="reprogramacion-actions">
+            <button class="ot-main-btn js-resolver-reprogramacion" type="button" data-id="{{ solicitud.idsolicitud_reprogramacion }}" data-accion="aprobar"><i class="bi bi-check2-circle"></i> Aceptar</button>
+            <button class="btn-reject js-resolver-reprogramacion" type="button" data-id="{{ solicitud.idsolicitud_reprogramacion }}" data-accion="rechazar"><i class="bi bi-x-circle"></i> Rechazar</button>
+          </div>
+        </article>
+        {% endfor %}
+      {% else %}
+        <div class="ot-empty"><i class="bi bi-calendar2-check"></i><strong>No hay solicitudes pendientes</strong><span>Las solicitudes enviadas desde la app aparecerán aquí.</span></div>
+      {% endif %}
     </section>
 
 
@@ -256,6 +297,31 @@
       const data = await response.json();
       if (!response.ok) return window.alert(data.error || 'No fue posible reprogramar la cita.');
       window.location.assign('/admin/citas?success=' + encodeURIComponent(data.message));
+    });
+
+    document.querySelectorAll('.js-resolver-reprogramacion').forEach(function (button) {
+      button.addEventListener('click', async function () {
+        const id = button.dataset.id;
+        const accion = button.dataset.accion;
+        let body = {};
+        if (accion === 'rechazar') {
+          const comentario = window.prompt('Motivo opcional del rechazo para el cliente:');
+          if (comentario === null) return;
+          body = { comentario };
+        } else if (!window.confirm('¿Aceptar esta propuesta y cambiar la fecha de la cita?')) {
+          return;
+        }
+        button.disabled = true;
+        const response = await fetch(`/api/solicitudes-reprogramacion/${id}/${accion}`, {
+          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          button.disabled = false;
+          return window.alert(data.error || 'No fue posible actualizar la solicitud.');
+        }
+        window.location.assign('/admin/citas?success=' + encodeURIComponent(data.message));
+      });
     });
 
     function citaText(value, fallback = 'Sin informacion') {
