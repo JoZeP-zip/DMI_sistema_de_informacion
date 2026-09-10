@@ -3989,6 +3989,38 @@ async def crear_cita(
                         },
                     )
 
+            # Capacidad operativa: máximo 12 citas activas por día (3 mecánicos
+            # x 4 citas). Para cada hora hay tres cupos, uno por mecánico.
+            citas_del_dia = conn.execute(
+                text("""
+                    SELECT COUNT(*) FROM dmi.citas
+                    WHERE fecha = CAST(:fecha AS date)
+                      AND lower(COALESCE(estado, 'pendiente')) NOT IN
+                          ('cancelada', 'cancelado', 'completada', 'finalizada')
+                """),
+                {"fecha": fecha_cita},
+            ).scalar() or 0
+            if citas_del_dia >= 12:
+                return JSONResponse(
+                    {"error": "No hay cupos disponibles para esta fecha. El taller ya alcanzó las 12 citas permitidas del día."},
+                    status_code=409,
+                )
+
+            citas_en_hora = conn.execute(
+                text("""
+                    SELECT COUNT(*) FROM dmi.citas
+                    WHERE fecha = CAST(:fecha AS date) AND hora = :hora
+                      AND lower(COALESCE(estado, 'pendiente')) NOT IN
+                          ('cancelada', 'cancelado', 'completada', 'finalizada')
+                """),
+                {"fecha": fecha_cita, "hora": hora_cita},
+            ).scalar() or 0
+            if citas_en_hora >= 3:
+                return JSONResponse(
+                    {"error": "No hay mecánicos disponibles a esa hora. Selecciona otro horario."},
+                    status_code=409,
+                )
+
             cita_creada = conn.execute(
                 text("""
                     INSERT INTO dmi.citas
