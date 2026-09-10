@@ -3127,7 +3127,54 @@ async def validar_sesion_react(request: Request, access_token: str = Cookie(None
             status_code=401,
         )
 
-    # ==================== ACTUALIZAR MI PERFIL ====================
+    return JSONResponse({
+        "success": True,
+        "email": usuario["email"],
+        "role": usuario["rol"],
+        "rol": usuario["rol"],
+        "nombre": usuario["nombre"],
+    })
+
+    # ==================== CONSULTAR Y ACTUALIZAR MI PERFIL ====================
+@app.get("/api/mi-perfil")
+async def obtener_mi_perfil(
+    request: Request,
+    access_token: str = Cookie(None),
+):
+    usuario = obtener_usuario(access_token, request)
+    if not usuario or not usuario.get("idusuarios"):
+        return JSONResponse(
+            {"success": False, "error": "Tu sesión no es válida o tu perfil no existe."},
+            status_code=401,
+        )
+
+    try:
+        with engine.begin() as conn:
+            # Campos separados para avatar y foto. La foto se guarda en la
+            # base de datos como data URI para que cada usuario solo pueda ver
+            # y modificar la suya mediante este endpoint autenticado.
+            conn.execute(text("ALTER TABLE dmi.usuarios ADD COLUMN IF NOT EXISTS avatar_perfil VARCHAR(30)"))
+            conn.execute(text("ALTER TABLE dmi.usuarios ADD COLUMN IF NOT EXISTS foto_perfil TEXT"))
+            perfil = conn.execute(
+                text("""
+                    SELECT idusuarios, nombre, apellidos, documento, email,
+                           telefono, rol, avatar_perfil, foto_perfil
+                    FROM dmi.usuarios
+                    WHERE idusuarios = :idusuarios
+                    LIMIT 1
+                """),
+                {"idusuarios": usuario["idusuarios"]},
+            ).mappings().fetchone()
+
+        if not perfil:
+            return JSONResponse({"success": False, "error": "No encontramos tu perfil de usuario."}, status_code=404)
+
+        return JSONResponse({"success": True, "usuario": json_row(perfil)})
+    except Exception as e:
+        print("ERROR obtener_mi_perfil:", e)
+        return JSONResponse({"success": False, "error": "No fue posible cargar tu perfil."}, status_code=500)
+
+
 @app.put("/api/mi-perfil")
 async def actualizar_mi_perfil(
     request: Request,
@@ -3161,6 +3208,26 @@ async def actualizar_mi_perfil(
         nombre = str(data.get("nombre", "") or "").strip()
         apellidos = str(data.get("apellidos", "") or "").strip()
         telefono = str(data.get("telefono", "") or "").strip()
+        avatar_perfil = str(data.get("avatar_perfil", "dmi_1") or "dmi_1").strip().lower()
+        foto_perfil_raw = data.get("foto_perfil")
+        foto_perfil = str(foto_perfil_raw).strip() if foto_perfil_raw else None
+
+        if avatar_perfil not in {"dmi_1", "dmi_2", "dmi_3", "dmi_4"}:
+            return JSONResponse(
+                {"success": False, "error": "El avatar seleccionado no es válido."},
+                status_code=400,
+            )
+
+        if foto_perfil:
+            patron_foto = r"^data:image/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\r\n]+$"
+            if len(foto_perfil) > 1_250_000 or not re.match(patron_foto, foto_perfil):
+                return JSONResponse(
+                    {
+                        "success": False,
+                        "error": "La foto debe ser una imagen JPG, PNG o WEBP de máximo 900 KB.",
+                    },
+                    status_code=400,
+                )
 
         if not nombre:
             return JSONResponse(
@@ -3199,6 +3266,8 @@ async def actualizar_mi_perfil(
             )
 
         with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE dmi.usuarios ADD COLUMN IF NOT EXISTS avatar_perfil VARCHAR(30)"))
+            conn.execute(text("ALTER TABLE dmi.usuarios ADD COLUMN IF NOT EXISTS foto_perfil TEXT"))
             columnas = table_columns(
                 conn,
                 "dmi",
@@ -3211,6 +3280,8 @@ async def actualizar_mi_perfil(
                 "nombre": nombre,
                 "apellidos": apellidos,
                 "telefono": telefono,
+                "avatar_perfil": avatar_perfil,
+                "foto_perfil": foto_perfil,
             }
 
             if "nombre" in columnas:
@@ -3221,6 +3292,12 @@ async def actualizar_mi_perfil(
 
             if "telefono" in columnas:
                 campos.append("telefono = :telefono")
+
+            if "avatar_perfil" in columnas:
+                campos.append("avatar_perfil = :avatar_perfil")
+
+            if "foto_perfil" in columnas:
+                campos.append("foto_perfil = :foto_perfil")
 
             if not campos:
                 return JSONResponse(
@@ -3244,7 +3321,7 @@ async def actualizar_mi_perfil(
                 text(
                     "SELECT "
                     "idusuarios, nombre, apellidos, documento, "
-                    "email, telefono, rol "
+                    "email, telefono, rol, avatar_perfil, foto_perfil "
                     "FROM dmi.usuarios "
                     "WHERE idusuarios = :idusuarios "
                     "LIMIT 1"
@@ -3287,14 +3364,6 @@ async def actualizar_mi_perfil(
             },
             status_code=500,
         )
-
-    return JSONResponse({
-        "email": usuario["email"],
-        "role": usuario["rol"],
-        "rol": usuario["rol"],
-        "nombre": usuario["nombre"],
-    })
-
 
 @app.post("/logout")
 async def logout():
@@ -7137,13 +7206,18 @@ async def preparar_pago_factura_cliente(factura_id: int, request: Request, acces
             if estado in {"pagada", "cancelada"} or saldo <= 0:
                 return JSONResponse({"error": "Esta factura no tiene un saldo pendiente"}, status_code=409)
 
-        # Esta referencia se utilizara en el Checkout Web dinamico de Wompi.
-        # Un link fijo de Wompi genera su propia referencia y no puede asociarse
-        # de forma segura a una factura concreta.
+        # La referencia enlaza el pago con la factura y el webhook la valida
+        # antes de modificar el saldo. Se usa el mismo Checkout Web dinámico
+        # que ya utiliza el catálogo, no un enlace fijo sin referencia.
         referencia = f"DMI-FACTURA-{factura_id}-{int(datetime.now().timestamp())}"
+        checkout_url = generar_checkout_wompi_pedido(
+            referencia=referencia,
+            amount_in_cents=int(round(saldo * 100)),
+            email=str(usuario_actual.get("email") or "").strip(),
+        )
         return JSONResponse({
             "ok": True,
-            "checkout_url": WOMPI_PAYMENT_LINK,
+            "checkout_url": checkout_url,
             "payment_intent": {
                 "referencia": referencia,
                 "monto_en_centavos": int(round(saldo * 100)),
