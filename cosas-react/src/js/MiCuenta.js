@@ -3,6 +3,22 @@ import { CitasService, MiCuentaService } from '../services/api';
 import { openInvoiceDocument } from './invoice';
 import Checkout from './Checkout';
 
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL.replace(/\/$/, '');
+  const { protocol, hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+  if (hostname.includes('app.github.dev')) return `${protocol}//${hostname.replace(/-3000\.app\.github\.dev$/, '-8000.app.github.dev')}`;
+  return '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+const AVATARES_DMI = {
+  dmi_1: { icon: '🚗', label: 'Conductor' },
+  dmi_2: { icon: '🔧', label: 'Mecánica' },
+  dmi_3: { icon: '🏁', label: 'Racing' },
+  dmi_4: { icon: '⚡', label: 'Potencia' },
+};
+
 const money = (value) => {
   const number = Number(value || 0);
   return number.toLocaleString('es-CO', {
@@ -108,6 +124,12 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   const [errorCita, setErrorCita] = useState('');
   const [mensajeCita, setMensajeCita] = useState('');
   const [citaDestacadaId, setCitaDestacadaId] = useState(null);
+  const [perfilAbierto, setPerfilAbierto] = useState(false);
+  const [perfil, setPerfil] = useState(null);
+  const [perfilForm, setPerfilForm] = useState({ nombre: '', apellidos: '', telefono: '', avatar_perfil: 'dmi_1', foto_perfil: null });
+  const [perfilError, setPerfilError] = useState('');
+  const [perfilMensaje, setPerfilMensaje] = useState('');
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -146,7 +168,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
 
   const resumen = data?.resumen || {};
   const usuario = data?.usuario || {};
-  const nombre = usuario.nombre || localStorage.getItem('nombre') || 'cliente';
+  const nombre = perfil?.nombre || usuario.nombre || localStorage.getItem('nombre') || 'cliente';
   const vehiculosCuenta = useMemo(() => data?.vehiculos || [], [data]);
 
   useEffect(() => {
@@ -216,6 +238,74 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
       ...actual,
       citas: (actual?.citas || []).map((cita) => String(cita.idcita) === String(citaId) ? { ...cita, ...cambios } : cita),
     }));
+  };
+
+  const solicitarPerfil = async (method, body) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/api/mi-perfil`, {
+      method,
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.success) throw new Error(payload.error || 'No fue posible actualizar tu perfil.');
+    return payload.usuario;
+  };
+
+  const abrirPerfil = async () => {
+    setPerfilAbierto(true);
+    setPerfilError('');
+    setPerfilMensaje('');
+    try {
+      const perfilActual = await solicitarPerfil('GET');
+      setPerfil(perfilActual);
+      setPerfilForm({
+        nombre: perfilActual.nombre || '',
+        apellidos: perfilActual.apellidos || '',
+        telefono: perfilActual.telefono || '',
+        avatar_perfil: perfilActual.avatar_perfil || 'dmi_1',
+        foto_perfil: perfilActual.foto_perfil || null,
+      });
+    } catch (err) {
+      setPerfilError(err.message || 'No se pudo cargar tu perfil.');
+    }
+  };
+
+  const seleccionarFotoPerfil = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 900 * 1024) {
+      setPerfilError('Selecciona una foto JPG, PNG o WEBP de máximo 900 KB.');
+      event.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setPerfilForm((actual) => ({ ...actual, foto_perfil: String(reader.result || '') }));
+    reader.onerror = () => setPerfilError('No pudimos leer la foto seleccionada.');
+    reader.readAsDataURL(file);
+  };
+
+  const guardarPerfil = async (event) => {
+    event.preventDefault();
+    setGuardandoPerfil(true);
+    setPerfilError('');
+    setPerfilMensaje('');
+    try {
+      const actualizado = await solicitarPerfil('PUT', perfilForm);
+      setPerfil(actualizado);
+      setPerfilForm((actual) => ({ ...actual, ...actualizado }));
+      localStorage.setItem('nombre', actualizado.nombre || '');
+      setPerfilMensaje('Tu perfil fue actualizado correctamente.');
+    } catch (err) {
+      setPerfilError(err.message || 'No se pudo guardar tu perfil.');
+    } finally {
+      setGuardandoPerfil(false);
+    }
   };
 
   const abrirReprogramacion = (cita) => {
@@ -392,6 +482,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
           </p>
         </div>
         <div className="user-account-actions">
+          <button type="button" className="outline" onClick={abrirPerfil}><i className="bi bi-person-circle" /> Mi perfil</button>
           <button type="button" onClick={onAddVehicle}><i className="bi bi-car-front-fill" /> Agregar vehículo</button>
           <button type="button" className="outline" onClick={onScheduleAppointment}><i className="bi bi-calendar-plus" /> Agendar cita</button>
         </div>
@@ -553,6 +644,33 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
           ) : <EmptyState icon="bi-clock" text="Aun no hay historial para tus vehiculos." />}
         </Section>}
       </section>
+
+      <DetailModal title={perfilAbierto ? 'Mi perfil' : ''} onClose={() => setPerfilAbierto(false)}>
+        <form className="user-appointment-form" onSubmit={guardarPerfil}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+            {perfilForm.foto_perfil ? (
+              <img src={perfilForm.foto_perfil} alt="Foto de perfil" style={{ width: 82, height: 82, borderRadius: '50%', objectFit: 'cover', border: '2px solid #ff2f55' }} />
+            ) : (
+              <div aria-label="Avatar seleccionado" style={{ width: 82, height: 82, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 36, background: '#2b0d16', border: '2px solid #ff2f55' }}>{AVATARES_DMI[perfilForm.avatar_perfil]?.icon || '🚗'}</div>
+            )}
+            <div><strong>{perfil?.email || usuario.email || 'Cuenta DMI'}</strong><p className="user-muted">Actualiza tus datos y cómo quieres aparecer en DMI.</p></div>
+          </div>
+          <label>Nombre<input required maxLength="100" value={perfilForm.nombre} onChange={(event) => setPerfilForm((actual) => ({ ...actual, nombre: event.target.value }))} /></label>
+          <label>Apellidos<input maxLength="150" value={perfilForm.apellidos} onChange={(event) => setPerfilForm((actual) => ({ ...actual, apellidos: event.target.value }))} /></label>
+          <label>Teléfono<input maxLength="30" value={perfilForm.telefono} onChange={(event) => setPerfilForm((actual) => ({ ...actual, telefono: event.target.value }))} /></label>
+          <fieldset style={{ border: '1px solid rgba(255,47,85,.45)', padding: 14, margin: '16px 0' }}>
+            <legend style={{ padding: '0 8px', color: '#ff5b78', fontWeight: 800 }}>Elige un avatar</legend>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(55px, 1fr))', gap: 10 }}>
+              {Object.entries(AVATARES_DMI).map(([id, avatar]) => <button key={id} type="button" onClick={() => setPerfilForm((actual) => ({ ...actual, avatar_perfil: id, foto_perfil: null }))} style={{ minHeight: 72, border: perfilForm.avatar_perfil === id && !perfilForm.foto_perfil ? '2px solid #ff2f55' : '1px solid #555', background: '#16161b', color: '#fff', cursor: 'pointer' }}><span style={{ display: 'block', fontSize: 25 }}>{avatar.icon}</span><small>{avatar.label}</small></button>)}
+            </div>
+          </fieldset>
+          <label>O usa una foto de tu galería<input type="file" accept="image/jpeg,image/png,image/webp" onChange={seleccionarFotoPerfil} /></label>
+          {perfilForm.foto_perfil && <button type="button" className="outline" onClick={() => setPerfilForm((actual) => ({ ...actual, foto_perfil: null }))}>Quitar foto y usar avatar</button>}
+          {perfilError && <p className="user-action-error">{perfilError}</p>}
+          {perfilMensaje && <p className="user-action-success">{perfilMensaje}</p>}
+          <div className="user-detail-footer"><button type="button" className="outline" onClick={() => setPerfilAbierto(false)}>Cerrar</button><button type="submit" disabled={guardandoPerfil}>{guardandoPerfil ? 'Guardando...' : 'Guardar perfil'}</button></div>
+        </form>
+      </DetailModal>
 
       <DetailModal title={cotizacionActiva ? 'Cotizacion realizada' : ''} onClose={() => setCotizacionActiva(null)}>
         {cotizacionActiva && (
