@@ -4298,11 +4298,14 @@ def enviar_notificacion_push(conn, titulo: str, mensaje: str, tipo: str,
                              referencia_tipo: str = None, referencia_id: int = None,
                              usuario_id: int = None, empleado_id: int = None):
     """Envía una alerta de sistema sin interrumpir la operación principal."""
+    resultado_push = {"ok": False, "dispositivos": 0, "enviadas": 0, "motivo": None}
     if not table_exists(conn, "dmi", "dispositivos_push"):
-        return
+        resultado_push["motivo"] = "Este celular todavía no está registrado para recibir alertas."
+        return resultado_push
     cliente = obtener_cliente_firebase()
     if not cliente:
-        return
+        resultado_push["motivo"] = "Firebase no está listo en Render. Revisa FIREBASE_SERVICE_ACCOUNT_JSON y firebase-admin."
+        return resultado_push
     filtros, params = ["activo = TRUE"], {}
     destinatarios = []
     if usuario_id:
@@ -4312,13 +4315,18 @@ def enviar_notificacion_push(conn, titulo: str, mensaje: str, tipo: str,
         destinatarios.append("empleado_id = :empleado_id")
         params["empleado_id"] = empleado_id
     if not destinatarios:
-        return
+        resultado_push["motivo"] = "No se encontró un destinatario para esta alerta."
+        return resultado_push
     try:
         filas = conn.execute(text(f"""
             SELECT iddispositivo_push, token FROM dmi.dispositivos_push
             WHERE {' AND '.join(filtros)} AND ({' OR '.join(destinatarios)})
         """), params).mappings().fetchall()
         tokens = [(row["iddispositivo_push"], row["token"]) for row in filas if row.get("token")]
+        resultado_push["dispositivos"] = len(tokens)
+        if not tokens:
+            resultado_push["motivo"] = "No hay un celular registrado para esta cuenta. Cierra sesión, abre el APK nuevo e inicia sesión otra vez."
+            return resultado_push
         for inicio in range(0, len(tokens), 500):
             lote = tokens[inicio:inicio + 500]
             respuesta = cliente.send_each_for_multicast(cliente.MulticastMessage(
@@ -4332,11 +4340,22 @@ def enviar_notificacion_push(conn, titulo: str, mensaje: str, tipo: str,
                 android=cliente.AndroidConfig(priority="high"),
             ))
             for indice, resultado in enumerate(respuesta.responses):
+                if resultado.success:
+                    resultado_push["enviadas"] += 1
+                    continue
                 codigo = getattr(getattr(resultado, "exception", None), "code", "")
-                if not resultado.success and codigo in {"registration-token-not-registered", "invalid-registration-token"}:
+                if codigo in {"registration-token-not-registered", "invalid-registration-token"}:
                     conn.execute(text("UPDATE dmi.dispositivos_push SET activo = FALSE, actualizado_en = now() WHERE iddispositivo_push = :id"), {"id": lote[indice][0]})
+                if not resultado_push["motivo"]:
+                    resultado_push["motivo"] = f"Firebase rechazó la alerta: {codigo or 'error de envío'}"
+        resultado_push["ok"] = resultado_push["enviadas"] > 0
+        if not resultado_push["ok"] and not resultado_push["motivo"]:
+            resultado_push["motivo"] = "Firebase no confirmó la entrega de la alerta."
+        return resultado_push
     except Exception as error:
         print("AVISO: no fue posible enviar push:", error)
+        resultado_push["motivo"] = f"Error de Firebase: {error}"
+        return resultado_push
 
 
 def crear_notificacion(conn, titulo: str, mensaje: str, tipo: str, referencia_tipo: str = None,
@@ -5003,17 +5022,29 @@ async def probar_notificacion_push(
     try:
         with engine.connect() as conn:
             empleado = obtener_empleado_actual(conn, usuario) if es_mecanico(usuario) else None
-            crear_notificacion(
+            usuario_id = None if empleado else usuario.get("idusuarios")
+            empleado_id = empleado.get("idempleado") if empleado else None
+            insert_dynamic_returning(conn, "notificaciones", {
+                "usuario_id": usuario_id,
+                "empleado_id": empleado_id,
+                "tipo": "prueba_push",
+                "titulo": "Notificaciones activas",
+                "mensaje": "Esta es una prueba de alerta para DMI Motors.",
+                "referencia_tipo": "prueba_push",
+                "accion_url": "/mi-cuenta",
+            }, "idnotificacion")
+            estado_push = enviar_notificacion_push(
                 conn,
                 "Notificaciones activas",
                 "Esta es una prueba de alerta para DMI Motors.",
                 "prueba_push",
-                usuario_id=None if empleado else usuario.get("idusuarios"),
-                empleado_id=empleado.get("idempleado") if empleado else None,
-                accion_url="/mi-cuenta",
+                usuario_id=usuario_id,
+                empleado_id=empleado_id,
             )
             conn.commit()
-        return JSONResponse({"success": True, "message": "Prueba enviada."})
+        if not estado_push["ok"]:
+            return JSONResponse({"error": estado_push["motivo"]}, status_code=409)
+        return JSONResponse({"success": True, "message": "Alerta enviada a " + str(estado_push["enviadas"]) + " celular(es)."})
     except Exception as error:
         print("ERROR prueba push:", error)
         return JSONResponse({"error": "No fue posible enviar la prueba."}, status_code=500)
