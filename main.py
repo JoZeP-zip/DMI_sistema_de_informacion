@@ -7655,6 +7655,32 @@ def wompi_propiedad(data: dict, ruta: str):
     return "" if valor is None else str(valor)
 
 
+def detalle_factura_pedido(productos, total: float) -> str:
+    """Construye el detalle HTML de una factura de compra del catálogo."""
+    if isinstance(productos, str):
+        try:
+            productos = json.loads(productos)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            productos = []
+    if not isinstance(productos, list):
+        productos = []
+    filas = []
+    for producto in productos:
+        if not isinstance(producto, dict):
+            continue
+        nombre = html.escape(str(producto.get("nombre") or producto.get("name") or "Producto"))
+        try:
+            cantidad = int(producto.get("cantidad") or producto.get("quantity") or 1)
+        except (TypeError, ValueError):
+            cantidad = 1
+        try:
+            precio = float(producto.get("precio") or producto.get("price") or 0)
+        except (TypeError, ValueError):
+            precio = 0
+        filas.append(f"<tr><td style='padding:8px;border-bottom:1px solid #ddd'>{nombre}</td><td style='padding:8px;border-bottom:1px solid #ddd;text-align:center'>{cantidad}</td><td style='padding:8px;border-bottom:1px solid #ddd;text-align:right'>${precio * cantidad:,.0f} COP</td></tr>")
+    return "<table style='width:100%;border-collapse:collapse'>" + ("".join(filas) or "<tr><td style='padding:8px'>Detalle no disponible.</td></tr>") + "</table>"
+
+
 @app.post("/api/wompi/webhook")
 async def recibir_evento_wompi(request: Request):
     """Confirma pagos de Wompi solo despues de validar su firma criptografica."""
@@ -7761,7 +7787,68 @@ async def recibir_evento_wompi(request: Request):
                         "referencia": referencia,
                     },
                 )
+                # Las facturas del catálogo son independientes de las facturas
+                # de servicios del taller, que requieren una orden de trabajo.
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS public.facturas_pedidos (
+                        id BIGSERIAL PRIMARY KEY,
+                        pedido_id BIGINT NOT NULL UNIQUE,
+                        codigo_factura VARCHAR(80) NOT NULL UNIQUE,
+                        usuario_id BIGINT,
+                        email TEXT,
+                        productos JSONB NOT NULL DEFAULT '[]'::jsonb,
+                        total NUMERIC(14,2) NOT NULL,
+                        estado VARCHAR(30) NOT NULL DEFAULT 'pagada',
+                        wompi_transaction_id VARCHAR(120),
+                        creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                """))
+                pedido_id = pedido.get("id") or pedido.get("idpedido")
+                codigo_factura = f"FAC-{pedido.get('codigo_pedido') or pedido_id}"
+                productos_pedido = pedido.get("productos")
+                if isinstance(productos_pedido, str):
+                    try:
+                        productos_json = json.loads(productos_pedido)
+                    except (TypeError, ValueError, json.JSONDecodeError):
+                        productos_json = []
+                else:
+                    productos_json = productos_pedido if isinstance(productos_pedido, list) else []
+                conn.execute(text("""
+                    INSERT INTO public.facturas_pedidos
+                      (pedido_id, codigo_factura, usuario_id, email, productos, total, estado, wompi_transaction_id)
+                    VALUES
+                      (:pedido_id, :codigo, :usuario_id, :email, CAST(:productos AS jsonb), :total, 'pagada', :transaction_id)
+                    ON CONFLICT (pedido_id) DO NOTHING
+                """), {
+                    "pedido_id": pedido_id,
+                    "codigo": codigo_factura,
+                    "usuario_id": pedido.get("usuarios_idusuarios"),
+                    "email": pedido.get("email"),
+                    "productos": json.dumps(productos_json),
+                    "total": float(pedido.get("total") or 0),
+                    "transaction_id": transaccion_id,
+                })
+                notificar_cliente(
+                    conn, pedido.get("usuarios_idusuarios"),
+                    "Pago aprobado y factura disponible",
+                    f"Tu pago fue aprobado. Generamos la factura {codigo_factura} de tu pedido {pedido.get('codigo_pedido') or ''}.",
+                    "factura_pedido_generada", "pedido", pedido_id, "/mi-cuenta",
+                )
+                correo_factura = str(pedido.get("email") or "").strip()
+                html_factura = (
+                    "<h2>DISOL MOTORS</h2><h3>Factura " + html.escape(codigo_factura) + "</h3>"
+                    "<p>Tu pago en Wompi fue aprobado. Gracias por tu compra.</p>"
+                    + detalle_factura_pedido(productos_json, float(pedido.get("total") or 0))
+                    + f"<h3 style='text-align:right'>Total pagado: ${float(pedido.get('total') or 0):,.0f} COP</h3>"
+                    + "<p>Pedido: " + html.escape(str(pedido.get("codigo_pedido") or "")) + "</p>"
+                )
                 conn.commit()
+
+            if correo_factura:
+                enviar_correo_transaccional(
+                    correo_factura, f"DMI | Factura {codigo_factura}", html_factura,
+                    "factura_pedido_generada", pedido.get("usuarios_idusuarios"), "pedido", pedido_id,
+                )
 
             return JSONResponse({
                 "ok": True,
