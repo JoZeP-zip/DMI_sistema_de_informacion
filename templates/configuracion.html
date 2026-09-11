@@ -10,13 +10,26 @@
     <link rel="stylesheet" href="/static/configuracion.css">
 
     <style>
-        .cfg-orders-calendar { display: grid; gap: 22px; }
-        .cfg-order-day { border: 1px solid rgba(255, 64, 87, .38); background: rgba(8, 9, 13, .7); padding: 16px; }
-        .cfg-order-day-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; color: #fff; }
-        .cfg-order-day-head h3 { margin: 0; font-size: 1rem; letter-spacing: .08em; text-transform: uppercase; }
-        .cfg-order-day-head h3 i { color: #ff4057; margin-right: 8px; }
-        .cfg-order-day-head span { border: 1px solid rgba(255,255,255,.23); padding: 5px 9px; color: #cbd1dd; font-size: .78rem; font-weight: 800; }
-        .cfg-order-day-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+        .cfg-orders-calendar { display: grid; gap: 16px; }
+        .cfg-calendar-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid rgba(255,64,87,.4); background:rgba(8,9,13,.7); }
+        .cfg-calendar-toolbar h3 { margin:0; color:#fff; font-size:1rem; text-transform:capitalize; }
+        .cfg-calendar-nav { width:36px; height:34px; border:1px solid #ff4057; background:#171217; color:#fff; font-size:1.1rem; cursor:pointer; }
+        .cfg-calendar-weekdays,.cfg-calendar-grid { display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:5px; }
+        .cfg-calendar-weekdays span { color:rgba(255,255,255,.52); font-size:.68rem; font-weight:900; text-align:center; text-transform:uppercase; }
+        .cfg-calendar-day { min-height:58px; padding:6px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.025); color:#fff; text-align:left; cursor:default; }
+        .cfg-calendar-day.has-orders { border-color:rgba(255,64,87,.58); background:rgba(255,47,85,.08); cursor:pointer; }
+        .cfg-calendar-day.has-orders:hover,.cfg-calendar-day.selected { background:rgba(255,47,85,.2); border-color:#ff4057; }
+        .cfg-calendar-day-number { display:block; font-weight:900; font-size:.82rem; }
+        .cfg-calendar-day-count { display:block; margin-top:4px; color:#fff; font-size:.66rem; font-weight:800; }
+        .cfg-calendar-dots { display:flex; gap:4px; margin-top:5px; }
+        .cfg-calendar-dot { width:7px; height:7px; border-radius:50%; background:#f0ae3a; }
+        .cfg-calendar-dot.wompi { background:#6a8dff; }.cfg-calendar-dot.cash { background:#32c77c; }.cfg-calendar-dot.other { background:#f0ae3a; }
+        .cfg-order-day { border:1px solid rgba(255,64,87,.38); background:rgba(8,9,13,.7); padding:16px; }
+        .cfg-order-day[hidden] { display:none; }
+        .cfg-order-day-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 14px; color:#fff; }
+        .cfg-order-day-head h3 { margin:0; font-size:1rem; letter-spacing:.08em; text-transform:capitalize; }
+        .cfg-order-day-head h3 i { color:#ff4057; margin-right:8px; }.cfg-order-day-head span { border:1px solid rgba(255,255,255,.23); padding:5px 9px; color:#cbd1dd; font-size:.78rem; font-weight:800; }
+        .cfg-order-day-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:14px; }
         .cfg-order-card.cfg-payment-wompi { border-left: 5px solid #6a8dff; }
         .cfg-order-card.cfg-payment-cash { border-left: 5px solid #32c77c; }
         .cfg-order-card.cfg-payment-other { border-left: 5px solid #f0ae3a; }
@@ -24,6 +37,7 @@
         .cfg-payment-badge.wompi { background: rgba(106,141,255,.17); border: 1px solid #6a8dff; color: #bdd0ff; }
         .cfg-payment-badge.cash { background: rgba(50,199,124,.15); border: 1px solid #32c77c; color: #a2f0c5; }
         .cfg-payment-badge.other { background: rgba(240,174,58,.14); border: 1px solid #f0ae3a; color: #ffd88e; }
+        @media (max-width: 560px) { .cfg-calendar-day { min-height:50px; padding:4px; }.cfg-calendar-weekdays span { font-size:.57rem; }.cfg-calendar-day-count { font-size:.57rem; }.cfg-order-day { padding:11px; } }
     </style>
 
     <style>
@@ -1102,15 +1116,58 @@
             grupos.get(dia).push(card);
         });
         calendar.innerHTML = '';
-        grupos.forEach((pedidos, dia) => {
+        const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        const fechasValidas = Array.from(grupos.keys()).filter(dia => /^\d{4}-\d{2}-\d{2}$/.test(dia)).sort().reverse();
+        let seleccion = fechasValidas[0] || 'sin-fecha';
+        let cursor = seleccion === 'sin-fecha' ? new Date() : new Date(`${seleccion}T12:00:00`);
+        const toolbar = document.createElement('div');
+        const weekdays = document.createElement('div');
+        const gridMes = document.createElement('div');
+        const detalle = document.createElement('section');
+        toolbar.className = 'cfg-calendar-toolbar';
+        weekdays.className = 'cfg-calendar-weekdays';
+        gridMes.className = 'cfg-calendar-grid';
+        detalle.className = 'cfg-order-day';
+        dias.forEach(dia => { const cell = document.createElement('span'); cell.textContent = dia; weekdays.appendChild(cell); });
+        calendar.append(toolbar, weekdays, gridMes, detalle);
+
+        const mostrarDetalle = (dia) => {
+            seleccion = dia;
+            const pedidos = grupos.get(dia) || [];
             const fecha = dia === 'sin-fecha' ? 'Fecha no registrada' : new Date(`${dia}T12:00:00`).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            const bloque = document.createElement('section');
-            bloque.className = 'cfg-order-day';
-            bloque.innerHTML = `<header class="cfg-order-day-head"><h3><i class="bi bi-calendar3"></i>${fecha}</h3><span>${pedidos.length} pedido${pedidos.length === 1 ? '' : 's'}</span></header><div class="cfg-order-day-grid"></div>`;
-            const grid = bloque.querySelector('.cfg-order-day-grid');
-            pedidos.forEach(card => grid.appendChild(card));
-            calendar.appendChild(bloque);
-        });
+            detalle.innerHTML = `<header class="cfg-order-day-head"><h3><i class="bi bi-calendar-check"></i>${fecha}</h3><span>${pedidos.length} pedido${pedidos.length === 1 ? '' : 's'}</span></header><div class="cfg-order-day-grid"></div>`;
+            const gridDetalle = detalle.querySelector('.cfg-order-day-grid');
+            pedidos.forEach(card => gridDetalle.appendChild(card));
+            renderizarMes();
+        };
+
+        const renderizarMes = () => {
+            const year = cursor.getFullYear();
+            const month = cursor.getMonth();
+            const nombreMes = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(cursor);
+            toolbar.innerHTML = `<button type="button" class="cfg-calendar-nav" aria-label="Mes anterior">‹</button><h3>${nombreMes}</h3><button type="button" class="cfg-calendar-nav" aria-label="Mes siguiente">›</button>`;
+            toolbar.querySelectorAll('button')[0].onclick = () => { cursor = new Date(year, month - 1, 1); renderizarMes(); };
+            toolbar.querySelectorAll('button')[1].onclick = () => { cursor = new Date(year, month + 1, 1); renderizarMes(); };
+            gridMes.innerHTML = '';
+            const primerDia = new Date(year, month, 1).getDay();
+            const diasMes = new Date(year, month + 1, 0).getDate();
+            for (let vacio = 0; vacio < primerDia; vacio += 1) gridMes.appendChild(document.createElement('span'));
+            for (let numero = 1; numero <= diasMes; numero += 1) {
+                const fecha = `${year}-${String(month + 1).padStart(2, '0')}-${String(numero).padStart(2, '0')}`;
+                const pedidos = grupos.get(fecha) || [];
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = `cfg-calendar-day${pedidos.length ? ' has-orders' : ''}${seleccion === fecha ? ' selected' : ''}`;
+                boton.innerHTML = `<span class="cfg-calendar-day-number">${numero}</span>${pedidos.length ? `<span class="cfg-calendar-day-count">${pedidos.length} pedido${pedidos.length === 1 ? '' : 's'}</span><span class="cfg-calendar-dots"></span>` : ''}`;
+                if (pedidos.length) {
+                    const dots = boton.querySelector('.cfg-calendar-dots');
+                    ['wompi', 'cash', 'other'].forEach(tipo => { if (pedidos.some(card => card.classList.contains(`cfg-payment-${tipo}`))) { const dot = document.createElement('i'); dot.className = `cfg-calendar-dot ${tipo}`; dots.appendChild(dot); } });
+                    boton.onclick = () => mostrarDetalle(fecha);
+                }
+                gridMes.appendChild(boton);
+            }
+        };
+        mostrarDetalle(seleccion);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
