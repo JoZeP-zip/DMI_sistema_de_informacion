@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import './styles/App.css';
 import NightSky from './components/NightSky';
+import DmiLoader from './components/DmiLoader';
 
 import RegistroVehiculo from './js/RegistrarUnidad.js';
 import Contacto from './js/Contacto.js';
@@ -30,7 +31,7 @@ const getApiBaseUrl = () => {
   }
 
   const isLocalNetworkHost = /^(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(hostname);
-  if (isLocalNetworkHost) { 
+  if (isLocalNetworkHost) {
     return `http://${hostname}:8000`;
   }
 
@@ -950,6 +951,8 @@ function App() {
 
   const [dialog, setDialog] = useState(null);
   const [toast, setToast] = useState(null);
+  const [networkBusy, setNetworkBusy] = useState(false);
+  useEffect(() => { let pending=0; let shownAt=0; let hideTimer=null; const start=()=>{ pending+=1; if(!shownAt){shownAt=Date.now();setNetworkBusy(true)} }; const end=()=>{ pending=Math.max(0,pending-1); if(!pending){ const wait=Math.max(0,450-(Date.now()-shownAt)); hideTimer=window.setTimeout(()=>{shownAt=0;setNetworkBusy(false)},wait) } }; const original=window.fetch; window.fetch=(...args)=>{start(); return original(...args).finally(end)}; return ()=>{window.fetch=original; if(hideTimer)window.clearTimeout(hideTimer)}; }, []);
 
   const [afterLoginView, setAfterLoginView] = useState(null);
 
@@ -1268,6 +1271,7 @@ function App() {
 
   return (
     <div className="bg-black text-white min-vh-100 d-flex flex-column">
+      <DmiLoader visible={networkBusy} />
 
         <NightSky />
 
