@@ -119,6 +119,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   const [historialActivo, setHistorialActivo] = useState(null);
   const [ordenActiva, setOrdenActiva] = useState(null);
   const [cotizacionActiva, setCotizacionActiva] = useState(null);
+  const [confirmacionCotizacion, setConfirmacionCotizacion] = useState(null);
   const [respondiendoCotizacion, setRespondiendoCotizacion] = useState(false);
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
   const [facturaAPagar, setFacturaAPagar] = useState(null);
@@ -380,12 +381,16 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
     items: itemsPorCotizacion(cotizacion.idcotizacion),
   });
 
-  const responderCotizacion = async (respuesta) => {
+  const responderCotizacion = async (respuesta, confirmado = false) => {
     if (!cotizacionActiva || respondiendoCotizacion) return;
     const mensaje = respuesta === 'aceptada'
       ? '¿Deseas aceptar la cotizacion y autorizar la reparacion?'
       : '¿Deseas rechazar esta cotizacion? La reparacion no continuara.';
-    if (!window.confirm(mensaje)) return;
+    if (!confirmado) {
+      setConfirmacionCotizacion({ respuesta, mensaje });
+      return;
+    }
+    setConfirmacionCotizacion(null);
     setRespondiendoCotizacion(true);
     try {
       await MiCuentaService.responderCotizacion(cotizacionActiva.idcotizacion, respuesta);
@@ -713,6 +718,22 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
         )}
       </DetailModal>
 
+      <DetailModal title={confirmacionCotizacion ? 'Confirmar respuesta' : ''} onClose={() => setConfirmacionCotizacion(null)}>
+        {confirmacionCotizacion && (
+          <div className="user-detail-content user-confirmation-content">
+            <div className="user-confirmation-icon">!</div>
+            <h3>¿Confirmas esta acción?</h3>
+            <p>{confirmacionCotizacion.mensaje}</p>
+            <div className="user-quote-actions">
+              <button type="button" className="outline" onClick={() => setConfirmacionCotizacion(null)}>Cancelar</button>
+              <button type="button" className={confirmacionCotizacion.respuesta === 'aceptada' ? '' : 'danger'} onClick={() => responderCotizacion(confirmacionCotizacion.respuesta, true)}>
+                {confirmacionCotizacion.respuesta === 'aceptada' ? 'Aceptar cotización' : 'Rechazar cotización'}
+              </button>
+            </div>
+          </div>
+        )}
+      </DetailModal>
+
       <DetailModal title={citaGestionActiva ? 'Reprogramar cita' : ''} onClose={() => setCitaGestionActiva(null)}>
         {citaGestionActiva && <form className="user-appointment-form" onSubmit={confirmarReprogramacion}>
           <p>Actualizarás la misma cita #{citaGestionActiva.cita.idcita}; su historial se conservará.</p>
@@ -832,6 +853,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
     </main>
   );
 }
+
 
 
 

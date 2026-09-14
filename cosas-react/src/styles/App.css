@@ -2923,3 +2923,5 @@ body {
         padding: 12px !important;
     }
 }
+
+.user-confirmation-content{text-align:center;padding:8px 2px 2px}.user-confirmation-content h3{margin:8px 0 10px;color:#fff;font-size:1.15rem}.user-confirmation-content p{margin:0 auto 20px;color:#b7bbc5;line-height:1.55;max-width:420px}.user-confirmation-icon{display:grid;place-items:center;width:48px;height:48px;margin:0 auto 14px;border:1px solid #ff3158;border-radius:50%;color:#ff3158;font-size:24px;font-weight:800;box-shadow:0 0 22px rgba(255,47,85,.22)}.user-confirmation-content .user-quote-actions{justify-content:center}
