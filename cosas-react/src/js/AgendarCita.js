@@ -95,8 +95,9 @@ const CAMPOS_REQUERIDOS = [
   { key: 'motivo', titulo: 'Servicio', mensaje: 'Selecciona el servicio que necesitas agendar.' },
 ];
 
-const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
+const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage, onViewAppointments, onGoHome }) => {
   const [confirmado, setConfirmado] = useState(false);
+  const [citaConfirmada, setCitaConfirmada] = useState(null);
   const [vehiculos, setVehiculos] = useState([]);
   const [citasRegistradas, setCitasRegistradas] = useState([]);
   const [servicios, setServicios] = useState([]);
@@ -145,13 +146,16 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
       setVehiculos(listaVehiculos);
       setCitasRegistradas(Array.isArray(garageData.citas) ? garageData.citas : []);
 
-      if (listaVehiculos.length && !formData.vehiculos_idvehiculo) {
+      if (listaVehiculos.length) {
         const primero = listaVehiculos[0];
-        setFormData(prev => ({
-          ...prev,
-          vehiculos_idvehiculo: String(primero.idvehiculo),
-          descripcion_vehiculo: [primero.marca, primero.modelo, primero.placa].filter(Boolean).join(' '),
-        }));
+        setFormData(prev => {
+          if (prev.vehiculos_idvehiculo) return prev;
+          return {
+            ...prev,
+            vehiculos_idvehiculo: String(primero.idvehiculo),
+            descripcion_vehiculo: [primero.marca, primero.modelo, primero.placa].filter(Boolean).join(' '),
+          };
+        });
       }
     } catch (err) {
       setVehiculos([]);
@@ -206,7 +210,7 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
       .catch(() => {});
 
     setLoadingData(false);
-  }, [token, onNeedLogin, formData.vehiculos_idvehiculo]);
+  }, [token]);
 
   useEffect(() => {
     cargarDatosAgenda();
@@ -308,6 +312,7 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
         throw new Error(data.error || 'No se pudo agendar la cita.');
       }
 
+      setCitaConfirmada({ ...data, fecha: data.fecha || data.fecha_cita || formData.fecha_cita, hora: data.hora || data.hora_cita || formData.hora_cita, vehiculo: data.vehiculo || formData.descripcion_vehiculo, oficina: data.oficina || data.sede || 'Disol Motors', estado: data.estado || 'confirmada' });
       setConfirmado(true);
       cargarDatosAgenda();
     } catch (err) {
@@ -387,15 +392,18 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
           ) : confirmado ? (
             <div className="cita-confirmada">
               <div className="success-icon">OK</div>
-              <h2>Cita agendada</h2>
-              <p>
-                Te esperamos en <span className="highlight">Disol Motors</span>.<br />
-                Hemos registrado tu cita exitosamente.
-              </p>
+              <p className="ac-modal-label">Reserva confirmada</p>
+              <h2>Cita agendada correctamente</h2>
+              <p>La informacion de tu cita se enviara al correo registrado cuando el servidor confirme el envio.</p>
+              <div className="ac-confirmation-grid">
+                {(citaConfirmada?.idcita || citaConfirmada?.id) && <strong className="ac-confirmation-code">CITA #{citaConfirmada.idcita || citaConfirmada.id}</strong>}
+                <span><b>Fecha</b>{citaConfirmada?.fecha}</span><span><b>Hora</b>{citaConfirmada?.hora}</span>
+                <span><b>Oficina</b>{citaConfirmada?.oficina}</span><span><b>Vehiculo</b>{citaConfirmada?.vehiculo}</span>
+                <span><b>Estado</b>{String(citaConfirmada?.estado || "confirmada").toUpperCase()}</span>
+              </div>
               <div className="btn-row" style={{ justifyContent: 'center' }}>
-                <button className="btn primary" onClick={handleNuevaCita}>
-                  Agendar otra
-                </button>
+                <button className="btn secondary" type="button" onClick={onGoHome}>Volver al inicio</button>
+                <button className="btn primary" type="button" onClick={onViewAppointments || handleNuevaCita}>Ver mis citas</button>
               </div>
             </div>
           ) : (
@@ -552,3 +560,5 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
 };
 
 export default AgendarCita;
+
+
