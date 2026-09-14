@@ -6387,11 +6387,6 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
         context=ctx,
     )
 
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
 #========================= INVENTARIO ======================================
 @app.get("/api/inventario")
 async def api_inventario():
@@ -7631,6 +7626,33 @@ async def responder_cotizacion_cliente(cotizacion_id: int, request: Request, acc
                 "Cliente " + ("acepto" if respuesta == "aceptada" else "rechazo") + f" la cotizacion {cotizacion.get('codigo_cotizacion')}",
                 float(cotizacion.get("total") or 0),
             )
+
+            # Avisar al mecanico asignado cuando el cliente responde la cotizacion.
+            # La orden puede usar distintos nombres de columna segun el esquema instalado.
+            orden_col = empleado_orden_column(conn)
+            empleado_id = None
+            if orden_col:
+                empleado_id = conn.execute(
+                    text(f"SELECT {orden_col} FROM dmi.orden_trabajo WHERE idorden = :orden_id"),
+                    {"orden_id": cotizacion["orden_id"]},
+                ).scalar()
+            if empleado_id:
+                titulo_mecanico = "Orden de trabajo aprobada" if respuesta == "aceptada" else "Cotizacion rechazada"
+                mensaje_mecanico = (
+                    f"El cliente acepto la cotizacion {cotizacion.get('codigo_cotizacion')} y autorizo la reparacion."
+                    if respuesta == "aceptada"
+                    else f"El cliente rechazo la cotizacion {cotizacion.get('codigo_cotizacion')}."
+                )
+                crear_notificacion(
+                    conn,
+                    titulo_mecanico,
+                    mensaje_mecanico,
+                    "cotizacion_" + respuesta,
+                    "orden",
+                    cotizacion["orden_id"],
+                    empleado_id=empleado_id,
+                    accion_url=f"/mecanico/ordenes/{cotizacion['orden_id']}",
+                )
             conn.commit()
         return JSONResponse({"ok": True, "estado": respuesta})
     except Exception as e:
@@ -8685,3 +8707,4 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
