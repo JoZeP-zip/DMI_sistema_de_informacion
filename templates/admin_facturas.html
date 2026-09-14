@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -118,25 +119,58 @@
         </table>
       </div>
     </section>
-  </main>
+  <section class="facturas-panel pagos-panel" id="pagosComprobantesPanel">
+  <div class="section-heading"><div><span class="eyebrow">DMI / CONTROL FINANCIERO</span><h2>PAGOS Y COMPROBANTES</h2></div><div class="toolbar-count"><span id="pagosCount">0</span> pagos</div></div>
+  <div class="payment-kpis"><article><span>Total recibido</span><strong id="pagosTotal">$0</strong></article><article><span>Pagos registrados</span><strong id="pagosHoy">0</strong></article><article><span>Pendientes en facturas</span><strong id="pagosPendientes">0</strong></article></div>
+  <input id="pagosSearch" type="search" placeholder="Buscar cliente, factura, orden o referencia...">
+  <div class="table-scroll"><table id="pagosTable"><thead><tr><th>Fecha</th><th>Cliente</th><th>Factura</th><th>OT</th><th>Valor</th><th>M�todo</th><th>Referencia</th><th>Estado</th><th>Acci�n</th></tr></thead><tbody><tr><td colspan="9">Cargando pagos...</td></tr></tbody></table></div>
+</section>
+<script>
+(async function () {
+  const panel = document.getElementById('pagosComprobantesPanel');
+  if (!panel) return;
+  const body = panel.querySelector('tbody');
+  const search = document.getElementById('pagosSearch');
+  let pagos = [];
+  const money = (n) => '$' + Number(n || 0).toLocaleString('es-CO');
+  const render = () => {
+    const q = (search.value || '').trim().toLowerCase();
+    const rows = pagos.filter((p) => [p.cliente,p.codigo_factura,p.codigo_orden,p.referencia,p.metodo].join(' ').toLowerCase().includes(q));
+    body.innerHTML = rows.length ? rows.map((p) => '<tr><td>' + (p.fecha_pago || '') + '</td><td>' + (p.cliente || 'Cliente') + '</td><td>' + (p.codigo_factura || 'Sin factura') + '</td><td>' + (p.codigo_orden || 'Sin OT') + '</td><td>' + money(p.valor) + '</td><td>' + (p.metodo || '') + '</td><td>' + (p.referencia || 'Pendiente') + '</td><td><span class="status">' + (p.estado || 'pagada') + '</span></td><td>' + (p.orden_id ? '<a class="view-btn" href="/admin/ordenes/' + p.orden_id + '">VER OT</a>' : '') + '</td></tr>').join('') : '<tr><td colspan="9">No hay pagos registrados.</td></tr>';
+  };
+  try {
+    const response = await fetch('/api/admin/pagos', { credentials: 'same-origin' });
+    const data = await response.json();
+    pagos = data.pagos || [];
+    document.getElementById('pagosCount').textContent = pagos.length;
+    document.getElementById('pagosTotal').textContent = money(pagos.reduce((sum, p) => sum + Number(p.valor || 0), 0));
+    document.getElementById('pagosHoy').textContent = pagos.length;
+    render();
+  } catch (error) {
+    body.innerHTML = '<tr><td colspan="9">No fue posible cargar los pagos.</td></tr>';
+  }
+  search.addEventListener('input', render);
+})();
+</script>
+</main>
 
-  <script>
-    (function () {
-      const input = document.getElementById('facturaSearch');
-      const rows = Array.from(document.querySelectorAll('#facturasTable tbody tr')).filter(row => row.id !== 'emptyRow');
-      const count = document.getElementById('visibleCount');
-      if (!input) return;
-      input.addEventListener('input', function () {
-        const term = input.value.trim().toLowerCase();
-        let visible = 0;
-        rows.forEach(function (row) {
-          const show = !term || row.textContent.toLowerCase().includes(term);
-          row.style.display = show ? '' : 'none';
-          if (show) visible++;
-        });
-        count.textContent = visible;
-      });
-    })();
-  </script>
+<script>
+(function () {
+  const input = document.getElementById('facturaSearch');
+  const rows = Array.from(document.querySelectorAll('#facturasTable tbody tr')).filter(row => row.id !== 'emptyRow');
+  const count = document.getElementById('visibleCount');
+  if (!input) return;
+  input.addEventListener('input', function () {
+    const term = input.value.trim().toLowerCase();
+    let visible = 0;
+    rows.forEach(function (row) {
+      const show = !term || row.textContent.toLowerCase().includes(term);
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    count.textContent = visible;
+  });
+})();
+</script>
 </body>
 </html>

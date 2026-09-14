@@ -1566,6 +1566,8 @@ function App() {
                       }}
                       onNeedVehicle={() => setView('registro')}
                       onGoGarage={() => setView('user-dashboard')}
+                      onViewAppointments={() => setView('user-dashboard')}
+                      onGoHome={() => setView('inicio')}
                     />
                   )}
                   {view === 'registro' && <RegistroVehiculo onComplete={() => setView('user-dashboard')} />}

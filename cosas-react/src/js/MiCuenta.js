@@ -35,26 +35,30 @@ const clean = (value, fallback = 'Por definir') => {
 
 const estadoClase = (estado = '') => String(estado).toLowerCase().replace(/[^a-z0-9_]/g, '-');
 const estadoCitaVisible = (cita) => cita?.reprogramada_en ? 'reprogramada' : (cita?.estado || 'pendiente');
+const estadoFacturaVisible = (estado = '') => ({ pendiente: 'Pendiente de pago', parcial: 'Pago parcial', pagada: 'Pagada', cancelada: 'Pago cancelado', rechazado: 'Pago rechazado' }[String(estado).toLowerCase()] || estado || 'Pendiente de pago');
 
 const estadoOrdenPasos = [
-  { key: 'abierta', label: 'Orden' },
+  { key: 'abierta', label: 'Cita / Orden' },
   { key: 'diagnostico', label: 'Diagnostico' },
   { key: 'cotizada', label: 'Cotizacion' },
-  { key: 'en_reparacion', label: 'Reparacion' },
-  { key: 'facturada', label: 'Factura' },
-  { key: 'entregada', label: 'Entrega' },
+  { key: 'aprobada', label: 'Aprobada' },
+  { key: 'en_reparacion', label: 'En reparacion' },
+  { key: 'finalizada', label: 'Terminada' },
+  { key: 'facturada', label: 'Pendiente de pago' },
+  { key: 'pagada', label: 'Pagada' },
+  { key: 'entregada', label: 'Entregada' },
 ];
 
 const pasoIndexPorEstado = {
   abierta: 0,
   diagnostico: 1,
   cotizada: 2,
-  aprobada: 2,
-  en_reparacion: 3,
-  finalizada: 3,
-  facturada: 4,
-  pagada: 4,
-  entregada: 5,
+  aprobada: 3,
+  en_reparacion: 4,
+  finalizada: 5,
+  facturada: 6,
+  pagada: 7,
+  entregada: 8,
 };
 
 const EmptyState = ({ icon = 'bi-info-circle', text }) => (
@@ -594,11 +598,11 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
                 <div className="user-account-item user-action-item" key={factura.idfactura}>
                   <strong>{factura.codigo_factura}</strong>
                   <span>{money(factura.total)} | Saldo {money(factura.saldo)}</span>
-                  <small className={`user-status ${estadoClase(factura.estado)}`}>{clean(factura.estado)}</small>
+                  <small className={`user-status ${estadoClase(factura.estado)}`}>{estadoFacturaVisible(factura.estado)}</small>
                   <button type="button" onClick={() => abrirFactura(factura)}>Ver factura</button>
                   {Number(factura.saldo ?? factura.total ?? 0) > 0 && !['pagada', 'cancelada'].includes(String(factura.estado || '').toLowerCase()) && (
                     <button type="button" className="user-pay-invoice" onClick={() => setFacturaAPagar(factura)}>
-                      <i className="bi bi-credit-card-2-front" /> Pagar factura
+                      <i className="bi bi-credit-card-2-front" /> Pagar con Wompi
                     </button>
                   )}
                 </div>

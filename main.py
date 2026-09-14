@@ -1045,6 +1045,38 @@ async def admin_registros(request: Request, access_token: str = Cookie(None)):
     )
 
 
+@app.get("/api/admin/pagos")
+async def admin_pagos_api(request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return JSONResponse({"error": "No tienes permiso."}, status_code=403)
+    try:
+        with engine.connect() as conn:
+            if not table_exists(conn, "dmi", "pagos"):
+                return JSONResponse({"pagos": []})
+            rows = conn.execute(text("""
+                SELECT p.idpago, p.codigo_pago, p.fecha_pago, p.valor, p.referencia,
+                       f.codigo_factura, f.orden_id, ot.codigo_orden,
+                       COALESCE(NULLIF(trim(concat_ws(' ', u.nombre, u.apellidos)), ''),
+                                NULLIF(u.usuarionombre, ''), 'Cliente') AS cliente,
+                       COALESCE(mp.descripcionmpago, 'Metodo no especificado') AS metodo,
+                       COALESCE(f.estado, 'pendiente') AS estado
+                FROM dmi.pagos p
+                LEFT JOIN dmi.facturas f ON f.idfactura = p.factura_id
+                LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id
+                LEFT JOIN dmi.usuarios u ON u.idusuarios = f.cliente_id
+                LEFT JOIN dmi.metodopago mp ON mp.idmetodopago = p.metodopago_id
+                ORDER BY p.fecha_pago DESC NULLS LAST, p.idpago DESC
+            """)).mappings().fetchall()
+            pagos = [dict(row) for row in rows]
+            for pago in pagos:
+                fecha = pago.get("fecha_pago")
+                pago["fecha_pago"] = fecha.strftime("%d/%m/%Y %H:%M") if hasattr(fecha, "strftime") else str(fecha or "Sin fecha")
+            return JSONResponse({"pagos": pagos})
+    except Exception as error:
+        return JSONResponse({"error": f"No se pudieron cargar los pagos: {error}"}, status_code=500)
+
+
 @app.get("/admin/facturas", response_class=HTMLResponse)
 async def admin_facturas(request: Request, access_token: str = Cookie(None)):
     """Historial de facturas generadas para el administrador."""
@@ -1106,6 +1138,27 @@ async def admin_facturas(request: Request, access_token: str = Cookie(None)):
             "error": error_msg,
         },
     )
+
+
+@app.get("/admin/pagos", response_class=HTMLResponse)
+async def admin_pagos(request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/")
+    pagos, error_msg = [], None
+    try:
+        with engine.connect() as conn:
+            pagos = [dict(row) for row in conn.execute(text("""
+                SELECT p.idpago, p.fecha_pago, p.valor, p.referencia, p.estado, p.codigo_pago, f.codigo_factura, f.orden_id, ot.codigo_orden, COALESCE(NULLIF(trim(concat_ws(\' \', u.nombre, u.apellidos)), \'\'), u.usuarionombre, \'Cliente\') AS cliente, COALESCE(mp.descripcionmpago, \'Sin metodo\') AS metodo
+                FROM dmi.pagos p LEFT JOIN dmi.facturas f ON f.idfactura = p.factura_id LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id LEFT JOIN dmi.usuarios u ON u.idusuarios = f.cliente_id LEFT JOIN dmi.metodopago mp ON mp.idmetodopago = p.metodopago_id ORDER BY p.fecha_pago DESC, p.idpago DESC
+            """)).mappings().fetchall()]
+            for pago in pagos:
+                fecha = pago.get("fecha_pago")
+                pago["fecha_visible"] = fecha.strftime("%d/%m/%Y %H:%M") if hasattr(fecha, "strftime") else str(fecha or "Sin fecha")
+    except Exception as e:
+        error_msg = f"No se pudieron cargar los pagos: {e}"
+    total_recibido = sum(float(p.get("valor") or 0) for p in pagos if str(p.get("estado") or "").lower() in ("pagado", "aprobado", "approved"))
+    return templates.TemplateResponse(request=request, name="admin_pagos.html", context={"usuario": usuario, "pagos": pagos, "error": error_msg, "total_recibido": total_recibido})
 
 
 # ==================== ACCIONES DE ORDENES ====================

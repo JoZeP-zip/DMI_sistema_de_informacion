@@ -13,3 +13,10 @@ root.render(
 );
 
 reportWebVitals();
+
+ls -l src/index.js
+npm run build
+ls -l src/index.js
+npm run buildls -l src/index.js
+npm run build
+
