@@ -952,7 +952,7 @@ function App() {
   const [dialog, setDialog] = useState(null);
   const [toast, setToast] = useState(null);
   const [networkBusy, setNetworkBusy] = useState(false);
-  useEffect(() => { let pending=0; let shownAt=0; let hideTimer=null; const start=()=>{ pending+=1; if(!shownAt){shownAt=Date.now();setNetworkBusy(true)} }; const end=()=>{ pending=Math.max(0,pending-1); if(!pending){ const wait=Math.max(0,450-(Date.now()-shownAt)); hideTimer=window.setTimeout(()=>{shownAt=0;setNetworkBusy(false)},wait) } }; const original=window.fetch; window.fetch=(...args)=>{start(); return original(...args).finally(end)}; return ()=>{window.fetch=original; if(hideTimer)window.clearTimeout(hideTimer)}; }, []);
+  useEffect(() => { let pending=0; let shownAt=0; let hideTimer=null; let safetyTimer=null; const stop=()=>{ if(hideTimer)window.clearTimeout(hideTimer); if(safetyTimer)window.clearTimeout(safetyTimer); pending=0; shownAt=0; setNetworkBusy(false); }; const start=()=>{ pending+=1; if(!shownAt){shownAt=Date.now();setNetworkBusy(true); safetyTimer=window.setTimeout(stop,5000)} }; const end=()=>{ pending=Math.max(0,pending-1); if(!pending){ const wait=Math.max(0,450-(Date.now()-shownAt)); hideTimer=window.setTimeout(stop,wait) } }; const original=window.fetch; window.fetch=(...args)=>{start(); return original(...args).catch(error=>{throw error}).finally(end)}; return ()=>{window.fetch=original;stop()}; }, []);
 
   const [afterLoginView, setAfterLoginView] = useState(null);
 
