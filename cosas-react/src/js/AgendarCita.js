@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import '../styles/AgendarCita.css';
+import { handleUnauthorizedResponse } from '../services/api';
 
 const getApiBaseUrl = () => {
   // En Vercel el frontend y el backend pueden estar en dominios distintos.
@@ -54,6 +55,38 @@ const normalizarHora = (value) => {
   return String(value).slice(0, 5);
 };
 
+// Regla de negocio: una cita solo puede agendarse desde hoy hasta
+// dos meses calendario hacia adelante.
+const formatearFechaISO = (fecha) => {
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, '0');
+  const day = String(fecha.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const calcularFechaMaxima = () => {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const diaOriginal = hoy.getDate();
+  const mesDestino = hoy.getMonth() + 2;
+  const anioDestino = hoy.getFullYear();
+  const ultimoDiaMesDestino = new Date(
+    anioDestino,
+    mesDestino + 1,
+    0
+  ).getDate();
+
+  return new Date(
+    anioDestino,
+    mesDestino,
+    Math.min(diaOriginal, ultimoDiaMesDestino)
+  );
+};
+
+const FECHA_MINIMA_CITA = formatearFechaISO(new Date());
+const FECHA_MAXIMA_CITA = formatearFechaISO(calcularFechaMaxima());
+
 const CAMPOS_REQUERIDOS = [
   { key: 'vehiculos_idvehiculo', titulo: 'Vehiculo', mensaje: 'Selecciona un vehiculo de Mi Garaje para continuar.' },
   { key: 'descripcion_vehiculo', titulo: 'Descripcion del vehiculo', mensaje: 'Cuentanos brevemente el estado o la falla del vehiculo.' },
@@ -103,6 +136,10 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include',
       });
+      if (garageRes.status === 401) {
+        handleUnauthorizedResponse();
+        return;
+      }
       const garageData = await garageRes.json();
       const listaVehiculos = Array.isArray(garageData.vehiculos) ? garageData.vehiculos : [];
       setVehiculos(listaVehiculos);
@@ -126,6 +163,10 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include',
       });
+      if (serviciosRes.status === 401) {
+        handleUnauthorizedResponse();
+        return;
+      }
       if (!serviciosRes.ok) {
         throw new Error(`El servidor no pudo cargar los servicios (${serviciosRes.status}).`);
       }
@@ -146,7 +187,13 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
       headers: { Authorization: `Bearer ${token}` },
       credentials: 'include',
     })
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          handleUnauthorizedResponse();
+          return null;
+        }
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data)) {
           setCitasRegistradas((actuales) => {
@@ -219,6 +266,18 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
       return;
     }
 
+    if (
+      formData.fecha_cita < FECHA_MINIMA_CITA
+      || formData.fecha_cita > FECHA_MAXIMA_CITA
+    ) {
+      mostrarAlerta(
+        'Fecha no disponible',
+        'Fecha fuera del rango permitido',
+        `Solo puedes agendar una cita desde hoy hasta ${FECHA_MAXIMA_CITA.split('-').reverse().join('/')}.`
+      );
+      return;
+    }
+
     setLoading(true);
 
     if (!horariosDisponibles.includes(formData.hora_cita)) {
@@ -241,6 +300,10 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
       });
 
       const data = await res.json();
+      if (res.status === 401) {
+        handleUnauthorizedResponse();
+        return;
+      }
       if (!res.ok || data.error) {
         throw new Error(data.error || 'No se pudo agendar la cita.');
       }
@@ -395,9 +458,14 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage }) => {
                       type="date"
                       name="fecha_cita"
                       value={formData.fecha_cita}
+                      min={FECHA_MINIMA_CITA}
+                      max={FECHA_MAXIMA_CITA}
                       onChange={handleChange}
                       required
                     />
+                    <span className="hours-help">
+                      Puedes agendar desde hoy hasta dos meses hacia adelante.
+                    </span>
                   </div>
                   <div className="form-group no-mb">
                     <label>Hora disponible <span className="ac-req">*</span></label>

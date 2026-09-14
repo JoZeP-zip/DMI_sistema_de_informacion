@@ -27,15 +27,6 @@ import hashlib
 import unicodedata
 from sqlalchemy import text
 from datetime import datetime
-from urllib.parse import urlencode
-
-try:
-    import firebase_admin
-    from firebase_admin import credentials as firebase_credentials, messaging as firebase_messaging
-except ImportError:
-    firebase_admin = None
-    firebase_credentials = None
-    firebase_messaging = None
 
 load_dotenv()
 
@@ -70,8 +61,6 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USERNAME)
-# Se configura como secreto en Render. Nunca se expone al APK ni al navegador.
-FIREBASE_SERVICE_ACCOUNT_JSON = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "")
 
 # Forzamos a SQLAlchemy a buscar directamente en el esquema dmi
 engine = create_engine(
@@ -115,25 +104,12 @@ def obtener_url_recuperacion_segura(candidate_url: str) -> str:
 
 app = FastAPI()
 
-# Orígenes autorizados para la aplicación web/Flutter publicada. En Railway
-# configura FRONTEND_ORIGINS con una lista separada por comas si agregas otros
-# dominios en el futuro.
-FRONTEND_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "FRONTEND_ORIGINS",
-        "https://dmi-sistema-de-informacion.vercel.app",
-    ).split(",")
-    if origin.strip()
-]
-
 class BotBuscarClienteRequest(BaseModel):
     tipoDocumento: str
     numeroDocumento: str
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=FRONTEND_ORIGINS,
     allow_origin_regex=r"https://.*\.app\.github\.dev|http://localhost:3000|http://127\.0\.0\.1:3000|http://(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):3000|https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
@@ -832,7 +808,6 @@ async def admin_citas(request: Request, access_token: str = Cookie(None)):
     total_completadas = 0
     citas_hoy = []
     empleados = []
-    solicitudes_reprogramacion = []
 
     try:
         with engine.connect() as conn:
@@ -877,39 +852,6 @@ async def admin_citas(request: Request, access_token: str = Cookie(None)):
                 {"hoy": hoy},
             ).mappings().fetchall()]
 
-            # Bandeja operativa para que el administrador pueda decidir cada
-            # solicitud desde la sección Citas, sin tener que buscarla solo en
-            # las notificaciones.
-            if table_exists(conn, "dmi", "solicitudes_reprogramacion"):
-                solicitudes_reprogramacion = [
-                    dict(row) for row in conn.execute(text("""
-                        SELECT
-                            sr.idsolicitud_reprogramacion,
-                            sr.cita_id,
-                            sr.fecha_solicitada,
-                            sr.hora_solicitada,
-                            COALESCE(sr.motivo, '') AS motivo,
-                            sr.creado_en,
-                            c.fecha AS fecha_actual,
-                            c.hora AS hora_actual,
-                            COALESCE(c.motivo, 'Servicio DMI') AS servicio,
-                            COALESCE(v.marca, '') || ' ' || COALESCE(v.modelo, '') AS vehiculo,
-                            COALESCE(v.placa, 'Sin placa') AS placa,
-                            COALESCE(u.nombre, '') || ' ' || COALESCE(u.apellidos, '') AS cliente
-                        FROM dmi.solicitudes_reprogramacion sr
-                        JOIN dmi.citas c ON c.idcita = sr.cita_id
-                        LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
-                        LEFT JOIN dmi.usuarios u ON u.idusuarios = sr.solicitante_usuario_id
-                        WHERE lower(COALESCE(sr.estado, 'pendiente')) = 'pendiente'
-                        ORDER BY sr.creado_en ASC
-                        LIMIT 100
-                    """)).mappings().fetchall()
-                ]
-                for solicitud in solicitudes_reprogramacion:
-                    for campo in ("fecha_solicitada", "hora_solicitada", "creado_en", "fecha_actual", "hora_actual"):
-                        if solicitud.get(campo) is not None:
-                            solicitud[campo] = str(solicitud[campo])
-
             if table_exists(conn, "dmi", "empleados"):
                 empleados_cols = table_columns(conn, "dmi", "empleados")
                 empleado_pk = resolve_table_pk(conn, "empleados", "idempleado") or "id"
@@ -950,8 +892,6 @@ async def admin_citas(request: Request, access_token: str = Cookie(None)):
             "citas": citas,
             "citas_hoy": citas_hoy,
             "empleados": empleados,
-            "solicitudes_reprogramacion": solicitudes_reprogramacion,
-            "total_solicitudes_reprogramacion": len(solicitudes_reprogramacion),
             "total_citas": len(citas),
             "total_pendientes": total_pendientes,
             "total_confirmadas": total_confirmadas,
@@ -1250,44 +1190,6 @@ def generar_codigo_documento(conn, table: str, column: str, prefix: str):
         {"base": f"{base}%"},
     ).scalar() or 0
     return f"{base}-{int(total_dia) + 1:04d}"
-def generar_firma_integridad_wompi(referencia: str, amount_in_cents: int) -> str:
-    texto = f"{referencia}{amount_in_cents}COP{WOMPI_INTEGRITY_SECRET}"
-    return hashlib.sha256(texto.encode("utf-8")).hexdigest()
-
-def generar_checkout_wompi_pedido(
-    referencia: str,
-    amount_in_cents: int,
-    email: Optional[str] = None,
-) -> str:
-    # Genera un Checkout Web de Wompi asociado a un pedido concreto.
-    if not WOMPI_PUBLIC_KEY:
-        raise RuntimeError("Falta configurar WOMPI_PUBLIC_KEY")
-    if not WOMPI_INTEGRITY_SECRET:
-        raise RuntimeError("Falta configurar WOMPI_INTEGRITY_SECRET")
-    if amount_in_cents <= 0:
-        raise ValueError("El monto del pedido debe ser mayor que cero")
-
-    firma = generar_firma_integridad_wompi(
-        referencia,
-        amount_in_cents,
-    )
-
-    parametros = {
-        "public-key": WOMPI_PUBLIC_KEY,
-        "currency": "COP",
-        "amount-in-cents": str(amount_in_cents),
-        "reference": referencia,
-        "signature:integrity": firma,
-        "redirect-url": "https://dmi-sistema-de-informacion.vercel.app/",
-    }
-
-    if email:
-        parametros["customer-data:email"] = email
-
-    return "https://checkout.wompi.co/p/?" + urlencode(parametros)
-
-
-
 
 
 def obtener_factura_orden(conn, orden_id: int):
@@ -1391,289 +1293,6 @@ async def mecanico_panel(request: Request, access_token: str = Cookie(None)):
             "error": error_msg,
         },
     )
-
-
-@app.get("/api/mecanico/panel")
-async def api_panel_mecanico(
-    request: Request,
-    access_token: str = Cookie(None),
-    authorization: Optional[str] = Header(None),
-):
-    """Devuelve únicamente la jornada asignada al mecánico autenticado."""
-    if not access_token and authorization and authorization.startswith("Bearer "):
-        access_token = authorization.split(" ", 1)[1]
-
-    usuario = obtener_usuario(access_token, request) if access_token else None
-    if not es_mecanico(usuario):
-        return JSONResponse({"error": "No tienes permiso para ver el panel mecánico."}, status_code=403)
-
-    try:
-        with engine.connect() as conn:
-            empleado = obtener_empleado_actual(conn, usuario)
-            orden_col = empleado_orden_column(conn)
-            if not empleado or not orden_col:
-                return JSONResponse(
-                    {
-                        "error": "Tu cuenta de mecánico no está enlazada a un empleado activo con el mismo correo.",
-                        "code": "MECHANIC_EMPLOYEE_NOT_LINKED",
-                    },
-                    status_code=409,
-                )
-
-            empleado_id = empleado["idempleado"]
-
-            # Reutilizamos las consultas que ya alimentan el panel web del
-            # mecánico. Así se respetan los nombres reales de las columnas de
-            # esta base de datos y no se rompe el panel móvil por una columna
-            # opcional (por ejemplo, notas o cliente_id) que no exista.
-            ordenes = obtener_ordenes_mecanico(conn, empleado_id)
-            # La app necesita el mes completo (incluidas las citas ya
-            # terminadas) para pintar la agenda por días.  La consulta de
-            # "hoy" usada por la web solo mostraba las próximas diez citas.
-            citas_origen = [dict(row) for row in conn.execute(text(f"""
-                SELECT c.idcita, c.fecha, c.hora, c.motivo, c.estado,
-                       COALESCE(u.nombre, 'Cliente') AS cliente,
-                       COALESCE(v.placa, 'Sin placa') AS placa,
-                       COALESCE(v.marca, '') || ' ' || COALESCE(v.modelo, '') AS vehiculo,
-                       ot.idorden
-                FROM dmi.citas c
-                JOIN dmi.orden_trabajo ot ON ot.cita_id = c.idcita
-                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
-                LEFT JOIN dmi.usuarios u
-                    ON u.idusuarios = v.cliente_id
-                    OR u.vehiculos_idvehiculo = v.idvehiculo
-                WHERE ot.{orden_col} = :empleado_id
-                  AND c.fecha >= :inicio
-                  AND c.fecha < :fin
-                  AND lower(COALESCE(c.estado, 'pendiente')) NOT IN ('cancelada', 'cancelado')
-                ORDER BY c.fecha ASC, c.hora ASC, c.idcita ASC
-            """), {
-                "empleado_id": empleado_id,
-                "inicio": date.today() - timedelta(days=31),
-                "fin": date.today() + timedelta(days=93),
-            }).mappings().fetchall()]
-            citas = [
-                {
-                    "idcita": cita.get("idcita"),
-                    "fecha": cita.get("fecha"),
-                    "hora": cita.get("hora"),
-                    "servicio": cita.get("motivo") or "Servicio por definir",
-                    "vehiculo": cita.get("vehiculo") or cita.get("placa") or "Vehículo",
-                    "cliente": cita.get("cliente") or "Cliente",
-                    "observaciones": "",
-                    "estado": cita.get("estado") or "pendiente",
-                }
-                for cita in citas_origen
-            ]
-
-            # Las notificaciones no deben impedir que se carguen las citas y
-            # órdenes. Algunas instalaciones antiguas no tienen las mismas
-            # columnas en esta tabla.
-            notificaciones = []
-            if table_exists(conn, "dmi", "notificaciones"):
-                try:
-                    notificaciones = conn.execute(
-                        text("""
-                            SELECT *
-                            FROM dmi.notificaciones
-                            WHERE empleado_id = :empleado_id
-                            ORDER BY creado_en DESC
-                            LIMIT 30
-                        """),
-                        {"empleado_id": empleado_id},
-                    ).mappings().fetchall()
-                except Exception as notification_error:
-                    print("AVISO: no fue posible cargar notificaciones del mecánico:", notification_error)
-
-            ordenes_panel = []
-            for orden in ordenes:
-                orden = dict(orden)
-                vehiculo = " ".join(
-                    str(orden.get(campo) or "").strip()
-                    for campo in ("marca", "modelo", "placa")
-                ).strip() or "Vehículo"
-                ordenes_panel.append(
-                    {
-                        **orden,
-                        "servicio": orden.get("motivo_ingreso") or orden.get("codigo_orden") or "Orden de trabajo",
-                        "vehiculo": vehiculo,
-                        "cliente": orden.get("cliente"),
-                        "observaciones": orden.get("observaciones_cliente"),
-                    }
-                )
-
-            recordatorios_citas = [
-                {
-                    "tipo": "recordatorio_cita",
-                    "titulo": "Cita pendiente",
-                    "mensaje": (
-                        f"Tienes la cita de {cita.get('vehiculo') or 'un vehículo'} "
-                        f"para {cita.get('fecha') or 'una fecha próxima'} "
-                        f"a las {cita.get('hora') or 'hora pendiente'}."
-                    ),
-                    "fecha": cita.get("fecha"),
-                    "hora": cita.get("hora"),
-                    "idcita": cita.get("idcita"),
-                }
-                for cita in citas
-            ]
-
-            # Respaldo para órdenes creadas desde flujos antiguos: aunque no
-            # exista una fila histórica en notificaciones, el mecánico verá la
-            # alerta de la orden que ya tiene asignada en su campana/panel.
-            recordatorios_ordenes = [
-                {
-                    "tipo": "orden_asignada",
-                    "titulo": "Orden de trabajo asignada",
-                    "mensaje": (
-                        f"Tienes asignada la orden {orden.get('codigo_orden') or '#' + str(orden.get('idorden') or '')} "
-                        f"para {orden.get('vehiculo') or 'un vehículo'}."
-                    ),
-                    "idorden": orden.get("idorden"),
-                    "estado": orden.get("estado"),
-                }
-                for orden in ordenes_panel
-                if str(orden.get("estado") or "").lower() not in {"finalizada", "finalizado", "entregada", "cancelada"}
-            ]
-
-            return JSONResponse(
-                {
-                    "success": True,
-                    "data": {
-                        "empleado": json_row(empleado),
-                        "citas": [json_row(cita) for cita in citas],
-                        "ordenes": [json_row(orden) for orden in ordenes_panel],
-                        "notificaciones": (
-                            [json_row(recordatorio) for recordatorio in recordatorios_citas]
-                            + [json_row(recordatorio) for recordatorio in recordatorios_ordenes]
-                            + [json_row(notificacion) for notificacion in notificaciones]
-                        ),
-                    },
-                }
-            )
-    except Exception as e:
-        print("ERROR GET /api/mecanico/panel:", e)
-        return JSONResponse({"error": "No fue posible cargar el panel del mecánico."}, status_code=500)
-
-
-@app.post("/api/mecanico/citas/{cita_id}/terminar")
-async def terminar_cita_mecanico_api(
-    cita_id: int,
-    request: Request,
-    access_token: str = Cookie(None),
-    authorization: Optional[str] = Header(None),
-):
-    """Marca una cita como terminada solo si pertenece al mecánico autenticado."""
-    if not access_token and authorization and authorization.startswith("Bearer "):
-        access_token = authorization.split(" ", 1)[1]
-
-    usuario = obtener_usuario(access_token, request) if access_token else None
-    if not es_mecanico(usuario):
-        return JSONResponse({"error": "No tienes permiso para terminar citas."}, status_code=403)
-
-    try:
-        with engine.connect() as conn:
-            empleado = obtener_empleado_actual(conn, usuario)
-            orden_col = empleado_orden_column(conn)
-            if not empleado or not orden_col:
-                return JSONResponse({"error": "Tu cuenta no está enlazada a un empleado mecánico."}, status_code=409)
-
-            cita = conn.execute(text(f"""
-                SELECT c.idcita, c.estado
-                FROM dmi.citas c
-                JOIN dmi.orden_trabajo ot ON ot.cita_id = c.idcita
-                WHERE c.idcita = :cita_id AND ot.{orden_col} = :empleado_id
-                LIMIT 1
-            """), {
-                "cita_id": cita_id,
-                "empleado_id": empleado["idempleado"],
-            }).mappings().fetchone()
-
-            if not cita:
-                return JSONResponse({"error": "Esta cita no está asignada a tu cuenta."}, status_code=403)
-            if str(cita.get("estado") or "").lower() in {"cancelada", "cancelado"}:
-                return JSONResponse({"error": "No se puede terminar una cita cancelada."}, status_code=400)
-
-            update_dynamic(conn, "citas", "idcita", cita_id, {"estado": "completada"})
-            conn.commit()
-
-        return JSONResponse({
-            "success": True,
-            "message": "Cita marcada como terminada.",
-            "data": {"idcita": cita_id, "estado": "completada"},
-        })
-    except Exception as e:
-        print("ERROR POST /api/mecanico/citas/{cita_id}/terminar:", e)
-        return JSONResponse({"error": "No fue posible terminar la cita."}, status_code=500)
-
-
-@app.post("/api/mecanico/ordenes/{orden_id}/estado")
-async def actualizar_estado_orden_mecanico_api(
-    orden_id: int,
-    request: Request,
-    access_token: str = Cookie(None),
-    authorization: Optional[str] = Header(None),
-):
-    """Permite al mecánico actualizar únicamente una orden que le pertenece."""
-    if not access_token and authorization and authorization.startswith("Bearer "):
-        access_token = authorization.split(" ", 1)[1]
-
-    usuario = obtener_usuario(access_token, request) if access_token else None
-    if not es_mecanico(usuario):
-        return JSONResponse({"error": "No tienes permiso para actualizar órdenes."}, status_code=403)
-
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-
-    estado = str(body.get("estado") or "").strip().lower()
-    estados_permitidos = {"diagnostico", "en_reparacion", "finalizada"}
-    if estado not in estados_permitidos:
-        return JSONResponse({"error": "Estado no válido para el mecánico."}, status_code=400)
-
-    try:
-        with engine.connect() as conn:
-            if not usuario_puede_gestionar_orden(conn, usuario, orden_id):
-                return JSONResponse(
-                    {"error": "Esta orden no está asignada a tu cuenta."},
-                    status_code=403,
-                )
-
-            orden = conn.execute(
-                text("SELECT cita_id FROM dmi.orden_trabajo WHERE idorden = :id"),
-                {"id": orden_id},
-            ).mappings().fetchone()
-            if not orden:
-                return JSONResponse({"error": "La orden no existe."}, status_code=404)
-
-            cambios = {"estado": estado}
-            if estado == "finalizada":
-                cambios["fecha_finalizacion"] = datetime.now()
-            update_dynamic(conn, "orden_trabajo", "idorden", orden_id, cambios)
-
-            # Al finalizar el trabajo, la cita deja de figurar como pendiente.
-            if estado == "finalizada" and orden.get("cita_id"):
-                update_dynamic(
-                    conn,
-                    "citas",
-                    "idcita",
-                    orden["cita_id"],
-                    {"estado": "completada"},
-                )
-
-            conn.commit()
-
-        return JSONResponse(
-            {
-                "success": True,
-                "message": "Orden marcada como terminada." if estado == "finalizada" else "Estado de la orden actualizado.",
-                "data": {"idorden": orden_id, "estado": estado},
-            }
-        )
-    except Exception as e:
-        print("ERROR POST /api/mecanico/ordenes/{orden_id}/estado:", e)
-        return JSONResponse({"error": "No fue posible actualizar la orden."}, status_code=500)
 
 
 @app.get("/mecanico/ordenes/{orden_id}", response_class=HTMLResponse)
@@ -3268,54 +2887,7 @@ async def validar_sesion_react(request: Request, access_token: str = Cookie(None
             status_code=401,
         )
 
-    return JSONResponse({
-        "success": True,
-        "email": usuario["email"],
-        "role": usuario["rol"],
-        "rol": usuario["rol"],
-        "nombre": usuario["nombre"],
-    })
-
-    # ==================== CONSULTAR Y ACTUALIZAR MI PERFIL ====================
-@app.get("/api/mi-perfil")
-async def obtener_mi_perfil(
-    request: Request,
-    access_token: str = Cookie(None),
-):
-    usuario = obtener_usuario(access_token, request)
-    if not usuario or not usuario.get("idusuarios"):
-        return JSONResponse(
-            {"success": False, "error": "Tu sesión no es válida o tu perfil no existe."},
-            status_code=401,
-        )
-
-    try:
-        with engine.begin() as conn:
-            # Campos separados para avatar y foto. La foto se guarda en la
-            # base de datos como data URI para que cada usuario solo pueda ver
-            # y modificar la suya mediante este endpoint autenticado.
-            conn.execute(text("ALTER TABLE dmi.usuarios ADD COLUMN IF NOT EXISTS avatar_perfil VARCHAR(30)"))
-            conn.execute(text("ALTER TABLE dmi.usuarios ADD COLUMN IF NOT EXISTS foto_perfil TEXT"))
-            perfil = conn.execute(
-                text("""
-                    SELECT idusuarios, nombre, apellidos, documento, email,
-                           telefono, rol, avatar_perfil, foto_perfil
-                    FROM dmi.usuarios
-                    WHERE idusuarios = :idusuarios
-                    LIMIT 1
-                """),
-                {"idusuarios": usuario["idusuarios"]},
-            ).mappings().fetchone()
-
-        if not perfil:
-            return JSONResponse({"success": False, "error": "No encontramos tu perfil de usuario."}, status_code=404)
-
-        return JSONResponse({"success": True, "usuario": json_row(perfil)})
-    except Exception as e:
-        print("ERROR obtener_mi_perfil:", e)
-        return JSONResponse({"success": False, "error": "No fue posible cargar tu perfil."}, status_code=500)
-
-
+    # ==================== ACTUALIZAR MI PERFIL ====================
 @app.put("/api/mi-perfil")
 async def actualizar_mi_perfil(
     request: Request,
@@ -3349,26 +2921,6 @@ async def actualizar_mi_perfil(
         nombre = str(data.get("nombre", "") or "").strip()
         apellidos = str(data.get("apellidos", "") or "").strip()
         telefono = str(data.get("telefono", "") or "").strip()
-        avatar_perfil = str(data.get("avatar_perfil", "dmi_1") or "dmi_1").strip().lower()
-        foto_perfil_raw = data.get("foto_perfil")
-        foto_perfil = str(foto_perfil_raw).strip() if foto_perfil_raw else None
-
-        if avatar_perfil not in {"dmi_1", "dmi_2", "dmi_3", "dmi_4"}:
-            return JSONResponse(
-                {"success": False, "error": "El avatar seleccionado no es válido."},
-                status_code=400,
-            )
-
-        if foto_perfil:
-            patron_foto = r"^data:image/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\r\n]+$"
-            if len(foto_perfil) > 1_250_000 or not re.match(patron_foto, foto_perfil):
-                return JSONResponse(
-                    {
-                        "success": False,
-                        "error": "La foto debe ser una imagen JPG, PNG o WEBP de máximo 900 KB.",
-                    },
-                    status_code=400,
-                )
 
         if not nombre:
             return JSONResponse(
@@ -3407,8 +2959,6 @@ async def actualizar_mi_perfil(
             )
 
         with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE dmi.usuarios ADD COLUMN IF NOT EXISTS avatar_perfil VARCHAR(30)"))
-            conn.execute(text("ALTER TABLE dmi.usuarios ADD COLUMN IF NOT EXISTS foto_perfil TEXT"))
             columnas = table_columns(
                 conn,
                 "dmi",
@@ -3421,8 +2971,6 @@ async def actualizar_mi_perfil(
                 "nombre": nombre,
                 "apellidos": apellidos,
                 "telefono": telefono,
-                "avatar_perfil": avatar_perfil,
-                "foto_perfil": foto_perfil,
             }
 
             if "nombre" in columnas:
@@ -3433,12 +2981,6 @@ async def actualizar_mi_perfil(
 
             if "telefono" in columnas:
                 campos.append("telefono = :telefono")
-
-            if "avatar_perfil" in columnas:
-                campos.append("avatar_perfil = :avatar_perfil")
-
-            if "foto_perfil" in columnas:
-                campos.append("foto_perfil = :foto_perfil")
 
             if not campos:
                 return JSONResponse(
@@ -3462,7 +3004,7 @@ async def actualizar_mi_perfil(
                 text(
                     "SELECT "
                     "idusuarios, nombre, apellidos, documento, "
-                    "email, telefono, rol, avatar_perfil, foto_perfil "
+                    "email, telefono, rol "
                     "FROM dmi.usuarios "
                     "WHERE idusuarios = :idusuarios "
                     "LIMIT 1"
@@ -3505,6 +3047,14 @@ async def actualizar_mi_perfil(
             },
             status_code=500,
         )
+
+    return JSONResponse({
+        "email": usuario["email"],
+        "role": usuario["rol"],
+        "rol": usuario["rol"],
+        "nombre": usuario["nombre"],
+    })
+
 
 @app.post("/logout")
 async def logout():
@@ -3911,6 +3461,12 @@ async def crear_cita(
     request: Request,
     access_token: str = Cookie(None),
     authorization: Optional[str] = Header(None),
+    vehiculos_idvehiculo: Optional[str] = Form(None),
+    fecha_cita: str = Form(...),
+    hora_cita: str = Form(...),
+    motivo: str = Form(...),
+    observaciones: Optional[str] = Form(None),
+    descripcion_vehiculo: Optional[str] = Form(None),
 ):
     if not access_token and authorization and authorization.startswith("Bearer "):
         access_token = authorization.split(" ", 1)[1]
@@ -3918,46 +3474,6 @@ async def crear_cita(
     usuario = obtener_usuario(access_token, request) if access_token else None
 
     try:
-        # La web histórica envía un formulario; Flutter envía JSON.
-        # Aceptamos ambos formatos para que las dos interfaces funcionen.
-        content_type = request.headers.get("content-type", "").lower()
-        if "application/json" in content_type:
-            payload = await request.json()
-            if not isinstance(payload, dict):
-                return JSONResponse(
-                    {"error": "Los datos de la cita deben enviarse como un objeto JSON."},
-                    status_code=400,
-                )
-        else:
-            form = await request.form()
-            payload = dict(form)
-
-        vehiculos_idvehiculo = str(
-            payload.get("vehiculos_idvehiculo") or ""
-        ).strip() or None
-        fecha_cita = str(payload.get("fecha_cita") or "").strip()
-        hora_cita = str(payload.get("hora_cita") or "").strip()
-        motivo = str(payload.get("motivo") or "").strip()
-        observaciones = str(payload.get("observaciones") or "").strip()
-        descripcion_vehiculo = str(
-            payload.get("descripcion_vehiculo") or ""
-        ).strip()
-
-        faltantes = [
-            campo
-            for campo, valor in {
-                "fecha_cita": fecha_cita,
-                "hora_cita": hora_cita,
-                "motivo": motivo,
-            }.items()
-            if not valor
-        ]
-        if faltantes:
-            return JSONResponse(
-                {"error": "Faltan campos obligatorios: " + ", ".join(faltantes) + "."},
-                status_code=400,
-            )
-
         # Validamos la fecha en el backend para que la regla de los dos meses
         # no pueda saltarse manipulando el calendario del navegador.
         fecha_cita_validada, hora_cita_validada = validar_fecha_hora_cita(fecha_cita, hora_cita)
@@ -3965,6 +3481,8 @@ async def crear_cita(
         hora_cita = hora_cita_validada.strftime("%H:%M")
 
         notas = observaciones or ""
+
+        descripcion_vehiculo = (descripcion_vehiculo or "").strip()
 
         if descripcion_vehiculo:
             notas = (
@@ -4118,38 +3636,6 @@ async def crear_cita(
                         },
                     )
 
-            # Capacidad operativa: máximo 12 citas activas por día (3 mecánicos
-            # x 4 citas). Para cada hora hay tres cupos, uno por mecánico.
-            citas_del_dia = conn.execute(
-                text("""
-                    SELECT COUNT(*) FROM dmi.citas
-                    WHERE fecha = CAST(:fecha AS date)
-                      AND lower(COALESCE(estado, 'pendiente')) NOT IN
-                          ('cancelada', 'cancelado', 'completada', 'finalizada')
-                """),
-                {"fecha": fecha_cita},
-            ).scalar() or 0
-            if citas_del_dia >= 12:
-                return JSONResponse(
-                    {"error": "No hay cupos disponibles para esta fecha. El taller ya alcanzó las 12 citas permitidas del día."},
-                    status_code=409,
-                )
-
-            citas_en_hora = conn.execute(
-                text("""
-                    SELECT COUNT(*) FROM dmi.citas
-                    WHERE fecha = CAST(:fecha AS date) AND hora = :hora
-                      AND lower(COALESCE(estado, 'pendiente')) NOT IN
-                          ('cancelada', 'cancelado', 'completada', 'finalizada')
-                """),
-                {"fecha": fecha_cita, "hora": hora_cita},
-            ).scalar() or 0
-            if citas_en_hora >= 3:
-                return JSONResponse(
-                    {"error": "No hay mecánicos disponibles a esa hora. Selecciona otro horario."},
-                    status_code=409,
-                )
-
             cita_creada = conn.execute(
                 text("""
                     INSERT INTO dmi.citas
@@ -4279,98 +3765,17 @@ def registrar_historial_cita(conn, cita_id: int, evento: str, usuario: Optional[
     )
 
 
-def obtener_cliente_firebase():
-    """Inicializa Firebase Admin una sola vez usando el secreto de Render."""
-    if not firebase_admin or not firebase_messaging or not FIREBASE_SERVICE_ACCOUNT_JSON:
-        return None
-    try:
-        if not firebase_admin._apps:
-            firebase_admin.initialize_app(
-                firebase_credentials.Certificate(json.loads(FIREBASE_SERVICE_ACCOUNT_JSON))
-            )
-        return firebase_messaging
-    except Exception as error:
-        print("AVISO: Firebase push no está disponible:", error)
-        return None
-
-
-def enviar_notificacion_push(conn, titulo: str, mensaje: str, tipo: str,
-                             referencia_tipo: str = None, referencia_id: int = None,
-                             usuario_id: int = None, empleado_id: int = None):
-    """Envía una alerta de sistema sin interrumpir la operación principal."""
-    resultado_push = {"ok": False, "dispositivos": 0, "enviadas": 0, "motivo": None}
-    if not table_exists(conn, "dmi", "dispositivos_push"):
-        resultado_push["motivo"] = "Este celular todavía no está registrado para recibir alertas."
-        return resultado_push
-    cliente = obtener_cliente_firebase()
-    if not cliente:
-        resultado_push["motivo"] = "Firebase no está listo en Render. Revisa FIREBASE_SERVICE_ACCOUNT_JSON y firebase-admin."
-        return resultado_push
-    filtros, params = ["activo = TRUE"], {}
-    destinatarios = []
-    if usuario_id:
-        destinatarios.append("usuario_id = :usuario_id")
-        params["usuario_id"] = usuario_id
-    if empleado_id:
-        destinatarios.append("empleado_id = :empleado_id")
-        params["empleado_id"] = empleado_id
-    if not destinatarios:
-        resultado_push["motivo"] = "No se encontró un destinatario para esta alerta."
-        return resultado_push
-    try:
-        filas = conn.execute(text(f"""
-            SELECT iddispositivo_push, token FROM dmi.dispositivos_push
-            WHERE {' AND '.join(filtros)} AND ({' OR '.join(destinatarios)})
-        """), params).mappings().fetchall()
-        tokens = [(row["iddispositivo_push"], row["token"]) for row in filas if row.get("token")]
-        resultado_push["dispositivos"] = len(tokens)
-        if not tokens:
-            resultado_push["motivo"] = "No hay un celular registrado para esta cuenta. Cierra sesión, abre el APK nuevo e inicia sesión otra vez."
-            return resultado_push
-        for inicio in range(0, len(tokens), 500):
-            lote = tokens[inicio:inicio + 500]
-            respuesta = cliente.send_each_for_multicast(cliente.MulticastMessage(
-                tokens=[token for _, token in lote],
-                notification=cliente.Notification(title=titulo, body=mensaje),
-                data={
-                    "tipo": str(tipo or "notificacion"),
-                    "referencia_tipo": str(referencia_tipo or ""),
-                    "referencia_id": str(referencia_id or ""),
-                },
-                android=cliente.AndroidConfig(priority="high"),
-            ))
-            for indice, resultado in enumerate(respuesta.responses):
-                if resultado.success:
-                    resultado_push["enviadas"] += 1
-                    continue
-                codigo = getattr(getattr(resultado, "exception", None), "code", "")
-                if codigo in {"registration-token-not-registered", "invalid-registration-token"}:
-                    conn.execute(text("UPDATE dmi.dispositivos_push SET activo = FALSE, actualizado_en = now() WHERE iddispositivo_push = :id"), {"id": lote[indice][0]})
-                if not resultado_push["motivo"]:
-                    resultado_push["motivo"] = f"Firebase rechazó la alerta: {codigo or 'error de envío'}"
-        resultado_push["ok"] = resultado_push["enviadas"] > 0
-        if not resultado_push["ok"] and not resultado_push["motivo"]:
-            resultado_push["motivo"] = "Firebase no confirmó la entrega de la alerta."
-        return resultado_push
-    except Exception as error:
-        print("AVISO: no fue posible enviar push:", error)
-        resultado_push["motivo"] = f"Error de Firebase: {error}"
-        return resultado_push
-
-
 def crear_notificacion(conn, titulo: str, mensaje: str, tipo: str, referencia_tipo: str = None,
                        referencia_id: int = None, usuario_id: int = None, empleado_id: int = None,
                        accion_url: str = None):
     """Registra una notificacion persistente para una cuenta o empleado."""
     if not table_exists(conn, "dmi", "notificaciones") or (not usuario_id and not empleado_id):
         return
-    notificacion_id = insert_dynamic_returning(conn, "notificaciones", {
+    insert_dynamic_returning(conn, "notificaciones", {
         "usuario_id": usuario_id, "empleado_id": empleado_id, "tipo": tipo,
         "titulo": titulo[:180], "mensaje": mensaje, "referencia_tipo": referencia_tipo,
         "referencia_id": referencia_id, "accion_url": accion_url,
-    }, "idnotificacion")
-    enviar_notificacion_push(conn, titulo, mensaje, tipo, referencia_tipo, referencia_id, usuario_id, empleado_id)
-    return notificacion_id
+    })
 
 
 def notificar_administradores(conn, titulo: str, mensaje: str, tipo: str,
@@ -4555,7 +3960,6 @@ def validar_fecha_hora_cita(fecha_cita: str, hora_cita: str) -> tuple[date, time
         raise HTTPException(status_code=400, detail="Selecciona una fecha y una hora validas.")
 
     hoy = datetime.now(ZoneInfo("America/Bogota")).date()
-    # Política de citas DMI: máximo dos meses, lunes a sábado, 9 AM a 6 PM.
     limite = fecha_maxima_cita(hoy, 2)
 
     if fecha < hoy:
@@ -4563,14 +3967,8 @@ def validar_fecha_hora_cita(fecha_cita: str, hora_cita: str) -> tuple[date, time
     if fecha > limite:
         raise HTTPException(
             status_code=400,
-            detail=f"Solo puedes agendar una cita hasta dos meses hacia adelante. La fecha máxima permitida es {limite.strftime('%d/%m/%Y')}."
+            detail=f"Solo puedes agendar una cita hasta dos meses hacia adelante. La fecha maxima permitida es {limite.strftime('%d/%m/%Y')}."
         )
-
-    if fecha.weekday() == 6:
-        raise HTTPException(status_code=400, detail="No atendemos citas los domingos. Selecciona una fecha de lunes a sábado.")
-
-    if hora < time(9, 0) or hora > time(18, 0):
-        raise HTTPException(status_code=400, detail="El horario de atención es de lunes a sábado, entre 9:00 AM y 6:00 PM.")
 
     return fecha, hora
 
@@ -4819,53 +4217,6 @@ async def aprobar_solicitud_reprogramacion(solicitud_id: int, request: Request, 
         return JSONResponse({"error": "No fue posible aprobar la solicitud."}, status_code=500)
 
 
-@app.post("/api/solicitudes-reprogramacion/{solicitud_id}/rechazar")
-async def rechazar_solicitud_reprogramacion(solicitud_id: int, request: Request, access_token: str = Cookie(None), authorization: Optional[str] = Header(None)):
-    """El administrador rechaza la propuesta sin alterar la cita original."""
-    if not access_token and authorization and authorization.startswith("Bearer "):
-        access_token = authorization.split(" ", 1)[1]
-    usuario = obtener_usuario(access_token, request)
-    if not usuario or not es_admin(usuario):
-        return JSONResponse({"error": "Solo un administrador puede rechazar esta solicitud."}, status_code=403)
-    try:
-        body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else dict(await request.form())
-        comentario = str(body.get("comentario") or body.get("motivo") or "").strip()[:1000]
-        with engine.connect() as conn:
-            solicitud = conn.execute(text("""
-                SELECT * FROM dmi.solicitudes_reprogramacion
-                WHERE idsolicitud_reprogramacion = :solicitud_id
-            """), {"solicitud_id": solicitud_id}).mappings().fetchone()
-            if not solicitud:
-                return JSONResponse({"error": "La solicitud no existe."}, status_code=404)
-            if solicitud.get("estado") != "pendiente":
-                return JSONResponse({"error": "Esta solicitud ya fue resuelta."}, status_code=400)
-
-            conn.execute(text("""
-                UPDATE dmi.solicitudes_reprogramacion
-                SET estado = 'rechazada', administrador_usuario_id = :administrador_id,
-                    resuelta_en = now()
-                WHERE idsolicitud_reprogramacion = :solicitud_id
-            """), {"administrador_id": usuario.get("idusuarios"), "solicitud_id": solicitud_id})
-            registrar_historial_cita(
-                conn, solicitud["cita_id"], "reprogramacion_rechazada", usuario,
-                comentario or "Solicitud rechazada por el administrador.", {},
-                {"estado_solicitud": "rechazada"},
-            )
-            mensaje = "Tu solicitud de reprogramación fue rechazada. La fecha original de tu cita se mantiene."
-            if comentario:
-                mensaje += " Motivo: " + comentario
-            crear_notificacion(
-                conn, "Solicitud de reprogramación rechazada", mensaje,
-                "reprogramacion_rechazada", "solicitud_reprogramacion", solicitud_id,
-                usuario_id=solicitud.get("solicitante_usuario_id"), accion_url="/citas",
-            )
-            conn.commit()
-        return JSONResponse({"success": True, "message": "Solicitud rechazada. El cliente fue notificado."})
-    except Exception as e:
-        print("ERROR rechazar_solicitud_reprogramacion:", e)
-        return JSONResponse({"error": "No fue posible rechazar la solicitud."}, status_code=500)
-
-
 @app.post("/api/citas/{cita_id}/cancelar")
 async def cancelar_cita(cita_id: int, request: Request, access_token: str = Cookie(None), authorization: Optional[str] = Header(None)):
     if not access_token and authorization and authorization.startswith("Bearer "):
@@ -4947,107 +4298,6 @@ async def listar_notificaciones(request: Request, access_token: str = Cookie(Non
     except Exception as e:
         print("ERROR listar_notificaciones:", e)
         return JSONResponse({"error": "No fue posible cargar las notificaciones."}, status_code=500)
-
-
-@app.post("/api/dispositivos-push/registrar")
-async def registrar_dispositivo_push(
-    request: Request,
-    access_token: str = Cookie(None),
-    authorization: Optional[str] = Header(None),
-):
-    """Vincula el token FCM del APK al cliente o mecánico autenticado."""
-    if not access_token and authorization and authorization.startswith("Bearer "):
-        access_token = authorization.split(" ", 1)[1]
-    usuario = obtener_usuario(access_token, request) if access_token else None
-    if not usuario:
-        return JSONResponse({"error": "Debes iniciar sesión."}, status_code=401)
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    token = str(body.get("token") or "").strip()
-    plataforma = str(body.get("platform") or "android").strip().lower()[:30]
-    if len(token) < 20:
-        return JSONResponse({"error": "Token de notificaciones no válido."}, status_code=400)
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS dmi.dispositivos_push (
-                    iddispositivo_push BIGSERIAL PRIMARY KEY,
-                    token TEXT UNIQUE NOT NULL,
-                    usuario_id BIGINT NULL,
-                    empleado_id BIGINT NULL,
-                    plataforma VARCHAR(30) NOT NULL DEFAULT 'android',
-                    activo BOOLEAN NOT NULL DEFAULT TRUE,
-                    creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
-                    actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-                )
-            """))
-            empleado = obtener_empleado_actual(conn, usuario) if es_mecanico(usuario) else None
-            conn.execute(text("""
-                INSERT INTO dmi.dispositivos_push
-                    (token, usuario_id, empleado_id, plataforma, activo, actualizado_en)
-                VALUES (:token, :usuario_id, :empleado_id, :plataforma, TRUE, now())
-                ON CONFLICT (token) DO UPDATE SET
-                    usuario_id = EXCLUDED.usuario_id,
-                    empleado_id = EXCLUDED.empleado_id,
-                    plataforma = EXCLUDED.plataforma,
-                    activo = TRUE,
-                    actualizado_en = now()
-            """), {
-                "token": token,
-                "usuario_id": usuario.get("idusuarios"),
-                "empleado_id": empleado.get("idempleado") if empleado else None,
-                "plataforma": plataforma,
-            })
-            conn.commit()
-        return JSONResponse({"success": True})
-    except Exception as error:
-        print("ERROR registrar dispositivo push:", error)
-        return JSONResponse({"error": "No fue posible registrar este celular."}, status_code=500)
-
-
-@app.post("/api/notificaciones/prueba-push")
-async def probar_notificacion_push(
-    request: Request,
-    access_token: str = Cookie(None),
-    authorization: Optional[str] = Header(None),
-):
-    """Prueba segura: envía una alerta únicamente al celular de esta sesión."""
-    if not access_token and authorization and authorization.startswith("Bearer "):
-        access_token = authorization.split(" ", 1)[1]
-    usuario = obtener_usuario(access_token, request) if access_token else None
-    if not usuario:
-        return JSONResponse({"error": "Debes iniciar sesión."}, status_code=401)
-    try:
-        with engine.connect() as conn:
-            empleado = obtener_empleado_actual(conn, usuario) if es_mecanico(usuario) else None
-            usuario_id = None if empleado else usuario.get("idusuarios")
-            empleado_id = empleado.get("idempleado") if empleado else None
-            insert_dynamic_returning(conn, "notificaciones", {
-                "usuario_id": usuario_id,
-                "empleado_id": empleado_id,
-                "tipo": "prueba_push",
-                "titulo": "Notificaciones activas",
-                "mensaje": "Esta es una prueba de alerta para DMI Motors.",
-                "referencia_tipo": "prueba_push",
-                "accion_url": "/mi-cuenta",
-            }, "idnotificacion")
-            estado_push = enviar_notificacion_push(
-                conn,
-                "Notificaciones activas",
-                "Esta es una prueba de alerta para DMI Motors.",
-                "prueba_push",
-                usuario_id=usuario_id,
-                empleado_id=empleado_id,
-            )
-            conn.commit()
-        if not estado_push["ok"]:
-            return JSONResponse({"error": estado_push["motivo"]}, status_code=409)
-        return JSONResponse({"success": True, "message": "Alerta enviada a " + str(estado_push["enviadas"]) + " celular(es)."})
-    except Exception as error:
-        print("ERROR prueba push:", error)
-        return JSONResponse({"error": "No fue posible enviar la prueba."}, status_code=500)
 
 
 @app.post("/api/notificaciones/{notificacion_id}/leer")
@@ -5557,12 +4807,6 @@ async def crear_mi_vehiculo(
     try:
         body = await request.json()
 
-        if not isinstance(body, dict):
-            return JSONResponse(
-                {"error": "El cuerpo de la solicitud debe ser un objeto JSON."},
-                status_code=400,
-            )
-
         marca = str(body.get("marca", "")).strip()
         modelo = str(body.get("modelo", "")).strip()
         placa = str(body.get("placa", "")).strip().upper()
@@ -5573,34 +4817,20 @@ async def crear_mi_vehiculo(
         capacidad = str(
             body.get("capacidad", "")
         ).strip()
-        # Se aceptan los nombres históricos de la web y los usados por Flutter.
         descripcion = str(
-            body.get("descripcionvehiculo")
-            or body.get("descripcion")
-            or ""
+            body.get("descripcionvehiculo", "")
         ).strip()
-        tipo_id = (
-            body.get("tipovehiculos_idtipovehiculos")
-            or body.get("tipo_vehiculo_id")
+
+        tipo_id = body.get(
+            "tipovehiculos_idtipovehiculos"
         )
 
-        try:
-            tipo_id = int(tipo_id) if tipo_id is not None else None
-        except (TypeError, ValueError):
-            tipo_id = None
-
-        vin = str(body.get("vin") or "").strip() or None
-        combustible = str(body.get("combustible") or "").strip() or None
-
-        try:
-            kilometraje = int(body.get("kilometraje_actual") or 0)
-            if kilometraje < 0:
-                raise ValueError
-        except (TypeError, ValueError):
-            return JSONResponse(
-                {"error": "El kilometraje debe ser un número positivo."},
-                status_code=400,
-            )
+        vin = body.get("vin")
+        kilometraje = body.get(
+            "kilometraje_actual",
+            0,
+        )
+        combustible = body.get("combustible")
 
         # --------------------------------------------------------
         # VALIDACIONES
@@ -5613,6 +4843,7 @@ async def crear_mi_vehiculo(
             "motor": motor,
             "cantidad_asientos": cantidad_asientos,
             "capacidad": capacidad,
+            "descripcionvehiculo": descripcion,
         }
 
         faltantes = [
@@ -5629,7 +4860,7 @@ async def crear_mi_vehiculo(
         if faltantes:
             return JSONResponse(
                 {
-                    "error": "Faltan campos obligatorios: " + ", ".join(faltantes) + ".",
+                    "error": "Faltan campos obligatorios.",
                     "campos": faltantes,
                 },
                 status_code=400,
@@ -5753,7 +4984,7 @@ async def crear_mi_vehiculo(
                 """),
                 {
                     "codigo": codigo,
-                    "descripcion": (descripcion or "Sin descripción")[:45],
+                    "descripcion": descripcion[:45],
                     "motor": motor[:45],
                     "cantidad_asientos":
                         cantidad_asientos[:45],
@@ -5763,9 +4994,17 @@ async def crear_mi_vehiculo(
                     "tipo_id": tipo_id,
                     "modelo": modelo,
                     "cliente_id": cliente_id,
-                    "vin": vin[:80] if vin else None,
+                    "vin": (
+                        str(vin).strip()[:80]
+                        if vin
+                        else None
+                    ),
                     "kilometraje": kilometraje,
-                    "combustible": combustible[:50] if combustible else None,
+                    "combustible": (
+                        str(combustible).strip()[:50]
+                        if combustible
+                        else None
+                    ),
                 },
             ).scalar()
 
@@ -5826,6 +5065,7 @@ async def crear_mi_vehiculo(
             {
                 "error":
                     "No fue posible registrar el vehículo.",
+                "detail": str(e),
             },
             status_code=500,
         )
@@ -5956,9 +5196,8 @@ async def api_usuarios(request: Request, access_token: str = Cookie(None)):
 
 @app.get("/api/citas")
 async def api_citas(request: Request, access_token: str = Cookie(None)):
-    """Entrega exclusivamente las citas del cliente autenticado."""
-    usuario = obtener_usuario(access_token, request)
-    if not usuario or not usuario.get("idusuarios"):
+    """Entrega citas con tipos compatibles con JSON para el calendario React."""
+    if not obtener_usuario(access_token, request):
         return JSONResponse({"error": "Debes iniciar sesion"}, status_code=401)
     try:
         with engine.connect() as conn:
@@ -5975,10 +5214,9 @@ async def api_citas(request: Request, access_token: str = Cookie(None)):
                     COALESCE(v.marca, '') AS marca,
                     COALESCE(v.codigovehiculo, '') AS codigovehiculo
                 FROM dmi.citas c
-                JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
-                WHERE v.cliente_id = :usuario_id
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
                 ORDER BY c.fecha DESC, c.hora DESC, c.idcita DESC
-            """), {"usuario_id": usuario["idusuarios"]}).mappings().fetchall()
+            """)).mappings().fetchall()
             result = [
                 {
                     **dict(r),
@@ -6164,6 +5402,11 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
                         pass
                     return []
 
+            try:
+                asegurar_servicios_base(conn)
+            except Exception as e:
+                load_errors.append("servicios base: " + str(e))
+                conn.rollback()
             ctx["ciudades"]         = fetch("SELECT * FROM dmi.ciudades ORDER BY idciudades", "ciudades")
             ctx["tipovehiculos"]    = fetch("SELECT * FROM dmi.tipovehiculos ORDER BY idtipovehiculos", "tipos de vehiculo")
             ctx["metodospago"]      = fetch("SELECT * FROM dmi.metodopago ORDER BY idmetodopago", "metodos de pago")
@@ -6206,12 +5449,12 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
             """, "oficinas")
             ctx["servicios"] = fetch("""
                 SELECT
-                    s.idservicios,
-                    s.codigoservicio,
-                    s.descripcionservicio,
+                    s.*,
                     NULL::varchar AS descripcionserviciosprecio,
-                    NULL::varchar AS precioserviciosprecio
+                    NULL::varchar AS precioserviciosprecio,
+                    pe.codigopedido
                 FROM dmi.servicios s
+                LEFT JOIN dmi.pedido pe ON pe.idpedido = s.pedido_idpedido
                 ORDER BY s.idservicios
             """, "servicios")
             ctx["tiporeparacion"] = fetch("""
@@ -6334,11 +5577,6 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
         context=ctx,
     )
 
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
 #========================= INVENTARIO ======================================
 @app.get("/api/inventario")
 async def api_inventario():
@@ -6959,7 +6197,7 @@ CONFIG_TABLES = {
     "servicios": {
         "table": "servicios",
         "pk": "idservicios",
-        "fields": ["codigoservicio", "descripcionservicio", "serviciosprecio_idserviciosprecio"],
+        "fields": ["codigoservicio", "descripcionservicio", "pedido_idpedido", "serviciosprecio_idserviciosprecio"],
     },
     "tiporeparacion": {
         "table": "tiporeparacion",
@@ -7462,9 +6700,6 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS barrio text"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS codigo_postal text"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS referencia_envio text"))
-            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS referencia_wompi varchar(120)"))
-            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS wompi_transaction_id varchar(120)"))
-            conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS wompi_estado varchar(40)"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS repartidor_nombre text"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS repartidor_telefono text"))
             conn.execute(text("ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS orden_envio varchar(60)"))
@@ -7483,10 +6718,6 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
                 "wompi": "pendiente_pago_wompi",
             }[tipo_pago]
             codigo_pedido = f"PED-{datetime.now().strftime('%Y%m%d')}-{int(datetime.now().timestamp() * 1000) % 1000000:06d}"
-            referencia_wompi = (
-               f"DMI-PEDIDO-{codigo_pedido}-"
-               f"{int(datetime.now().timestamp() * 1000)}"
-              ) if tipo_pago == "wompi" else None
             valores = {
                 "nombre": datos.get("nombre"), "telefono": datos.get("telefono"),
                 "email": usuario.get("email") or datos.get("email"), "direccion": datos.get("direccion"),
@@ -7495,11 +6726,7 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
                 "metodo_pago": datos.get("metodoPago") or datos.get("metodo_pago"),
                 "total": total_calculado, "productos": json.dumps(productos),
                 "usuarios_idusuarios": usuario.get("idusuarios"), "activo": True, "estado": estado_pedido,
-                "codigo_pedido": codigo_pedido,
-                "tipo_pago": tipo_pago,
-                "referencia_wompi": referencia_wompi,
-                "wompi_transaction_id": None,
-                "wompi_estado": None,
+                "codigo_pedido": codigo_pedido, "tipo_pago": tipo_pago,
                 "novedad": "Pedido recibido. Estamos validando la disponibilidad de los productos.",
             }
             campos = [campo for campo in valores if campo in columnas]
@@ -7513,28 +6740,14 @@ async def registrar_pedido_checkout(request: Request, access_token: str = Cookie
             )
             pedido_id = resultado.scalar() if id_column else None
             conn.commit()
-
-        checkout_url = None
-        if tipo_pago == "wompi":
-            monto_en_centavos = int(round(total_calculado * 100))
-            checkout_url = generar_checkout_wompi_pedido(
-                referencia=referencia_wompi,
-                amount_in_cents=monto_en_centavos,
-                email=str(
-                    usuario.get("email")
-                    or datos.get("email")
-                    or ""
-                ).strip(),
-            )
-
         return JSONResponse({
             "ok": True,
             "pedido_id": pedido_id,
             "codigo_pedido": codigo_pedido,
             "total": total_calculado,
             "estado": estado_pedido,
-            "referencia_wompi": referencia_wompi,
-            "checkout_url": checkout_url,
+            # Enlace temporal hasta terminar el Checkout dinamico por pedido.
+            "checkout_url": WOMPI_PAYMENT_LINK if tipo_pago == "wompi" else None,
         })
     except (TypeError, ValueError):
         return JSONResponse({"error": "Revisa las cantidades y precios del carrito"}, status_code=400)
@@ -7622,18 +6835,13 @@ async def preparar_pago_factura_cliente(factura_id: int, request: Request, acces
             if estado in {"pagada", "cancelada"} or saldo <= 0:
                 return JSONResponse({"error": "Esta factura no tiene un saldo pendiente"}, status_code=409)
 
-        # La referencia enlaza el pago con la factura y el webhook la valida
-        # antes de modificar el saldo. Se usa el mismo Checkout Web dinámico
-        # que ya utiliza el catálogo, no un enlace fijo sin referencia.
+        # Esta referencia se utilizara en el Checkout Web dinamico de Wompi.
+        # Un link fijo de Wompi genera su propia referencia y no puede asociarse
+        # de forma segura a una factura concreta.
         referencia = f"DMI-FACTURA-{factura_id}-{int(datetime.now().timestamp())}"
-        checkout_url = generar_checkout_wompi_pedido(
-            referencia=referencia,
-            amount_in_cents=int(round(saldo * 100)),
-            email=str(usuario_actual.get("email") or "").strip(),
-        )
         return JSONResponse({
             "ok": True,
-            "checkout_url": checkout_url,
+            "checkout_url": WOMPI_PAYMENT_LINK,
             "payment_intent": {
                 "referencia": referencia,
                 "monto_en_centavos": int(round(saldo * 100)),
@@ -7658,32 +6866,6 @@ def wompi_propiedad(data: dict, ruta: str):
             return ""
         valor = valor.get(parte)
     return "" if valor is None else str(valor)
-
-
-def detalle_factura_pedido(productos, total: float) -> str:
-    """Construye el detalle HTML de una factura de compra del catálogo."""
-    if isinstance(productos, str):
-        try:
-            productos = json.loads(productos)
-        except (TypeError, ValueError, json.JSONDecodeError):
-            productos = []
-    if not isinstance(productos, list):
-        productos = []
-    filas = []
-    for producto in productos:
-        if not isinstance(producto, dict):
-            continue
-        nombre = html.escape(str(producto.get("nombre") or producto.get("name") or "Producto"))
-        try:
-            cantidad = int(producto.get("cantidad") or producto.get("quantity") or 1)
-        except (TypeError, ValueError):
-            cantidad = 1
-        try:
-            precio = float(producto.get("precio") or producto.get("price") or 0)
-        except (TypeError, ValueError):
-            precio = 0
-        filas.append(f"<tr><td style='padding:8px;border-bottom:1px solid #ddd'>{nombre}</td><td style='padding:8px;border-bottom:1px solid #ddd;text-align:center'>{cantidad}</td><td style='padding:8px;border-bottom:1px solid #ddd;text-align:right'>${precio * cantidad:,.0f} COP</td></tr>")
-    return "<table style='width:100%;border-collapse:collapse'>" + ("".join(filas) or "<tr><td style='padding:8px'>Detalle no disponible.</td></tr>") + "</table>"
 
 
 @app.post("/api/wompi/webhook")
@@ -7713,176 +6895,15 @@ async def recibir_evento_wompi(request: Request):
 
         referencia = str(transaccion.get("reference") or "")
         partes = referencia.split("-")
-
-        # ============================================================
-        # PEDIDO DE REPUESTOS DEL CATALOGO
-        # ============================================================
-        if len(partes) >= 4 and partes[0] == "DMI" and partes[1] == "PEDIDO":
-            monto_recibido = int(transaccion.get("amount_in_cents") or 0)
-
-            if monto_recibido <= 0:
-                return JSONResponse(
-                    {"error": "Monto de transaccion invalido"},
-                    status_code=400,
-                )
-
-            with engine.connect() as conn:
-                pedido = conn.execute(
-                    text("""
-                        SELECT *
-                        FROM public.pedidos
-                        WHERE referencia_wompi = :referencia
-                        LIMIT 1
-                    """),
-                    {"referencia": referencia},
-                ).mappings().fetchone()
-
-                if not pedido:
-                    return JSONResponse({
-                        "ok": True,
-                        "ignored": True,
-                        "reason": "Pedido DMI no encontrado",
-                    })
-
-                monto_esperado = int(
-                    round(float(pedido.get("total") or 0) * 100)
-                )
-
-                if monto_recibido != monto_esperado:
-                    return JSONResponse(
-                        {
-                            "error": "El monto de Wompi no coincide con el pedido",
-                        },
-                        status_code=400,
-                    )
-
-                transaccion_id = str(
-                    transaccion.get("id") or referencia
-                )
-
-                ya_procesado = conn.execute(
-                    text("""
-                        SELECT 1
-                        FROM public.pedidos
-                        WHERE wompi_transaction_id = :transaction_id
-                        LIMIT 1
-                    """),
-                    {"transaction_id": transaccion_id},
-                ).fetchone()
-
-                if ya_procesado:
-                    return JSONResponse({
-                        "ok": True,
-                        "duplicado": True,
-                        "pedido_id": pedido.get("id"),
-                    })
-
-                conn.execute(
-                    text("""
-                        UPDATE public.pedidos
-                        SET
-                            wompi_transaction_id = :transaction_id,
-                            wompi_estado = 'APPROVED',
-                            estado = 'pedido_aceptado',
-                            novedad = 'Pago Wompi aprobado. Pedido aceptado para preparacion.'
-                        WHERE referencia_wompi = :referencia
-                    """),
-                    {
-                        "transaction_id": transaccion_id,
-                        "referencia": referencia,
-                    },
-                )
-                # Las facturas del catálogo son independientes de las facturas
-                # de servicios del taller, que requieren una orden de trabajo.
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS public.facturas_pedidos (
-                        id BIGSERIAL PRIMARY KEY,
-                        pedido_id BIGINT NOT NULL UNIQUE,
-                        codigo_factura VARCHAR(80) NOT NULL UNIQUE,
-                        usuario_id BIGINT,
-                        email TEXT,
-                        productos JSONB NOT NULL DEFAULT '[]'::jsonb,
-                        total NUMERIC(14,2) NOT NULL,
-                        estado VARCHAR(30) NOT NULL DEFAULT 'pagada',
-                        wompi_transaction_id VARCHAR(120),
-                        creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
-                    )
-                """))
-                pedido_id = pedido.get("id") or pedido.get("idpedido")
-                codigo_factura = f"FAC-{pedido.get('codigo_pedido') or pedido_id}"
-                productos_pedido = pedido.get("productos")
-                if isinstance(productos_pedido, str):
-                    try:
-                        productos_json = json.loads(productos_pedido)
-                    except (TypeError, ValueError, json.JSONDecodeError):
-                        productos_json = []
-                else:
-                    productos_json = productos_pedido if isinstance(productos_pedido, list) else []
-                conn.execute(text("""
-                    INSERT INTO public.facturas_pedidos
-                      (pedido_id, codigo_factura, usuario_id, email, productos, total, estado, wompi_transaction_id)
-                    VALUES
-                      (:pedido_id, :codigo, :usuario_id, :email, CAST(:productos AS jsonb), :total, 'pagada', :transaction_id)
-                    ON CONFLICT (pedido_id) DO NOTHING
-                """), {
-                    "pedido_id": pedido_id,
-                    "codigo": codigo_factura,
-                    "usuario_id": pedido.get("usuarios_idusuarios"),
-                    "email": pedido.get("email"),
-                    "productos": json.dumps(productos_json),
-                    "total": float(pedido.get("total") or 0),
-                    "transaction_id": transaccion_id,
-                })
-                notificar_cliente(
-                    conn, pedido.get("usuarios_idusuarios"),
-                    "Pago aprobado y factura disponible",
-                    f"Tu pago fue aprobado. Generamos la factura {codigo_factura} de tu pedido {pedido.get('codigo_pedido') or ''}.",
-                    "factura_pedido_generada", "pedido", pedido_id, "/mi-cuenta",
-                )
-                correo_factura = str(pedido.get("email") or "").strip()
-                html_factura = (
-                    "<h2>DISOL MOTORS</h2><h3>Factura " + html.escape(codigo_factura) + "</h3>"
-                    "<p>Tu pago en Wompi fue aprobado. Gracias por tu compra.</p>"
-                    + detalle_factura_pedido(productos_json, float(pedido.get("total") or 0))
-                    + f"<h3 style='text-align:right'>Total pagado: ${float(pedido.get('total') or 0):,.0f} COP</h3>"
-                    + "<p>Pedido: " + html.escape(str(pedido.get("codigo_pedido") or "")) + "</p>"
-                )
-                conn.commit()
-
-            if correo_factura:
-                enviar_correo_transaccional(
-                    correo_factura, f"DMI | Factura {codigo_factura}", html_factura,
-                    "factura_pedido_generada", pedido.get("usuarios_idusuarios"), "pedido", pedido_id,
-                )
-
-            return JSONResponse({
-                "ok": True,
-                "pedido_id": pedido.get("id"),
-                "codigo_pedido": pedido.get("codigo_pedido"),
-                "estado": "pedido_aceptado",
-                "wompi_estado": "APPROVED",
-                "transaction_id": transaccion_id,
-            })
-
-        # ============================================================
-        # FACTURA DE SERVICIO
-        # ============================================================
         if len(partes) < 4 or partes[0] != "DMI" or partes[1] != "FACTURA":
             # Los links fijos tienen una referencia propia de Wompi. No se les
             # asigna una factura para impedir acreditar un pago equivocado.
-            return JSONResponse({
-                "ok": True,
-                "ignored": True,
-                "reason": "Referencia no asociada a DMI",
-            })
+            return JSONResponse({"ok": True, "ignored": True, "reason": "Referencia no asociada a DMI"})
 
         factura_id = int(partes[2])
         valor_pagado = float(transaccion.get("amount_in_cents") or 0) / 100
         if valor_pagado <= 0:
-            return JSONResponse(
-                {"error": "Monto de transaccion invalido"},
-                status_code=400,
-            )
+            return JSONResponse({"error": "Monto de transaccion invalido"}, status_code=400)
 
         with engine.connect() as conn:
             factura = conn.execute(text("SELECT * FROM dmi.facturas WHERE idfactura = :id"), {"id": factura_id}).mappings().fetchone()
@@ -8004,10 +7025,10 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     tv.vehiculo AS tipo_vehiculo
                 FROM dmi.vehiculos v
                 LEFT JOIN dmi.tipovehiculos tv ON tv.idtipovehiculos = v.tipovehiculos_idtipovehiculos
-                WHERE v.cliente_id = :usuario_id
+                WHERE v.cliente_id = :usuario_id OR v.idvehiculo = :vehiculo_legacy_id
                 ORDER BY v.idvehiculo DESC
                 """,
-                {"usuario_id": usuario_id},
+                {"usuario_id": usuario_id, "vehiculo_legacy_id": vehiculo_legacy_id},
             )
 
             citas = query_rows(
@@ -8025,10 +7046,10 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     COALESCE(v.marca, '') || ' ' || COALESCE(v.modelo, '') AS vehiculo
                 FROM dmi.citas c
                 LEFT JOIN dmi.vehiculos v ON v.idvehiculo = c.vehiculos_idvehiculo
-                WHERE v.cliente_id = :usuario_id
+                WHERE v.cliente_id = :usuario_id OR c.vehiculos_idvehiculo = :vehiculo_legacy_id
                 ORDER BY c.fecha DESC, c.hora DESC
                 """,
-                {"usuario_id": usuario_id},
+                {"usuario_id": usuario_id, "vehiculo_legacy_id": vehiculo_legacy_id},
             )
 
             ordenes = query_rows(
@@ -8384,6 +7405,8 @@ async def config_crear_generico(entity: str, request: Request, access_token: str
                         return config_redirect(entity, "Selecciona un inventario valido registrado en Supabase", False)
 
                 if entity == "servicios":
+                    if not exists("pedido", "idpedido", values.get("pedido_idpedido")):
+                        return config_redirect(entity, "Selecciona un pedido valido registrado en Supabase", False)
                     if not exists("serviciosprecio", "idserviciosprecio", values.get("serviciosprecio_idserviciosprecio")):
                         return config_redirect(entity, "Selecciona un precio de servicio valido o deja el campo en blanco", False)
 
@@ -8450,6 +7473,8 @@ async def config_editar_generico(entity: str, record_id: int, request: Request, 
                         return config_redirect(entity, "Selecciona un inventario valido registrado en Supabase", False)
 
                 if entity == "servicios":
+                    if not exists("pedido", "idpedido", values.get("pedido_idpedido")):
+                        return config_redirect(entity, "Selecciona un pedido valido registrado en Supabase", False)
                     if not exists("serviciosprecio", "idserviciosprecio", values.get("serviciosprecio_idserviciosprecio")):
                         return config_redirect(entity, "Selecciona un precio de servicio valido o deja el campo en blanco", False)
 

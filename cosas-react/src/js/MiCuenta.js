@@ -1,7 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MiCuentaService } from '../services/api';
+import { CitasService, MiCuentaService } from '../services/api';
 import { openInvoiceDocument } from './invoice';
 import Checkout from './Checkout';
+
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL.replace(/\/$/, '');
+  const { protocol, hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:8000';
+  if (hostname.includes('app.github.dev')) return `${protocol}//${hostname.replace(/-3000\.app\.github\.dev$/, '-8000.app.github.dev')}`;
+  return '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+const AVATARES_DMI = {
+  dmi_1: { icon: '🚗', label: 'Conductor' },
+  dmi_2: { icon: '🔧', label: 'Mecánica' },
+  dmi_3: { icon: '🏁', label: 'Racing' },
+  dmi_4: { icon: '⚡', label: 'Potencia' },
+};
 
 const money = (value) => {
   const number = Number(value || 0);
@@ -18,6 +34,7 @@ const clean = (value, fallback = 'Por definir') => {
 };
 
 const estadoClase = (estado = '') => String(estado).toLowerCase().replace(/[^a-z0-9_]/g, '-');
+const estadoCitaVisible = (cita) => cita?.reprogramada_en ? 'reprogramada' : (cita?.estado || 'pendiente');
 
 const estadoOrdenPasos = [
   { key: 'abierta', label: 'Orden' },
@@ -91,7 +108,7 @@ const OrderSteps = ({ estado }) => {
   );
 };
 
-export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
+export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialSection = 'resumen' }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -102,6 +119,17 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
   const [facturaAPagar, setFacturaAPagar] = useState(null);
   const [seccionActiva, setSeccionActiva] = useState('resumen');
+  const [citaGestionActiva, setCitaGestionActiva] = useState(null);
+  const [gestionandoCita, setGestionandoCita] = useState(false);
+  const [errorCita, setErrorCita] = useState('');
+  const [mensajeCita, setMensajeCita] = useState('');
+  const [citaDestacadaId, setCitaDestacadaId] = useState(null);
+  const [perfilAbierto, setPerfilAbierto] = useState(false);
+  const [perfil, setPerfil] = useState(null);
+  const [perfilForm, setPerfilForm] = useState({ nombre: '', apellidos: '', telefono: '', avatar_perfil: 'dmi_1', foto_perfil: null });
+  const [perfilError, setPerfilError] = useState('');
+  const [perfilMensaje, setPerfilMensaje] = useState('');
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -125,9 +153,22 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     };
   }, []);
 
+  useEffect(() => {
+    setSeccionActiva(initialSection || 'resumen');
+  }, [initialSection]);
+
+  // La aprobación la realiza el administrador en otro panel. Consultamos de
+  // forma liviana para reflejar su decisión sin pedir al cliente que recargue.
+  useEffect(() => {
+    const intervalo = window.setInterval(() => {
+      MiCuentaService.obtener().then(setData).catch(() => {});
+    }, 15000);
+    return () => window.clearInterval(intervalo);
+  }, []);
+
   const resumen = data?.resumen || {};
   const usuario = data?.usuario || {};
-  const nombre = usuario.nombre || localStorage.getItem('nombre') || 'cliente';
+  const nombre = perfil?.nombre || usuario.nombre || localStorage.getItem('nombre') || 'cliente';
   const vehiculosCuenta = useMemo(() => data?.vehiculos || [], [data]);
 
   useEffect(() => {
@@ -167,6 +208,12 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
     const activas = citasVehiculo.filter((cita) => !['cancelada', 'cancelado', 'completada'].includes(String(cita.estado || '').toLowerCase()));
     return [...activas].sort((a, b) => `${a.fecha || ''} ${a.hora || ''}`.localeCompare(`${b.fecha || ''} ${b.hora || ''}`))[0];
   }, [citasVehiculo]);
+  // Después de reprogramar, se muestra esa misma cita aunque exista otra más
+  // cercana. Así el cliente ve de inmediato la fecha y hora que acaba de elegir.
+  const citaMostrada = useMemo(
+    () => citasVehiculo.find((cita) => String(cita.idcita) === String(citaDestacadaId)) || citaProxima,
+    [citasVehiculo, citaDestacadaId, citaProxima],
+  );
 
   const cotizacionPendiente = useMemo(
     () => cotizacionesVehiculo.find((cotizacion) => String(cotizacion.estado || '').toLowerCase() === 'pendiente'),
@@ -186,6 +233,132 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
   const facturaPorOrden = (ordenId) => facturasVehiculo.find((item) => item.orden_id === ordenId);
   const pagosPorFactura = (facturaId) => (data?.pagos_facturas || []).filter((item) => item.factura_id === facturaId);
   const itemsPorCotizacion = (cotizacionId) => (data?.cotizacion_detalles || []).filter((item) => item.cotizacion_id === cotizacionId);
+  const actualizarCitaLocal = (citaId, cambios) => {
+    setData((actual) => ({
+      ...actual,
+      citas: (actual?.citas || []).map((cita) => String(cita.idcita) === String(citaId) ? { ...cita, ...cambios } : cita),
+    }));
+  };
+
+  const solicitarPerfil = async (method, body) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/api/mi-perfil`, {
+      method,
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.success) throw new Error(payload.error || 'No fue posible actualizar tu perfil.');
+    return payload.usuario;
+  };
+
+  const abrirPerfil = async () => {
+    setPerfilAbierto(true);
+    setPerfilError('');
+    setPerfilMensaje('');
+    try {
+      const perfilActual = await solicitarPerfil('GET');
+      setPerfil(perfilActual);
+      setPerfilForm({
+        nombre: perfilActual.nombre || '',
+        apellidos: perfilActual.apellidos || '',
+        telefono: perfilActual.telefono || '',
+        avatar_perfil: perfilActual.avatar_perfil || 'dmi_1',
+        foto_perfil: perfilActual.foto_perfil || null,
+      });
+    } catch (err) {
+      setPerfilError(err.message || 'No se pudo cargar tu perfil.');
+    }
+  };
+
+  const seleccionarFotoPerfil = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 900 * 1024) {
+      setPerfilError('Selecciona una foto JPG, PNG o WEBP de máximo 900 KB.');
+      event.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setPerfilForm((actual) => ({ ...actual, foto_perfil: String(reader.result || '') }));
+    reader.onerror = () => setPerfilError('No pudimos leer la foto seleccionada.');
+    reader.readAsDataURL(file);
+  };
+
+  const guardarPerfil = async (event) => {
+    event.preventDefault();
+    setGuardandoPerfil(true);
+    setPerfilError('');
+    setPerfilMensaje('');
+    try {
+      const actualizado = await solicitarPerfil('PUT', perfilForm);
+      setPerfil(actualizado);
+      setPerfilForm((actual) => ({ ...actual, ...actualizado }));
+      localStorage.setItem('nombre', actualizado.nombre || '');
+      setPerfilMensaje('Tu perfil fue actualizado correctamente.');
+    } catch (err) {
+      setPerfilError(err.message || 'No se pudo guardar tu perfil.');
+    } finally {
+      setGuardandoPerfil(false);
+    }
+  };
+
+  const abrirReprogramacion = (cita) => {
+    setErrorCita('');
+    setMensajeCita('');
+    setCitaGestionActiva({ cita, fecha_cita: String(cita.fecha || '').slice(0, 10), hora_cita: String(cita.hora || '').slice(0, 5), motivo: '' });
+  };
+
+  const confirmarReprogramacion = async (event) => {
+    event.preventDefault();
+    if (!citaGestionActiva || gestionandoCita) return;
+    setGestionandoCita(true);
+    setErrorCita('');
+    setMensajeCita('');
+    try {
+      const citaId = citaGestionActiva.cita.idcita;
+      const response = await CitasService.reprogramar(citaId, {
+        fecha_cita: citaGestionActiva.fecha_cita,
+        hora_cita: citaGestionActiva.hora_cita,
+        motivo: citaGestionActiva.motivo,
+      });
+      if (response.cita) {
+        actualizarCitaLocal(citaId, response.cita);
+        setCitaDestacadaId(citaId);
+      } else {
+        // Para clientes, el servidor entrega una solicitud pendiente: la cita
+        // conserva su fecha actual hasta que el administrador la apruebe.
+        setCitaDestacadaId(citaId);
+        setMensajeCita(response.message || 'Solicitud enviada al administrador.');
+      }
+      setCitaGestionActiva(null);
+    } catch (err) {
+      setErrorCita(err.message || 'No se pudo reprogramar la cita.');
+    } finally {
+      setGestionandoCita(false);
+    }
+  };
+
+  const cancelarCita = async (cita) => {
+    if (gestionandoCita || !window.confirm('¿Deseas cancelar esta cita? El registro se conservará en tu historial.')) return;
+    const motivo = window.prompt('Motivo de cancelación (opcional):') || '';
+    setGestionandoCita(true);
+    setErrorCita('');
+    try {
+      await CitasService.cancelar(cita.idcita, motivo);
+      actualizarCitaLocal(cita.idcita, { estado: 'cancelada' });
+      if (String(citaDestacadaId) === String(cita.idcita)) setCitaDestacadaId(null);
+    } catch (err) {
+      setErrorCita(err.message || 'No se pudo cancelar la cita.');
+    } finally {
+      setGestionandoCita(false);
+    }
+  };
 
   const abrirCotizacion = (cotizacion) => setCotizacionActiva({
     ...cotizacion,
@@ -309,6 +482,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
           </p>
         </div>
         <div className="user-account-actions">
+          <button type="button" className="outline" onClick={abrirPerfil}><i className="bi bi-person-circle" /> Mi perfil</button>
           <button type="button" onClick={onAddVehicle}><i className="bi bi-car-front-fill" /> Agregar vehículo</button>
           <button type="button" className="outline" onClick={onScheduleAppointment}><i className="bi bi-calendar-plus" /> Agendar cita</button>
         </div>
@@ -336,8 +510,8 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
         </article>
 
         <article className="user-priority-card user-appointment-focus">
-          <div className="user-priority-head"><span><i className="bi bi-calendar2-check-fill" /> Proxima cita</span><button type="button" onClick={onScheduleAppointment}><i className="bi bi-calendar-plus" /> Agendar</button></div>
-          {citaProxima ? <div className="user-appointment-feature"><time>{clean(citaProxima.fecha, 'Fecha pendiente')}<b>{clean(citaProxima.hora, 'Hora por confirmar')}</b></time><div><strong>{clean(citaProxima.motivo, 'Servicio agendado')}</strong><span>{clean(citaProxima.vehiculo, 'Tu vehiculo')}</span><small className={`user-status ${estadoClase(citaProxima.estado)}`}>{clean(citaProxima.estado, 'pendiente')}</small></div></div> : <EmptyState icon="bi-calendar-x" text="No tienes citas activas." />}
+          <div className="user-priority-head"><span><i className="bi bi-calendar2-check-fill" /> {citaMostrada?.reprogramada_en ? 'Cita reprogramada' : 'Proxima cita'}</span><button type="button" onClick={onScheduleAppointment}><i className="bi bi-calendar-plus" /> Agendar</button></div>
+          {citaMostrada ? <div className="user-appointment-feature"><time>{clean(citaMostrada.fecha, 'Fecha pendiente')}<b>{clean(citaMostrada.hora, 'Hora por confirmar')}</b></time><div><strong>{clean(citaMostrada.motivo, 'Servicio agendado')}</strong><span>{clean(citaMostrada.vehiculo, 'Tu vehiculo')}</span><small className={`user-status ${estadoClase(estadoCitaVisible(citaMostrada))}`}>{estadoCitaVisible(citaMostrada)}</small><div className="user-appointment-actions"><button type="button" onClick={() => abrirReprogramacion(citaMostrada)}><i className="bi bi-calendar2-week" /> Reprogramar</button><button type="button" className="danger" disabled={gestionandoCita} onClick={() => cancelarCita(citaMostrada)}><i className="bi bi-x-circle" /> Cancelar</button></div>{mensajeCita && <small className="user-action-success">{mensajeCita}</small>}{errorCita && <small className="user-action-error">{errorCita}</small>}</div></div> : <EmptyState icon="bi-calendar-x" text="No tienes citas activas." />}
         </article>
 
         <article className="user-priority-card user-quote-focus">
@@ -471,6 +645,33 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
         </Section>}
       </section>
 
+      <DetailModal title={perfilAbierto ? 'Mi perfil' : ''} onClose={() => setPerfilAbierto(false)}>
+        <form className="user-appointment-form" onSubmit={guardarPerfil}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+            {perfilForm.foto_perfil ? (
+              <img src={perfilForm.foto_perfil} alt="Foto de perfil" style={{ width: 82, height: 82, borderRadius: '50%', objectFit: 'cover', border: '2px solid #ff2f55' }} />
+            ) : (
+              <div aria-label="Avatar seleccionado" style={{ width: 82, height: 82, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 36, background: '#2b0d16', border: '2px solid #ff2f55' }}>{AVATARES_DMI[perfilForm.avatar_perfil]?.icon || '🚗'}</div>
+            )}
+            <div><strong>{perfil?.email || usuario.email || 'Cuenta DMI'}</strong><p className="user-muted">Actualiza tus datos y cómo quieres aparecer en DMI.</p></div>
+          </div>
+          <label>Nombre<input required maxLength="100" value={perfilForm.nombre} onChange={(event) => setPerfilForm((actual) => ({ ...actual, nombre: event.target.value }))} /></label>
+          <label>Apellidos<input maxLength="150" value={perfilForm.apellidos} onChange={(event) => setPerfilForm((actual) => ({ ...actual, apellidos: event.target.value }))} /></label>
+          <label>Teléfono<input maxLength="30" value={perfilForm.telefono} onChange={(event) => setPerfilForm((actual) => ({ ...actual, telefono: event.target.value }))} /></label>
+          <fieldset style={{ border: '1px solid rgba(255,47,85,.45)', padding: 14, margin: '16px 0' }}>
+            <legend style={{ padding: '0 8px', color: '#ff5b78', fontWeight: 800 }}>Elige un avatar</legend>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(55px, 1fr))', gap: 10 }}>
+              {Object.entries(AVATARES_DMI).map(([id, avatar]) => <button key={id} type="button" onClick={() => setPerfilForm((actual) => ({ ...actual, avatar_perfil: id, foto_perfil: null }))} style={{ minHeight: 72, border: perfilForm.avatar_perfil === id && !perfilForm.foto_perfil ? '2px solid #ff2f55' : '1px solid #555', background: '#16161b', color: '#fff', cursor: 'pointer' }}><span style={{ display: 'block', fontSize: 25 }}>{avatar.icon}</span><small>{avatar.label}</small></button>)}
+            </div>
+          </fieldset>
+          <label>O usa una foto de tu galería<input type="file" accept="image/jpeg,image/png,image/webp" onChange={seleccionarFotoPerfil} /></label>
+          {perfilForm.foto_perfil && <button type="button" className="outline" onClick={() => setPerfilForm((actual) => ({ ...actual, foto_perfil: null }))}>Quitar foto y usar avatar</button>}
+          {perfilError && <p className="user-action-error">{perfilError}</p>}
+          {perfilMensaje && <p className="user-action-success">{perfilMensaje}</p>}
+          <div className="user-detail-footer"><button type="button" className="outline" onClick={() => setPerfilAbierto(false)}>Cerrar</button><button type="submit" disabled={guardandoPerfil}>{guardandoPerfil ? 'Guardando...' : 'Guardar perfil'}</button></div>
+        </form>
+      </DetailModal>
+
       <DetailModal title={cotizacionActiva ? 'Cotizacion realizada' : ''} onClose={() => setCotizacionActiva(null)}>
         {cotizacionActiva && (
           <div className="user-detail-content">
@@ -495,6 +696,17 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment }) {
             )}
           </div>
         )}
+      </DetailModal>
+
+      <DetailModal title={citaGestionActiva ? 'Reprogramar cita' : ''} onClose={() => setCitaGestionActiva(null)}>
+        {citaGestionActiva && <form className="user-appointment-form" onSubmit={confirmarReprogramacion}>
+          <p>Actualizarás la misma cita #{citaGestionActiva.cita.idcita}; su historial se conservará.</p>
+          <label>Fecha<input required type="date" min={new Date().toISOString().slice(0, 10)} value={citaGestionActiva.fecha_cita} onChange={(event) => setCitaGestionActiva((actual) => ({ ...actual, fecha_cita: event.target.value }))} /></label>
+          <label>Hora<input required type="time" value={citaGestionActiva.hora_cita} onChange={(event) => setCitaGestionActiva((actual) => ({ ...actual, hora_cita: event.target.value }))} /></label>
+          <label>Motivo del cambio (opcional)<textarea value={citaGestionActiva.motivo} onChange={(event) => setCitaGestionActiva((actual) => ({ ...actual, motivo: event.target.value }))} /></label>
+          {errorCita && <p className="user-action-error">{errorCita}</p>}
+          <div className="user-detail-footer"><button type="button" className="outline" onClick={() => setCitaGestionActiva(null)}>Volver</button><button type="submit" disabled={gestionandoCita}>{gestionandoCita ? 'Guardando...' : 'Confirmar reprogramación'}</button></div>
+        </form>}
       </DetailModal>
 
       <DetailModal title={ordenActiva ? 'Detalle de orden' : ''} onClose={() => setOrdenActiva(null)}>

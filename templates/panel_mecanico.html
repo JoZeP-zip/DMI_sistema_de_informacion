@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DMI | Panel Mecánico</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/panel_mecanico.css?v=20260824">
+
+<style>
+.profile-user {
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-avatar {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 47, 85, .5);
+  color: #ff2f55;
+  background: rgba(255, 47, 85, .06);
+  font-size: 18px;
+}
+
+.profile-user strong,
+.profile-user span,
+.profile-user small {
+  display: block;
+}
+
+.profile-user strong {
+  color: #fff;
+  font-size: 12px;
+}
+
+.profile-user span {
+  margin-top: 4px;
+  color: #999;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  word-break: break-word;
+}
+
+.profile-user small {
+  margin-top: 6px;
+  color: #ff2f55;
+  font-size: 8px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.profile-divider {
+  height: 1px;
+  margin: 0 15px;
+  background: rgba(255, 47, 85, .18);
+}
+
+.profile-action {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  font-family: "Orbitron", Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.profile-action i {
+  color: #ff2f55;
+  font-size: 16px;
+}
+
+.profile-action:hover {
+  background: rgba(255, 47, 85, .08);
+}
+
+.logout-action:disabled {
+  opacity: .7;
+  cursor: wait;
+}
+</style>
+
+</head>
+
+<body class="mechanic-page">
+
+<header class="mechanic-topbar">
+  <a class="mechanic-brand" href="#" id="mechanicBrandHome">
+    <span class="brand-mark">DMI</span>
+    <span>
+      <strong>DISOL MOTORS</strong>
+      <small>PANEL MECÁNICO</small>
+    </span>
+  </a>
+
+  <nav class="mechanic-main-nav" aria-label="Navegación principal">
+    <a href="#" class="mechanic-nav-link" id="mechanicHomeLink">
+      <i class="bi bi-house-door-fill"></i>
+      Inicio
+    </a>
+    <a href="/mecanico" class="mechanic-nav-link active">
+      <i class="bi bi-speedometer2"></i>
+      Mi panel
+    </a>
+    <a href="#mis-ordenes" class="mechanic-nav-link">
+      <i class="bi bi-clipboard2-check-fill"></i>
+      Mis órdenes
+    </a>
+  </nav>
+
+  <div class="mechanic-tools">
+    <button type="button" class="mechanic-icon-btn" id="mechanicBell"
+            aria-label="Notificaciones" title="Notificaciones">
+      <i class="bi bi-bell-fill"></i>
+      <b id="mechanicNotificationCount" hidden>0</b>
+    </button>
+
+    <button type="button" class="mechanic-icon-btn" id="mechanicProfile"
+            aria-label="Perfil" title="Perfil">
+      <i class="bi bi-person-circle"></i>
+    </button>
+
+    <div class="mechanic-popover notifications-popover" id="mechanicNotifications" hidden>
+      <div class="popover-title">
+        <span>Notificaciones</span>
+        <i class="bi bi-bell-fill"></i>
+      </div>
+      <div id="mechanicNotificationList">
+        <p class="popover-empty">Cargando...</p>
+      </div>
+    </div>
+
+    <div class="mechanic-popover profile-popover" id="mechanicProfileCard" hidden>
+      <div class="profile-user">
+        <div class="profile-avatar">
+          <i class="bi bi-person-fill"></i>
+        </div>
+        <div>
+          <strong>{{ usuario.nombre or 'Mecánico' }}</strong>
+          <span>{{ usuario.email or 'Correo no disponible' }}</span>
+          <small>{{ usuario.rol or 'mecanico' }}</small>
+        </div>
+      </div>
+
+      <div class="profile-divider"></div>
+
+      <button type="button" class="profile-action logout-action" id="mechanicLogout">
+        <i class="bi bi-box-arrow-right"></i>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="mechanic-shell">
+
+  {% if success_msg %}
+    <div class="mechanic-alert success">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>{{ success_msg }}</span>
+    </div>
+  {% endif %}
+
+  {% if error %}
+    <div class="mechanic-alert error">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ error }}</span>
+    </div>
+  {% endif %}
+
+  <section class="mechanic-hero">
+    <div class="hero-copy">
+      <span class="hero-kicker"><i class="bi bi-wrench-adjustable-circle-fill"></i> CONTROL TÉCNICO DMI</span>
+      <h1>Panel <span>Mecánico</span></h1>
+      <p>
+        Bienvenido,
+        <strong>{{ (empleado_actual.nombre or empleado_actual.nombres or usuario.nombre or 'Mecánico') }}</strong>.
+        Aquí encontrarás tus órdenes de trabajo, agenda y avisos importantes.
+      </p>
+    </div>
+
+    <div class="hero-status">
+      <span class="status-dot"></span>
+      <div>
+        <strong>Sesión activa</strong>
+        <small>Área técnica</small>
+      </div>
+    </div>
+  </section>
+
+  <section class="mechanic-summary" aria-label="Resumen de trabajo">
+    <article class="summary-card primary">
+      <div class="summary-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
+      <div>
+        <span>Mis órdenes</span>
+        <strong>{{ total_ordenes or 0 }}</strong>
+        <small>Asignadas</small>
+      </div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-icon"><i class="bi bi-search"></i></div>
+      <div>
+        <span>Diagnóstico</span>
+        <strong>{{ total_diagnostico or 0 }}</strong>
+        <small>En revisión</small>
+      </div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-icon"><i class="bi bi-tools"></i></div>
+      <div>
+        <span>En reparación</span>
+        <strong>{{ total_reparacion or 0 }}</strong>
+        <small>Trabajo activo</small>
+      </div>
+    </article>
+
+    <article class="summary-card">
+      <div class="summary-icon"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <span>Terminadas</span>
+        <strong>{{ total_facturadas or 0 }}</strong>
+        <small>Cerradas / facturadas</small>
+      </div>
+    </article>
+  </section>
+
+  <section class="mechanic-grid-top">
+
+    <article class="mechanic-panel-card notification-card">
+      <div class="card-heading">
+        <div>
+          <span class="card-kicker">AVISOS</span>
+          <h2><i class="bi bi-bell-fill"></i> Notificaciones</h2>
+        </div>
+        <button type="button" class="outline-btn" id="refreshMechanicNotifications">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+
+      <div class="inline-notifications" id="mechanicDashboardNotifications">
+        {% if notificaciones %}
+          {% for item in notificaciones[:5] %}
+            <div class="inline-notification">
+              <span class="notification-icon"><i class="bi bi-info-circle-fill"></i></span>
+              <div>
+                <strong>{{ item.titulo or 'Nueva actualización' }}</strong>
+                <p>{{ item.mensaje or 'Tienes una actualización pendiente.' }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-mini">
+            <i class="bi bi-check2-circle"></i>
+            <span>No tienes avisos pendientes.</span>
+          </div>
+        {% endif %}
+      </div>
+    </article>
+
+    <article class="mechanic-panel-card agenda-card">
+      <div class="card-heading">
+        <div>
+          <span class="card-kicker">AGENDA</span>
+          <h2><i class="bi bi-calendar2-week-fill"></i> Próximas citas</h2>
+        </div>
+        <span class="count-pill">{{ citas_hoy_ordenes|length if citas_hoy_ordenes else 0 }}</span>
+      </div>
+
+      <div class="agenda-list">
+        {% if citas_hoy_ordenes %}
+          {% for cita in citas_hoy_ordenes[:5] %}
+            <div class="agenda-item">
+              <div class="agenda-time">
+                <strong>{{ cita.hora or '--:--' }}</strong>
+                <small>Hoy</small>
+              </div>
+              <div class="agenda-info">
+                <strong>{{ cita.cliente or 'Cliente' }}</strong>
+                <span>{{ cita.placa or 'Sin placa' }} · {{ cita.motivo or 'Servicio' }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-mini">
+            <i class="bi bi-calendar-x"></i>
+            <span>No hay citas programadas para hoy.</span>
+          </div>
+        {% endif %}
+      </div>
+    </article>
+
+  </section>
+
+  <section class="mechanic-panel-card orders-card" id="mis-ordenes">
+    <div class="card-heading orders-heading">
+      <div>
+        <span class="card-kicker">TRABAJO ASIGNADO</span>
+        <h2><i class="bi bi-clipboard2-check-fill"></i> Mis órdenes de trabajo</h2>
+        <p>Solo se muestran las órdenes asignadas a tu usuario.</p>
+      </div>
+
+      <div class="orders-actions">
+        <a href="/mecanico" class="outline-btn">
+          <i class="bi bi-arrow-clockwise"></i> Actualizar
+        </a>
+      </div>
+    </div>
+
+    <div class="orders-filters">
+      <div class="filter-label">
+        <i class="bi bi-calendar3"></i>
+        <span>Periodo</span>
+      </div>
+
+      <form method="get" action="/mecanico" class="period-form">
+        <select name="mes" aria-label="Seleccionar periodo">
+          {% for mes in meses_ordenes or [] %}
+            <option value="{{ mes.clave }}" {% if mes.clave == mes_seleccionado %}selected{% endif %}>
+              {{ mes.nombre or mes.clave }}
+            </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="primary-btn">
+          <i class="bi bi-funnel-fill"></i> Filtrar
+        </button>
+      </form>
+    </div>
+
+    {% if ordenes %}
+      <div class="orders-table-wrap">
+        <table class="mechanic-table">
+          <thead>
+            <tr>
+              <th>Orden</th>
+              <th>Cliente</th>
+              <th>Vehículo</th>
+              <th>Motivo</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for orden in ordenes %}
+              {% set estado = (orden.estado or 'abierta')|lower %}
+              <tr>
+                <td>
+                  <strong class="order-code">
+                    {{ orden.codigo_orden or ('OT-' ~ orden.idorden) }}
+                  </strong>
+                </td>
+                <td>
+                  <strong>{{ orden.cliente or orden.nombre_cliente or 'Cliente' }}</strong>
+                </td>
+                <td>
+                  <div class="vehicle-cell">
+                    <strong>{{ orden.placa or 'Sin placa' }}</strong>
+                    <span>{{ orden.marca or '' }} {{ orden.modelo or '' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="reason-cell">{{ orden.motivo_ingreso or orden.motivo or 'Sin motivo registrado' }}</span>
+                </td>
+                <td>
+                  <span class="status-badge status-{{ estado|replace('_','-') }}">
+                    {{ estado|replace('_',' ')|title }}
+                  </span>
+                </td>
+                <td>
+                  <span class="date-cell">
+                    {{ orden.fecha_apertura or orden.fecha or 'Sin fecha' }}
+                  </span>
+                </td>
+                <td>
+                  <a class="view-order-btn" href="/mecanico/ordenes/{{ orden.idorden }}">
+                    <i class="bi bi-eye-fill"></i>
+                    Ver orden
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="orders-empty">
+        <div class="empty-icon"><i class="bi bi-clipboard2-x"></i></div>
+        <h3>No tienes órdenes asignadas</h3>
+        <p>Cuando el administrador te asigne una orden de trabajo aparecerá aquí.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="mechanic-grid-bottom">
+
+    <article class="mechanic-panel-card quick-card">
+      <div class="card-heading">
+        <div>
+          <span class="card-kicker">ACCESOS</span>
+          <h2><i class="bi bi-lightning-charge-fill"></i> Acciones rápidas</h2>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <a href="#mis-ordenes" class="quick-action">
+          <i class="bi bi-clipboard2-check-fill"></i>
+          <span>
+            <strong>Ver mis órdenes</strong>
+            <small>Revisar trabajos asignados</small>
+          </span>
+        </a>
+
+        <button type="button" class="quick-action" id="openMechanicNotifications">
+          <i class="bi bi-bell-fill"></i>
+          <span>
+            <strong>Ver notificaciones</strong>
+            <small>Revisar avisos pendientes</small>
+          </span>
+        </button>
+
+        <a href="#agenda" class="quick-action">
+          <i class="bi bi-calendar2-week-fill"></i>
+          <span>
+            <strong>Mi agenda</strong>
+            <small>Consultar citas del día</small>
+          </span>
+        </a>
+      </div>
+    </article>
+
+    <article class="mechanic-panel-card workflow-card" id="agenda">
+      <div class="card-heading">
+        <div>
+          <span class="card-kicker">FLUJO DE TRABAJO</span>
+          <h2><i class="bi bi-diagram-3-fill"></i> Estados de una orden</h2>
+        </div>
+      </div>
+
+      <div class="workflow">
+        <div class="workflow-step">
+          <span>01</span>
+          <i class="bi bi-folder2-open"></i>
+          <strong>Abierta</strong>
+        </div>
+        <div class="workflow-line"></div>
+        <div class="workflow-step">
+          <span>02</span>
+          <i class="bi bi-search"></i>
+          <strong>Diagnóstico</strong>
+        </div>
+        <div class="workflow-line"></div>
+        <div class="workflow-step">
+          <span>03</span>
+          <i class="bi bi-tools"></i>
+          <strong>Reparación</strong>
+        </div>
+        <div class="workflow-line"></div>
+        <div class="workflow-step">
+          <span>04</span>
+          <i class="bi bi-check-circle-fill"></i>
+          <strong>Finalizada</strong>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+</main>
+
+<footer class="mechanic-footer">
+  <span>DMI · DISOL MOTORS INJECTIONS</span>
+  <span>Panel técnico · Mecánico</span>
+</footer>
+
+<script>
+(function () {
+  const bell = document.getElementById("mechanicBell");
+  const count = document.getElementById("mechanicNotificationCount");
+  const panel = document.getElementById("mechanicNotifications");
+  const profile = document.getElementById("mechanicProfile");
+  const profileCard = document.getElementById("mechanicProfileCard");
+  const list = document.getElementById("mechanicNotificationList");
+  const dashboardList = document.getElementById("mechanicDashboardNotifications");
+  const refresh = document.getElementById("refreshMechanicNotifications");
+  const quickOpen = document.getElementById("openMechanicNotifications");
+  const homeLink = document.getElementById("mechanicHomeLink");
+  const brandHome = document.getElementById("mechanicBrandHome");
+  const logoutButton = document.getElementById("mechanicLogout");
+
+  /*
+   * El panel mecánico vive en FastAPI (puerto 8000) y el frontend
+   * principal de React vive en el puerto 3000 en Codespaces.
+   * En producción, si ambos están bajo el mismo dominio, se conserva
+   * el origen actual.
+   */
+  function getFrontendBaseUrl() {
+    const origin = window.location.origin;
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+
+    // Codespaces / GitHub Codespaces:
+    // ejemplo: xxx-8000.app.github.dev -> xxx-3000.app.github.dev
+    if (hostname.includes("-8000.")) {
+      return origin.replace(hostname, hostname.replace("-8000.", "-3000."));
+    }
+
+    // Desarrollo local
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      if (port === "8000") {
+        return window.location.protocol + "//" + hostname + ":3000";
+      }
+      return origin;
+    }
+
+    // Si frontend y backend comparten dominio en producción.
+    return origin;
+  }
+
+  function goToFrontendHome() {
+    window.location.href = getFrontendBaseUrl() + "/";
+  }
+
+  function goToFrontendLogin() {
+    window.location.href = getFrontendBaseUrl() + "/login";
+  }
+
+  if (!bell || !count || !panel || !list) return;
+
+  function safe(value) {
+    return String(value ?? "").replace(/[&<>"']/g, function (char) {
+      return ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[char];
+    });
+  }
+
+  function renderDashboard(items) {
+    if (!dashboardList) return;
+
+    if (!items.length) {
+      dashboardList.innerHTML =
+        '<div class="empty-mini"><i class="bi bi-check2-circle"></i><span>No tienes avisos pendientes.</span></div>';
+      return;
+    }
+
+    dashboardList.innerHTML = items.slice(0, 5).map(function (item) {
+      return `
+        <div class="inline-notification">
+          <span class="notification-icon"><i class="bi bi-bell-fill"></i></span>
+          <div>
+            <strong>${safe(item.titulo || "Nueva actualización")}</strong>
+            <p>${safe(item.mensaje || "")}</p>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function loadNotifications() {
+    try {
+      const response = await fetch("/api/notificaciones", {
+        credentials: "same-origin"
+      });
+
+      const data = await response.json();
+      const items = data.notificaciones || [];
+      const pending = items.filter(function (item) {
+        return !item.leida;
+      }).length;
+
+      count.hidden = !pending;
+      count.textContent = pending > 99 ? "99+" : pending;
+
+      if (!items.length) {
+        list.innerHTML = '<p class="popover-empty">Estás al día.</p>';
+      } else {
+        list.innerHTML = items.slice(0, 8).map(function (item) {
+          return `
+            <button class="mechanic-notification-item ${item.leida ? "read" : "unread"}"
+                    data-id="${safe(item.idnotificacion)}">
+              <strong>${safe(item.titulo)}</strong>
+              <span>${safe(item.mensaje)}</span>
+            </button>
+          `;
+        }).join("");
+
+        list.querySelectorAll("[data-id]").forEach(function (button) {
+          button.addEventListener("click", async function () {
+            const id = button.dataset.id;
+
+            try {
+              await fetch("/api/notificaciones/" + id + "/leer", {
+                method: "POST",
+                credentials: "same-origin"
+              });
+            } finally {
+              loadNotifications();
+            }
+          });
+        });
+      }
+
+      renderDashboard(items.filter(function (item) {
+        return !item.leida;
+      }));
+
+    } catch (error) {
+      list.innerHTML =
+        '<p class="popover-empty">No fue posible cargar las notificaciones.</p>';
+    }
+  }
+
+  bell.addEventListener("click", function () {
+    panel.hidden = !panel.hidden;
+    profileCard.hidden = true;
+
+    if (!panel.hidden) {
+      loadNotifications();
+    }
+  });
+
+  profile.addEventListener("click", function () {
+    profileCard.hidden = !profileCard.hidden;
+    panel.hidden = true;
+  });
+
+  if (refresh) {
+    refresh.addEventListener("click", loadNotifications);
+  }
+
+  if (quickOpen) {
+    quickOpen.addEventListener("click", function () {
+      panel.hidden = false;
+      profileCard.hidden = true;
+      loadNotifications();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  // Inicio y logo: siempre regresan al frontend principal de React.
+  if (homeLink) {
+    homeLink.addEventListener("click", function (event) {
+      event.preventDefault();
+      goToFrontendHome();
+    });
+  }
+
+  if (brandHome) {
+    brandHome.addEventListener("click", function (event) {
+      event.preventDefault();
+      goToFrontendHome();
+    });
+  }
+
+  // Cerrar sesión: limpia el frontend y también invalida la sesión del backend.
+  if (logoutButton) {
+    logoutButton.addEventListener("click", async function () {
+      logoutButton.disabled = true;
+      logoutButton.innerHTML =
+        '<i class="bi bi-arrow-repeat"></i><span>Cerrando sesión...</span>';
+
+      try {
+        await fetch("/logout-login", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store"
+        });
+      } catch (error) {
+        // Aunque el backend no responda, continuamos limpiando
+        // la sesión local para no dejar al usuario bloqueado.
+      } finally {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("email");
+        localStorage.removeItem("nombre");
+        localStorage.removeItem("usuario");
+        sessionStorage.clear();
+
+        goToFrontendLogin();
+      }
+    });
+  }
+
+  loadNotifications();
+})();
+</script>
+
+</body>
+</html>

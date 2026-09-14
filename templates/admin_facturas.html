@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facturas | DMI Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/admin_facturas.css">
+</head>
+<body>
+  <header class="facturas-topbar">
+    <div class="brand">
+      <span class="brand-mark">DMI</span>
+      <div>
+        <strong>DISOL MOTORS</strong>
+        <small>ADMINISTRACIÓN</small>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <a href="/" class="top-btn"><i class="bi bi-arrow-left"></i> VOLVER</a>
+    </div>
+  </header>
+
+  <main class="facturas-page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">CONTROL FINANCIERO DMI</p>
+        <h1>FACTURAS <span>GENERADAS</span></h1>
+        <p class="hero-copy">Consulta las facturas creadas desde las órdenes de trabajo y accede directamente a la orden donde fue generada cada factura.</p>
+      </div>
+      <div class="hero-stat">
+        <i class="bi bi-receipt-cutoff"></i>
+        <strong>{{ total_facturas }}</strong>
+        <span>FACTURAS REGISTRADAS</span>
+      </div>
+    </section>
+
+    {% if error %}
+      <div class="alert error"><i class="bi bi-exclamation-triangle-fill"></i><span>{{ error }}</span></div>
+    {% endif %}
+
+    <section class="toolbar">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input id="facturaSearch" type="search" placeholder="Buscar por factura, cliente, documento u orden...">
+      </div>
+      <div class="toolbar-count"><span id="visibleCount">{{ total_facturas }}</span> registros visibles</div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-header">
+        <div>
+          <p>HISTORIAL</p>
+          <h2>FACTURAS GENERADAS</h2>
+        </div>
+        <i class="bi bi-file-earmark-text"></i>
+      </div>
+
+      <div class="table-wrap">
+        <table id="facturasTable">
+          <thead>
+            <tr>
+              <th>Factura</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Documento</th>
+              <th>Orden</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Factura generada</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for factura in facturas %}
+            <tr>
+              <td data-label="Factura"><span class="invoice-code">{{ factura.codigo_factura }}</span></td>
+              <td data-label="Fecha">{{ factura.fecha_factura }}</td>
+              <td data-label="Cliente"><strong class="client-name">{{ factura.cliente }}</strong></td>
+              <td data-label="Documento">{{ factura.documento }}</td>
+              <td data-label="Orden">
+                {% if factura.orden_id %}
+                  <span class="order-code">{{ factura.codigo_orden }}</span>
+                {% else %}
+                  <span class="muted">Sin orden</span>
+                {% endif %}
+              </td>
+              <td data-label="Total"><strong class="amount">${{ "{:,.0f}".format(factura.total or 0) }}</strong></td>
+              <td data-label="Estado">
+                {% set estado = (factura.estado or 'pendiente')|lower %}
+                <span class="status status-{{ estado|replace('_', '-') }}">{{ estado|replace('_', ' ') }}</span>
+              </td>
+              <td data-label="Factura generada">
+                {% if factura.orden_id %}
+                  <a class="view-btn" href="/admin/ordenes/{{ factura.orden_id }}">
+                    <i class="bi bi-receipt"></i> VER FACTURA
+                  </a>
+                {% else %}
+                  <span class="muted">No disponible</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr id="emptyRow">
+              <td colspan="8">
+                <div class="empty-state">
+                  <i class="bi bi-receipt"></i>
+                  <strong>No hay facturas generadas</strong>
+                  <span>Las facturas aparecerán aquí cuando se generen desde una orden de trabajo.</span>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const input = document.getElementById('facturaSearch');
+      const rows = Array.from(document.querySelectorAll('#facturasTable tbody tr')).filter(row => row.id !== 'emptyRow');
+      const count = document.getElementById('visibleCount');
+      if (!input) return;
+      input.addEventListener('input', function () {
+        const term = input.value.trim().toLowerCase();
+        let visible = 0;
+        rows.forEach(function (row) {
+          const show = !term || row.textContent.toLowerCase().includes(term);
+          row.style.display = show ? '' : 'none';
+          if (show) visible++;
+        });
+        count.textContent = visible;
+      });
+    })();
+  </script>
+</body>
+</html>
