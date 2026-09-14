@@ -3863,6 +3863,11 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
         context=ctx,
     )
 
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 #========================= INVENTARIO ======================================
 @app.get("/api/inventario")
 async def api_inventario():
