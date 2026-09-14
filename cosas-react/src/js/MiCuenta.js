@@ -189,15 +189,15 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   const vehiculoIdActual = vehiculoSeleccionado?.idvehiculo;
   const ordenesVehiculo = useMemo(() => {
     if (!vehiculoIdActual) return data?.ordenes || [];
-    return (data?.ordenes || []).filter((orden) => String(orden.vehiculo_id) === String(vehiculoIdActual));
+    return (data?.ordenes || []).filter((orden) => String(orden.vehiculo_id || orden.vehiculos_idvehiculo || orden.idvehiculo) === String(vehiculoIdActual));
   }, [data, vehiculoIdActual]);
 
-  const ordenIdsVehiculo = useMemo(() => new Set(ordenesVehiculo.map((orden) => orden.idorden)), [ordenesVehiculo]);
+  const ordenIdsVehiculo = useMemo(() => new Set(ordenesVehiculo.map((orden) => String(orden.idorden || orden.id || orden.orden_id))), [ordenesVehiculo]);
   const citasVehiculo = useMemo(() => {
     if (!vehiculoIdActual) return data?.citas || [];
     return (data?.citas || []).filter((cita) => String(cita.idvehiculo || cita.vehiculos_idvehiculo) === String(vehiculoIdActual));
   }, [data, vehiculoIdActual]);
-  const diagnosticosVehiculo = useMemo(() => (data?.diagnosticos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
+  const diagnosticosVehiculo = useMemo(() => (data?.diagnosticos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id || item.idorden || item.orden_trabajo_id)), [data, ordenIdsVehiculo]);
   const serviciosVehiculo = useMemo(() => (data?.servicios_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
   const repuestosVehiculo = useMemo(() => (data?.repuestos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
   const facturasVehiculo = useMemo(() => (data?.facturas || []).filter((factura) => ordenIdsVehiculo.has(factura.orden_id)), [data, ordenIdsVehiculo]);
