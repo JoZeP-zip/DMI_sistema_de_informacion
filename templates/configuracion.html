@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -344,6 +345,21 @@
         @media (max-width: 760px) { .cfg-command-header,.cfg-catalog-orders-head { align-items:start; flex-direction:column; } .cfg-command-status,.cfg-catalog-orders-head p { text-align:left; } .cfg-catalog-orders { padding:16px; } .cfg-catalog-orders-grid { grid-template-columns:1fr; } .cfg-order-details,.cfg-order-form-grid { grid-template-columns:1fr; } }
     </style>
 
+    <style>
+        /* Layout del calendario de pedidos: calendario arriba y pedidos del día abajo. */
+        .cfg-catalog-orders-grid.cfg-orders-calendar { display:block; margin-top:20px; }
+        .cfg-orders-calendar .cfg-calendar-toolbar { width:100%; }
+        .cfg-orders-calendar .cfg-calendar-weekdays { margin-top:16px; }
+        .cfg-orders-calendar .cfg-calendar-grid { margin-top:7px; }
+        .cfg-orders-calendar .cfg-order-day { margin-top:16px; }
+        .cfg-orders-calendar .cfg-order-day-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); }
+        .cfg-orders-calendar .cfg-calendar-day { min-height:72px; transition:background .18s ease,border-color .18s ease,transform .18s ease; }
+        .cfg-orders-calendar .cfg-calendar-day.has-orders:hover { transform:translateY(-2px); }
+        @media (max-width:760px) {
+            .cfg-orders-calendar .cfg-calendar-weekdays span { font-size:.58rem; }
+            .cfg-orders-calendar .cfg-calendar-day { min-height:58px; }
+        }
+    </style>
 </head>
 <body>
 
@@ -1185,3 +1201,4 @@
 </script>
 </body>
 </html>
+
