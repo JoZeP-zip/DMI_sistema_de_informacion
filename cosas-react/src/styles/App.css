@@ -251,7 +251,7 @@
 .auth-shell .btn-danger:hover { transform: translateY(-2px); background: #e7274e !important; box-shadow: 0 9px 22px rgba(255,47,85,.28); }
 .auth-shell .btn-link { color: #ff7590 !important; font: 700 14px 'Rajdhani', sans-serif !important; }
 .auth-shell .text-muted { color: #b4b8c1 !important; font: 600 15px 'Rajdhani', sans-serif; }
-.auth-shell .text-muted2 { color: #ce2323 !important; font: 600 15px 'Rajdhani', sans-serif; }
+.auth-shell .text-muted2 { color: #fffcfc !important; font: 600 15px 'Rajdhani', sans-serif; }
 .auth-shell .text-danger { color: #ff7590 !important; }
 
 .auth-register-shell form {
