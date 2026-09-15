@@ -22,7 +22,6 @@ import urllib.request
 import os
 import html
 import re
-import traceback
 import jwt
 import json
 import hashlib
@@ -4018,8 +4017,8 @@ async def crear_cita(
         # no pueda saltarse manipulando el calendario del navegador.
         fecha_cita_validada, hora_cita_validada = validar_fecha_hora_cita(fecha_cita, hora_cita)
         fecha_cita = fecha_cita_validada
-        # PostgreSQL espera un objeto datetime.time para columnas TIME.
-        # El texto separado se usa solo para mensajes y correos.
+        # La columna dmi.citas.hora es TIME; enviamos un objeto datetime.time.
+        # Usamos texto separado únicamente para HTML y mensajes.
         hora_cita = hora_cita_validada
         hora_cita_texto = hora_cita_validada.strftime("%H:%M")
 
@@ -4274,7 +4273,7 @@ async def crear_cita(
                   <p>Tu cita fue registrada correctamente. Estos son los datos:</p>
                   <table style="width:100%;border-collapse:collapse;margin:18px 0">
                     <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Numero de cita</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">#{cita_id}</td></tr>
-                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Fecha</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(fecha_cita)}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Fecha</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(str(fecha_cita))}</td></tr>
                     <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Hora</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(hora_cita_texto)}</td></tr>
                     <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Vehiculo</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(nombre_vehiculo)} · {html.escape(str(placa_vehiculo))}</td></tr>
                     <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Servicio solicitado</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(motivo)}</td></tr>
@@ -4304,13 +4303,12 @@ async def crear_cita(
         )
 
     except Exception as e:
-        print("ERROR POST /citas/nueva:", repr(e))
-        traceback.print_exc()
         if quiere_json(request):
             return JSONResponse(
                 {"error": str(e)},
                 status_code=500
             )
+
         return RedirectResponse(
             url=f"/citas?error={str(e)}",
             status_code=302
@@ -8774,8 +8772,6 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
 
 
 
