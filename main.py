@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 from email.message import EmailMessage
 import smtplib
 import ssl
+import urllib.request
 import os
 import html
 import re
@@ -70,6 +71,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USERNAME)
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 # Se configura como secreto en Render. Nunca se expone al APK ni al navegador.
 FIREBASE_SERVICE_ACCOUNT_JSON = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "")
 
@@ -4242,10 +4244,44 @@ async def crear_cita(
             )
             correo_cliente = str(usuario.get("email") or "").strip()
             if correo_cliente:
-                mensaje_correo = f"Tu cita fue agendada para el {fecha_cita} a las {hora_cita}. Servicio: {motivo}."
+                vehiculo_correo = conn.execute(
+                    text("""
+                        SELECT placa, marca, modelo, codigovehiculo
+                        FROM dmi.vehiculos
+                        WHERE idvehiculo = :vehiculo_id
+                    """),
+                    {"vehiculo_id": vehiculo_id},
+                ).mappings().fetchone() or {}
+                nombre_vehiculo = " ".join(
+                    str(valor).strip()
+                    for valor in (vehiculo_correo.get("marca"), vehiculo_correo.get("modelo"))
+                    if valor
+                ) or "Vehiculo registrado"
+                placa_vehiculo = vehiculo_correo.get("placa") or vehiculo_correo.get("codigovehiculo") or "No registrada"
+                observaciones_correo = observaciones or "Sin observaciones adicionales"
+                asunto_correo = "DMI | Confirmacion de cita agendada"
+                contenido_correo = f"""
+                <div style="font-family:Arial,sans-serif;background:#09090b;color:#f4f4f5;padding:28px;max-width:620px">
+                  <div style="border-bottom:2px solid #ff3158;padding-bottom:16px;margin-bottom:22px">
+                    <h1 style="margin:0;color:#ff3158;font-size:24px">DISOL MOTORS</h1>
+                    <p style="margin:6px 0 0;color:#a1a1aa">Confirmacion de cita</p>
+                  </div>
+                  <p>Hola, <strong>{html.escape(str(usuario.get('nombre') or 'cliente'))}</strong>.</p>
+                  <p>Tu cita fue registrada correctamente. Estos son los datos:</p>
+                  <table style="width:100%;border-collapse:collapse;margin:18px 0">
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Numero de cita</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">#{cita_id}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Fecha</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(fecha_cita)}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Hora</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(hora_cita)}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Vehiculo</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(nombre_vehiculo)} · {html.escape(str(placa_vehiculo))}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Servicio solicitado</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(motivo)}</td></tr>
+                    <tr><td style="padding:9px;color:#a1a1aa">Observaciones</td><td style="padding:9px;font-weight:bold">{html.escape(observaciones_correo)}</td></tr>
+                  </table>
+                  <p style="color:#a1a1aa;font-size:13px">Estado: <strong style="color:#ff3158">Pendiente de confirmacion del taller</strong>.</p>
+                  <p style="color:#a1a1aa;font-size:13px">Si necesitas modificar la cita, ingresa a Mi cuenta o comunicate con Disol Motors.</p>
+                </div>
+                """
                 enviar_correo_transaccional(
-                    correo_cliente, "DMI | Cita agendada",
-                    "<h2>DISOL MOTORS</h2><p>" + html.escape(mensaje_correo) + "</p>",
+                    correo_cliente, asunto_correo, contenido_correo,
                     "cita_agendada", usuario.get("idusuarios") or usuario.get("id"), "cita", cita_id,
                 )
             conn.commit()
@@ -4501,6 +4537,32 @@ def enviar_correo_transaccional(destinatario: str, asunto: str, contenido_html: 
         return False
     asunto = str(asunto)[:255]
     try:
+        if BREVO_API_KEY:
+            payload = json.dumps({
+                "sender": {"email": EMAIL_FROM, "name": "DMI Motors"},
+                "to": [{"email": destinatario}],
+                "subject": asunto,
+                "htmlContent": contenido_html,
+            }).encode("utf-8")
+            solicitud = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=payload,
+                headers={
+                    "accept": "application/json",
+                    "api-key": BREVO_API_KEY,
+                    "content-type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(solicitud, timeout=20) as respuesta:
+                if respuesta.status < 200 or respuesta.status >= 300:
+                    raise RuntimeError(f"Brevo devolvio HTTP {respuesta.status}")
+            with engine.connect() as conn:
+                registrar_correo(conn, destinatario, tipo, asunto, "enviado", usuario_id,
+                                 referencia_tipo, referencia_id)
+                conn.commit()
+            return True
+
         if not (SMTP_USERNAME and SMTP_PASSWORD and EMAIL_FROM):
             with engine.connect() as conn:
                 registrar_correo(conn, destinatario, tipo, asunto, "pendiente", usuario_id,
@@ -8707,4 +8769,9 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
+
+
 
