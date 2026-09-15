@@ -35,26 +35,30 @@ const clean = (value, fallback = 'Por definir') => {
 
 const estadoClase = (estado = '') => String(estado).toLowerCase().replace(/[^a-z0-9_]/g, '-');
 const estadoCitaVisible = (cita) => cita?.reprogramada_en ? 'reprogramada' : (cita?.estado || 'pendiente');
+const estadoFacturaVisible = (estado = '') => ({ pendiente: 'Pendiente de pago', parcial: 'Pago parcial', pagada: 'Pagada', cancelada: 'Pago cancelado', rechazado: 'Pago rechazado' }[String(estado).toLowerCase()] || estado || 'Pendiente de pago');
 
 const estadoOrdenPasos = [
-  { key: 'abierta', label: 'Orden' },
+  { key: 'abierta', label: 'Cita / Orden' },
   { key: 'diagnostico', label: 'Diagnostico' },
   { key: 'cotizada', label: 'Cotizacion' },
-  { key: 'en_reparacion', label: 'Reparacion' },
-  { key: 'facturada', label: 'Factura' },
-  { key: 'entregada', label: 'Entrega' },
+  { key: 'aprobada', label: 'Aprobada' },
+  { key: 'en_reparacion', label: 'En reparacion' },
+  { key: 'finalizada', label: 'Terminada' },
+  { key: 'facturada', label: 'Pendiente de pago' },
+  { key: 'pagada', label: 'Pagada' },
+  { key: 'entregada', label: 'Entregada' },
 ];
 
 const pasoIndexPorEstado = {
   abierta: 0,
   diagnostico: 1,
   cotizada: 2,
-  aprobada: 2,
-  en_reparacion: 3,
-  finalizada: 3,
-  facturada: 4,
-  pagada: 4,
-  entregada: 5,
+  aprobada: 3,
+  en_reparacion: 4,
+  finalizada: 5,
+  facturada: 6,
+  pagada: 7,
+  entregada: 8,
 };
 
 const EmptyState = ({ icon = 'bi-info-circle', text }) => (
@@ -115,6 +119,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   const [historialActivo, setHistorialActivo] = useState(null);
   const [ordenActiva, setOrdenActiva] = useState(null);
   const [cotizacionActiva, setCotizacionActiva] = useState(null);
+  const [confirmacionCotizacion, setConfirmacionCotizacion] = useState(null);
   const [respondiendoCotizacion, setRespondiendoCotizacion] = useState(false);
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
   const [facturaAPagar, setFacturaAPagar] = useState(null);
@@ -185,19 +190,30 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   const vehiculoIdActual = vehiculoSeleccionado?.idvehiculo;
   const ordenesVehiculo = useMemo(() => {
     if (!vehiculoIdActual) return data?.ordenes || [];
-    return (data?.ordenes || []).filter((orden) => String(orden.vehiculo_id) === String(vehiculoIdActual));
+    return (data?.ordenes || []).filter((orden) => String(orden.vehiculo_id || orden.vehiculos_idvehiculo || orden.idvehiculo) === String(vehiculoIdActual));
   }, [data, vehiculoIdActual]);
 
-  const ordenIdsVehiculo = useMemo(() => new Set(ordenesVehiculo.map((orden) => orden.idorden)), [ordenesVehiculo]);
+  const ordenIdsVehiculo = useMemo(() => new Set(ordenesVehiculo.map((orden) => String(orden.idorden || orden.id || orden.orden_id))), [ordenesVehiculo]);
   const citasVehiculo = useMemo(() => {
     if (!vehiculoIdActual) return data?.citas || [];
     return (data?.citas || []).filter((cita) => String(cita.idvehiculo || cita.vehiculos_idvehiculo) === String(vehiculoIdActual));
   }, [data, vehiculoIdActual]);
-  const diagnosticosVehiculo = useMemo(() => (data?.diagnosticos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
-  const serviciosVehiculo = useMemo(() => (data?.servicios_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
-  const repuestosVehiculo = useMemo(() => (data?.repuestos_orden || []).filter((item) => ordenIdsVehiculo.has(item.orden_id)), [data, ordenIdsVehiculo]);
-  const facturasVehiculo = useMemo(() => (data?.facturas || []).filter((factura) => ordenIdsVehiculo.has(factura.orden_id)), [data, ordenIdsVehiculo]);
-  const cotizacionesVehiculo = useMemo(() => (data?.cotizaciones || []).filter((cotizacion) => ordenIdsVehiculo.has(cotizacion.orden_id)), [data, ordenIdsVehiculo]);
+  const idOrdenDeItem = (item) => String(item?.orden_id ?? item?.idorden ?? item?.orden_trabajo_id ?? '');
+  const diagnosticosVehiculo = useMemo(() => (data?.diagnosticos_orden || []).filter((item) => ordenIdsVehiculo.has(idOrdenDeItem(item))), [data, ordenIdsVehiculo]);
+  const facturasVehiculo = useMemo(() => (data?.facturas || []).filter((factura) => ordenIdsVehiculo.has(idOrdenDeItem(factura))), [data, ordenIdsVehiculo]);
+  const cotizacionesVehiculo = useMemo(() => (data?.cotizaciones || []).filter((cotizacion) => ordenIdsVehiculo.has(idOrdenDeItem(cotizacion))), [data, ordenIdsVehiculo]);
+  const cotizacionPorId = useMemo(() => new Map(cotizacionesVehiculo.map((cotizacion) => [String(cotizacion.idcotizacion), cotizacion])), [cotizacionesVehiculo]);
+  const itemsCotizacionVehiculo = useMemo(() => (data?.cotizacion_detalles || [])
+    .filter((item) => cotizacionPorId.has(String(item.cotizacion_id)))
+    .map((item) => ({ ...item, orden_id: cotizacionPorId.get(String(item.cotizacion_id))?.orden_id })), [data, cotizacionPorId]);
+  const serviciosVehiculo = useMemo(() => [
+    ...(data?.servicios_orden || []).filter((item) => ordenIdsVehiculo.has(idOrdenDeItem(item))),
+    ...itemsCotizacionVehiculo.filter((item) => String(item.tipo || '').toLowerCase() === 'servicio').map((item) => ({ ...item, descripcionservicio: item.descripcion, estado: 'cotizado' })),
+  ], [data, ordenIdsVehiculo, itemsCotizacionVehiculo]);
+  const repuestosVehiculo = useMemo(() => [
+    ...(data?.repuestos_orden || []).filter((item) => ordenIdsVehiculo.has(idOrdenDeItem(item))),
+    ...itemsCotizacionVehiculo.filter((item) => String(item.tipo || '').toLowerCase() === 'repuesto').map((item) => ({ ...item, descripcionproductos: item.descripcion, estado: 'cotizado' })),
+  ], [data, ordenIdsVehiculo, itemsCotizacionVehiculo]);
   const historialVehiculo = useMemo(() => {
     if (!vehiculoIdActual) return data?.historial || [];
     return (data?.historial || []).filter((evento) => String(evento.vehiculo_id) === String(vehiculoIdActual));
@@ -228,11 +244,11 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   }, [ordenesVehiculo]);
 
   const diagnosticosPorOrden = (ordenId) => diagnosticosVehiculo.filter((item) => item.orden_id === ordenId);
-  const serviciosPorOrden = (ordenId) => serviciosVehiculo.filter((item) => item.orden_id === ordenId);
-  const repuestosPorOrden = (ordenId) => repuestosVehiculo.filter((item) => item.orden_id === ordenId);
-  const facturaPorOrden = (ordenId) => facturasVehiculo.find((item) => item.orden_id === ordenId);
+  const serviciosPorOrden = (ordenId) => serviciosVehiculo.filter((item) => String(item.orden_id) === String(ordenId));
+  const repuestosPorOrden = (ordenId) => repuestosVehiculo.filter((item) => String(item.orden_id) === String(ordenId));
+  const facturaPorOrden = (ordenId) => facturasVehiculo.find((item) => String(item.orden_id) === String(ordenId));
   const pagosPorFactura = (facturaId) => (data?.pagos_facturas || []).filter((item) => item.factura_id === facturaId);
-  const itemsPorCotizacion = (cotizacionId) => (data?.cotizacion_detalles || []).filter((item) => item.cotizacion_id === cotizacionId);
+  const itemsPorCotizacion = (cotizacionId) => (data?.cotizacion_detalles || []).filter((item) => String(item.cotizacion_id) === String(cotizacionId));
   const actualizarCitaLocal = (citaId, cambios) => {
     setData((actual) => ({
       ...actual,
@@ -365,12 +381,16 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
     items: itemsPorCotizacion(cotizacion.idcotizacion),
   });
 
-  const responderCotizacion = async (respuesta) => {
+  const responderCotizacion = async (respuesta, confirmado = false) => {
     if (!cotizacionActiva || respondiendoCotizacion) return;
     const mensaje = respuesta === 'aceptada'
       ? '¿Deseas aceptar la cotizacion y autorizar la reparacion?'
       : '¿Deseas rechazar esta cotizacion? La reparacion no continuara.';
-    if (!window.confirm(mensaje)) return;
+    if (!confirmado) {
+      setConfirmacionCotizacion({ respuesta, mensaje });
+      return;
+    }
+    setConfirmacionCotizacion(null);
     setRespondiendoCotizacion(true);
     try {
       await MiCuentaService.responderCotizacion(cotizacionActiva.idcotizacion, respuesta);
@@ -545,7 +565,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
           {serviciosVehiculo.length ? (
             <div className="user-account-list">
               {serviciosVehiculo.slice(0, 8).map((item) => (
-                <div className="user-account-item user-service-item" key={item.iddetalle_servicio}>
+                <div className="user-account-item user-service-item" key={'servicio-' + (item.iddetalle_servicio || item.cotizacion_id || item.descripcion)}>
                   <strong>{clean(item.descripcion || item.descripcionservicio, 'Servicio tecnico')}</strong>
                   <span>Cantidad {clean(item.cantidad, 1)} | {money(item.subtotal)}</span>
                   <small>Orden #{item.orden_id}</small>
@@ -558,7 +578,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
           {repuestosVehiculo.length ? (
             <div className="user-account-list">
               {repuestosVehiculo.slice(0, 8).map((item) => (
-                <div className="user-account-item" key={item.iddetalle_repuesto}>
+                <div className="user-account-item" key={'repuesto-' + (item.iddetalle_repuesto || item.cotizacion_id || item.descripcion)}>
                   <strong>{clean(item.descripcion)}</strong>
                   <span>Cantidad {clean(item.cantidad, 1)} | {money(item.subtotal)}</span>
                   <small>Orden #{item.orden_id}</small>
@@ -594,11 +614,11 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
                 <div className="user-account-item user-action-item" key={factura.idfactura}>
                   <strong>{factura.codigo_factura}</strong>
                   <span>{money(factura.total)} | Saldo {money(factura.saldo)}</span>
-                  <small className={`user-status ${estadoClase(factura.estado)}`}>{clean(factura.estado)}</small>
+                  <small className={`user-status ${estadoClase(factura.estado)}`}>{estadoFacturaVisible(factura.estado)}</small>
                   <button type="button" onClick={() => abrirFactura(factura)}>Ver factura</button>
                   {Number(factura.saldo ?? factura.total ?? 0) > 0 && !['pagada', 'cancelada'].includes(String(factura.estado || '').toLowerCase()) && (
                     <button type="button" className="user-pay-invoice" onClick={() => setFacturaAPagar(factura)}>
-                      <i className="bi bi-credit-card-2-front" /> Pagar factura
+                      <i className="bi bi-credit-card-2-front" /> Pagar con Wompi
                     </button>
                   )}
                 </div>
@@ -698,6 +718,22 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
         )}
       </DetailModal>
 
+      <DetailModal title={confirmacionCotizacion ? 'Confirmar respuesta' : ''} onClose={() => setConfirmacionCotizacion(null)}>
+        {confirmacionCotizacion && (
+          <div className="user-detail-content user-confirmation-content">
+            <div className="user-confirmation-icon">!</div>
+            <h3>¿Confirmas esta acción?</h3>
+            <p>{confirmacionCotizacion.mensaje}</p>
+            <div className="user-quote-actions">
+              <button type="button" className="outline" onClick={() => setConfirmacionCotizacion(null)}>Cancelar</button>
+              <button type="button" className={confirmacionCotizacion.respuesta === 'aceptada' ? '' : 'danger'} onClick={() => responderCotizacion(confirmacionCotizacion.respuesta, true)}>
+                {confirmacionCotizacion.respuesta === 'aceptada' ? 'Aceptar cotización' : 'Rechazar cotización'}
+              </button>
+            </div>
+          </div>
+        )}
+      </DetailModal>
+
       <DetailModal title={citaGestionActiva ? 'Reprogramar cita' : ''} onClose={() => setCitaGestionActiva(null)}>
         {citaGestionActiva && <form className="user-appointment-form" onSubmit={confirmarReprogramacion}>
           <p>Actualizarás la misma cita #{citaGestionActiva.cita.idcita}; su historial se conservará.</p>
@@ -732,14 +768,14 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
 
             <h3>Servicios realizados</h3>
             {ordenActiva.servicios.length ? ordenActiva.servicios.map((item) => (
-              <div className="user-detail-line" key={item.iddetalle_servicio}>
+              <div className="user-detail-line" key={'servicio-' + (item.iddetalle_servicio || item.cotizacion_id || item.descripcion)}>
                 <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay servicios registrados para esta orden.</p>}
 
             <h3>Repuestos utilizados</h3>
             {ordenActiva.repuestos.length ? ordenActiva.repuestos.map((item) => (
-              <div className="user-detail-line" key={item.iddetalle_repuesto}>
+              <div className="user-detail-line" key={'repuesto-' + (item.iddetalle_repuesto || item.cotizacion_id || item.descripcion)}>
                 <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay repuestos registrados para esta orden.</p>}
@@ -775,14 +811,14 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
 
             <h3>Servicios realizados</h3>
             {historialActivo.servicios.length ? historialActivo.servicios.map((item) => (
-              <div className="user-detail-line" key={item.iddetalle_servicio}>
+              <div className="user-detail-line" key={'servicio-' + (item.iddetalle_servicio || item.cotizacion_id || item.descripcion)}>
                 <span>{clean(item.descripcion)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay servicios registrados para esta orden.</p>}
 
             <h3>Repuestos utilizados</h3>
             {historialActivo.repuestos.length ? historialActivo.repuestos.map((item) => (
-              <div className="user-detail-line" key={item.iddetalle_repuesto}>
+              <div className="user-detail-line" key={'repuesto-' + (item.iddetalle_repuesto || item.cotizacion_id || item.descripcion)}>
                 <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay repuestos registrados para esta orden.</p>}
@@ -817,3 +853,8 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
     </main>
   );
 }
+
+
+
+
+

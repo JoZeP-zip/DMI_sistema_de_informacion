@@ -39,6 +39,7 @@ const clearAuthSession = () => {
   ["token", "role", "email", "nombre", "dmiSessionStartedAt"].forEach((key) => {
     localStorage.removeItem(key);
   });
+  sessionStorage.clear();
 };
 
 export const handleUnauthorizedResponse = () => {
@@ -164,9 +165,10 @@ export const AuthService = {
     }),
   }),
 
-  /** Limpia localStorage y cierra sesion local. */
+  /** Cierra sesion remota y limpia todo estado local. */
   logout: () => {
     clearAuthSession();
+    return fetch(BASE_URL + "/logout-login", { method: "GET", credentials: "include", redirect: "manual", cache: "no-store" }).catch(() => null);
   },
 
   /** Devuelve el usuario guardado en localStorage o null. */

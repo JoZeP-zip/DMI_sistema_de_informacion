@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 from email.message import EmailMessage
 import smtplib
 import ssl
+import urllib.request
 import os
 import html
 import re
@@ -70,6 +71,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 EMAIL_FROM = os.getenv("EMAIL_FROM", SMTP_USERNAME)
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 # Se configura como secreto en Render. Nunca se expone al APK ni al navegador.
 FIREBASE_SERVICE_ACCOUNT_JSON = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "")
 
@@ -1045,6 +1047,38 @@ async def admin_registros(request: Request, access_token: str = Cookie(None)):
     )
 
 
+@app.get("/api/admin/pagos")
+async def admin_pagos_api(request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return JSONResponse({"error": "No tienes permiso."}, status_code=403)
+    try:
+        with engine.connect() as conn:
+            if not table_exists(conn, "dmi", "pagos"):
+                return JSONResponse({"pagos": []})
+            rows = conn.execute(text("""
+                SELECT p.idpago, p.codigo_pago, p.fecha_pago, p.valor, p.referencia,
+                       f.codigo_factura, f.orden_id, ot.codigo_orden,
+                       COALESCE(NULLIF(trim(concat_ws(' ', u.nombre, u.apellidos)), ''),
+                                NULLIF(u.usuarionombre, ''), 'Cliente') AS cliente,
+                       COALESCE(mp.descripcionmpago, 'Metodo no especificado') AS metodo,
+                       COALESCE(f.estado, 'pendiente') AS estado
+                FROM dmi.pagos p
+                LEFT JOIN dmi.facturas f ON f.idfactura = p.factura_id
+                LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id
+                LEFT JOIN dmi.usuarios u ON u.idusuarios = f.cliente_id
+                LEFT JOIN dmi.metodopago mp ON mp.idmetodopago = p.metodopago_id
+                ORDER BY p.fecha_pago DESC NULLS LAST, p.idpago DESC
+            """)).mappings().fetchall()
+            pagos = [dict(row) for row in rows]
+            for pago in pagos:
+                fecha = pago.get("fecha_pago")
+                pago["fecha_pago"] = fecha.strftime("%d/%m/%Y %H:%M") if hasattr(fecha, "strftime") else str(fecha or "Sin fecha")
+            return JSONResponse({"pagos": pagos})
+    except Exception as error:
+        return JSONResponse({"error": f"No se pudieron cargar los pagos: {error}"}, status_code=500)
+
+
 @app.get("/admin/facturas", response_class=HTMLResponse)
 async def admin_facturas(request: Request, access_token: str = Cookie(None)):
     """Historial de facturas generadas para el administrador."""
@@ -1106,6 +1140,27 @@ async def admin_facturas(request: Request, access_token: str = Cookie(None)):
             "error": error_msg,
         },
     )
+
+
+@app.get("/admin/pagos", response_class=HTMLResponse)
+async def admin_pagos(request: Request, access_token: str = Cookie(None)):
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/")
+    pagos, error_msg = [], None
+    try:
+        with engine.connect() as conn:
+            pagos = [dict(row) for row in conn.execute(text("""
+                SELECT p.idpago, p.fecha_pago, p.valor, p.referencia, p.estado, p.codigo_pago, f.codigo_factura, f.orden_id, ot.codigo_orden, COALESCE(NULLIF(trim(concat_ws(\' \', u.nombre, u.apellidos)), \'\'), u.usuarionombre, \'Cliente\') AS cliente, COALESCE(mp.descripcionmpago, \'Sin metodo\') AS metodo
+                FROM dmi.pagos p LEFT JOIN dmi.facturas f ON f.idfactura = p.factura_id LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id LEFT JOIN dmi.usuarios u ON u.idusuarios = f.cliente_id LEFT JOIN dmi.metodopago mp ON mp.idmetodopago = p.metodopago_id ORDER BY p.fecha_pago DESC, p.idpago DESC
+            """)).mappings().fetchall()]
+            for pago in pagos:
+                fecha = pago.get("fecha_pago")
+                pago["fecha_visible"] = fecha.strftime("%d/%m/%Y %H:%M") if hasattr(fecha, "strftime") else str(fecha or "Sin fecha")
+    except Exception as e:
+        error_msg = f"No se pudieron cargar los pagos: {e}"
+    total_recibido = sum(float(p.get("valor") or 0) for p in pagos if str(p.get("estado") or "").lower() in ("pagado", "aprobado", "approved"))
+    return templates.TemplateResponse(request=request, name="admin_pagos.html", context={"usuario": usuario, "pagos": pagos, "error": error_msg, "total_recibido": total_recibido})
 
 
 # ==================== ACCIONES DE ORDENES ====================
@@ -3962,7 +4017,10 @@ async def crear_cita(
         # no pueda saltarse manipulando el calendario del navegador.
         fecha_cita_validada, hora_cita_validada = validar_fecha_hora_cita(fecha_cita, hora_cita)
         fecha_cita = fecha_cita_validada
-        hora_cita = hora_cita_validada.strftime("%H:%M")
+        # La columna dmi.citas.hora es TIME; enviamos un objeto datetime.time.
+        # Usamos texto separado únicamente para HTML y mensajes.
+        hora_cita = hora_cita_validada
+        hora_cita_texto = hora_cita_validada.strftime("%H:%M")
 
         notas = observaciones or ""
 
@@ -4189,10 +4247,44 @@ async def crear_cita(
             )
             correo_cliente = str(usuario.get("email") or "").strip()
             if correo_cliente:
-                mensaje_correo = f"Tu cita fue agendada para el {fecha_cita} a las {hora_cita}. Servicio: {motivo}."
+                vehiculo_correo = conn.execute(
+                    text("""
+                        SELECT placa, marca, modelo, codigovehiculo
+                        FROM dmi.vehiculos
+                        WHERE idvehiculo = :vehiculo_id
+                    """),
+                    {"vehiculo_id": vehiculo_id},
+                ).mappings().fetchone() or {}
+                nombre_vehiculo = " ".join(
+                    str(valor).strip()
+                    for valor in (vehiculo_correo.get("marca"), vehiculo_correo.get("modelo"))
+                    if valor
+                ) or "Vehiculo registrado"
+                placa_vehiculo = vehiculo_correo.get("placa") or vehiculo_correo.get("codigovehiculo") or "No registrada"
+                observaciones_correo = observaciones or "Sin observaciones adicionales"
+                asunto_correo = "DMI | Confirmacion de cita agendada"
+                contenido_correo = f"""
+                <div style="font-family:Arial,sans-serif;background:#09090b;color:#f4f4f5;padding:28px;max-width:620px">
+                  <div style="border-bottom:2px solid #ff3158;padding-bottom:16px;margin-bottom:22px">
+                    <h1 style="margin:0;color:#ff3158;font-size:24px">DISOL MOTORS</h1>
+                    <p style="margin:6px 0 0;color:#a1a1aa">Confirmacion de cita</p>
+                  </div>
+                  <p>Hola, <strong>{html.escape(str(usuario.get('nombre') or 'cliente'))}</strong>.</p>
+                  <p>Tu cita fue registrada correctamente. Estos son los datos:</p>
+                  <table style="width:100%;border-collapse:collapse;margin:18px 0">
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Numero de cita</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">#{cita_id}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Fecha</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(str(fecha_cita))}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Hora</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(hora_cita_texto)}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Vehiculo</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(nombre_vehiculo)} · {html.escape(str(placa_vehiculo))}</td></tr>
+                    <tr><td style="padding:9px;border-bottom:1px solid #27272a;color:#a1a1aa">Servicio solicitado</td><td style="padding:9px;border-bottom:1px solid #27272a;font-weight:bold">{html.escape(motivo)}</td></tr>
+                    <tr><td style="padding:9px;color:#a1a1aa">Observaciones</td><td style="padding:9px;font-weight:bold">{html.escape(observaciones_correo)}</td></tr>
+                  </table>
+                  <p style="color:#a1a1aa;font-size:13px">Estado: <strong style="color:#ff3158">Pendiente de confirmacion del taller</strong>.</p>
+                  <p style="color:#a1a1aa;font-size:13px">Si necesitas modificar la cita, ingresa a Mi cuenta o comunicate con Disol Motors.</p>
+                </div>
+                """
                 enviar_correo_transaccional(
-                    correo_cliente, "DMI | Cita agendada",
-                    "<h2>DISOL MOTORS</h2><p>" + html.escape(mensaje_correo) + "</p>",
+                    correo_cliente, asunto_correo, contenido_correo,
                     "cita_agendada", usuario.get("idusuarios") or usuario.get("id"), "cita", cita_id,
                 )
             conn.commit()
@@ -4448,6 +4540,32 @@ def enviar_correo_transaccional(destinatario: str, asunto: str, contenido_html: 
         return False
     asunto = str(asunto)[:255]
     try:
+        if BREVO_API_KEY:
+            payload = json.dumps({
+                "sender": {"email": EMAIL_FROM, "name": "DMI Motors"},
+                "to": [{"email": destinatario}],
+                "subject": asunto,
+                "htmlContent": contenido_html,
+            }).encode("utf-8")
+            solicitud = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=payload,
+                headers={
+                    "accept": "application/json",
+                    "api-key": BREVO_API_KEY,
+                    "content-type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(solicitud, timeout=20) as respuesta:
+                if respuesta.status < 200 or respuesta.status >= 300:
+                    raise RuntimeError(f"Brevo devolvio HTTP {respuesta.status}")
+            with engine.connect() as conn:
+                registrar_correo(conn, destinatario, tipo, asunto, "enviado", usuario_id,
+                                 referencia_tipo, referencia_id)
+                conn.commit()
+            return True
+
         if not (SMTP_USERNAME and SMTP_PASSWORD and EMAIL_FROM):
             with engine.connect() as conn:
                 registrar_correo(conn, destinatario, tipo, asunto, "pendiente", usuario_id,
@@ -6334,11 +6452,6 @@ async def configuracion(request: Request, access_token: str = Cookie(None)):
         context=ctx,
     )
 
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
 #========================= INVENTARIO ======================================
 @app.get("/api/inventario")
 async def api_inventario():
@@ -7578,6 +7691,33 @@ async def responder_cotizacion_cliente(cotizacion_id: int, request: Request, acc
                 "Cliente " + ("acepto" if respuesta == "aceptada" else "rechazo") + f" la cotizacion {cotizacion.get('codigo_cotizacion')}",
                 float(cotizacion.get("total") or 0),
             )
+
+            # Avisar al mecanico asignado cuando el cliente responde la cotizacion.
+            # La orden puede usar distintos nombres de columna segun el esquema instalado.
+            orden_col = empleado_orden_column(conn)
+            empleado_id = None
+            if orden_col:
+                empleado_id = conn.execute(
+                    text(f"SELECT {orden_col} FROM dmi.orden_trabajo WHERE idorden = :orden_id"),
+                    {"orden_id": cotizacion["orden_id"]},
+                ).scalar()
+            if empleado_id:
+                titulo_mecanico = "Orden de trabajo aprobada" if respuesta == "aceptada" else "Cotizacion rechazada"
+                mensaje_mecanico = (
+                    f"El cliente acepto la cotizacion {cotizacion.get('codigo_cotizacion')} y autorizo la reparacion."
+                    if respuesta == "aceptada"
+                    else f"El cliente rechazo la cotizacion {cotizacion.get('codigo_cotizacion')}."
+                )
+                crear_notificacion(
+                    conn,
+                    titulo_mecanico,
+                    mensaje_mecanico,
+                    "cotizacion_" + respuesta,
+                    "orden",
+                    cotizacion["orden_id"],
+                    empleado_id=empleado_id,
+                    accion_url=f"/mecanico/ordenes/{cotizacion['orden_id']}",
+                )
             conn.commit()
         return JSONResponse({"ok": True, "estado": respuesta})
     except Exception as e:
@@ -8632,3 +8772,10 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
+
+
+
+
