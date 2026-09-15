@@ -78,7 +78,7 @@ const CloudinaryCarousel = ({ proyecto, isOpen, onClose }) => {
             <h4 className="fw-bold text-uppercase tracking-wider mb-2 text-danger">
               {proyecto.titulo}
             </h4>
-            <p className="text-muted small mb-0">
+            <p className="text-muted2 small mb-0">
               {proyecto.descripcion}
             </p>
 
