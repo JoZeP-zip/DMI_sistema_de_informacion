@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Form, Request, Cookie, Header, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
@@ -1142,6 +1142,22 @@ async def admin_facturas(request: Request, access_token: str = Cookie(None)):
     )
 
 
+@app.get("/admin/facturas/{factura_id}/pdf")
+async def ver_pdf_factura(factura_id: int, request: Request, access_token: str = Cookie(None)):
+    """Muestra el PDF de una factura y lo conserva en la base de datos."""
+    usuario = obtener_usuario(access_token, request)
+    if not es_admin(usuario):
+        return redirigir_sin_permiso("/")
+    with engine.begin() as conn:
+        contenido, codigo = obtener_o_generar_pdf_factura(conn, factura_id)
+    nombre = re.sub(r"[^A-Za-z0-9_-]", "_", codigo)
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{nombre}.pdf"'},
+    )
+
+
 @app.get("/admin/pagos", response_class=HTMLResponse)
 async def admin_pagos(request: Request, access_token: str = Cookie(None)):
     usuario = obtener_usuario(access_token, request)
@@ -1359,6 +1375,114 @@ def obtener_resumen_orden(conn, orden_id: int):
         text("SELECT * FROM dmi.v_ordenes_resumen WHERE idorden = :id"),
         {"id": orden_id},
     ).mappings().fetchone()
+
+
+def asegurar_columnas_pdf_factura(conn):
+    """Añade el archivo PDF y su fecha de generación sin depender de una migración manual."""
+    columnas = table_columns(conn, "dmi", "facturas")
+    if "pdf_contenido" not in columnas:
+        conn.execute(text("ALTER TABLE dmi.facturas ADD COLUMN pdf_contenido BYTEA"))
+    if "pdf_generado_en" not in columnas:
+        conn.execute(text("ALTER TABLE dmi.facturas ADD COLUMN pdf_generado_en TIMESTAMPTZ"))
+
+
+def escapar_texto_pdf(valor) -> str:
+    """Convierte texto de la factura a una cadena segura para un PDF básico."""
+    texto = str(valor or "").replace("\r", " ").replace("\n", " ").replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    return texto.encode("cp1252", "replace").decode("cp1252")
+
+
+def construir_pdf_factura(factura: dict, items: list[dict]) -> bytes:
+    """Crea un PDF ligero y autocontenido para que no dependa de librerías del servidor."""
+    fecha = factura.get("fecha_factura")
+    fecha_texto = fecha.strftime("%d/%m/%Y %H:%M") if hasattr(fecha, "strftime") else str(fecha or "")
+    cliente = factura.get("cliente") or "Cliente"
+    lineas = [
+        ("DISOL MOTORS", 20),
+        ("FACTURA DE SERVICIO", 14),
+        (f"Factura: {factura.get('codigo_factura') or ''}", 11),
+        (f"Fecha: {fecha_texto}", 10),
+        (f"Cliente: {cliente}", 10),
+        (f"Documento: {factura.get('documento') or 'No registrado'}", 10),
+        (f"Orden: {factura.get('codigo_orden') or 'Sin orden'}", 10),
+        ("", 8),
+        ("DETALLE", 11),
+    ]
+    for item in items:
+        descripcion = item.get("descripcion") or item.get("concepto") or item.get("nombre") or item.get("tipo") or "Servicio / repuesto"
+        cantidad = item.get("cantidad") or 1
+        subtotal = float(item.get("subtotal") or item.get("valor_total") or 0)
+        lineas.append((f"{descripcion}  |  Cant.: {cantidad}  |  ${subtotal:,.0f}", 9))
+    if not items:
+        lineas.append(("Servicios y repuestos incluidos en la orden.", 9))
+    lineas.extend([
+        ("", 8),
+        (f"TOTAL: ${float(factura.get('total') or 0):,.0f}", 14),
+        (f"SALDO: ${float(factura.get('saldo') if factura.get('saldo') is not None else factura.get('total') or 0):,.0f}", 11),
+        (f"ESTADO: {str(factura.get('estado') or 'pendiente').upper()}", 10),
+        ("Gracias por confiar en Disol Motors.", 9),
+    ])
+
+    paginas = [lineas[indice:indice + 42] for indice in range(0, len(lineas), 42)] or [[]]
+    objetos = [b"<< /Type /Catalog /Pages 2 0 R >>", None, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
+    paginas_objetos = []
+    for pagina in paginas:
+        contenido = ["BT", "/F1 10 Tf", "50 790 Td"]
+        for texto_linea, tamano in pagina:
+            contenido.append(f"/F1 {tamano} Tf ({escapar_texto_pdf(texto_linea)}) Tj")
+            contenido.append("0 -17 Td")
+        stream = "\n".join(contenido + ["ET"]).encode("cp1252", "replace")
+        paginas_objetos.append((stream, None))
+
+    # El catálogo, las páginas, la fuente y pares página/contenido se numeran explícitamente.
+    total_objetos = 3 + len(paginas_objetos) * 2
+    referencias_paginas = " ".join(f"{4 + indice * 2} 0 R" for indice in range(len(paginas_objetos)))
+    objetos[1] = f"<< /Type /Pages /Kids [{referencias_paginas}] /Count {len(paginas_objetos)} >>".encode()
+    for indice, (stream, _) in enumerate(paginas_objetos):
+        pagina_numero = 4 + indice * 2
+        contenido_numero = pagina_numero + 1
+        objetos.append(f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents {contenido_numero} 0 R >>".encode())
+        objetos.append(b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream")
+
+    resultado = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    offsets = [0]
+    for numero, objeto in enumerate(objetos, start=1):
+        offsets.append(len(resultado))
+        resultado.extend(f"{numero} 0 obj\n".encode())
+        resultado.extend(objeto)
+        resultado.extend(b"\nendobj\n")
+    inicio_xref = len(resultado)
+    resultado.extend(f"xref\n0 {total_objetos + 1}\n0000000000 65535 f \n".encode())
+    for offset in offsets[1:]:
+        resultado.extend(f"{offset:010d} 00000 n \n".encode())
+    resultado.extend(f"trailer\n<< /Size {total_objetos + 1} /Root 1 0 R >>\nstartxref\n{inicio_xref}\n%%EOF".encode())
+    return bytes(resultado)
+
+
+def obtener_o_generar_pdf_factura(conn, factura_id: int) -> tuple[bytes, str]:
+    """Devuelve el PDF persistido; lo crea y guarda para facturas anteriores si aún no existe."""
+    asegurar_columnas_pdf_factura(conn)
+    factura = conn.execute(text("""
+        SELECT f.*, COALESCE(NULLIF(trim(concat_ws(' ', u.nombre, u.apellidos)), ''), NULLIF(u.usuarionombre, ''), 'Cliente') AS cliente,
+               COALESCE(u.documento::text, 'No registrado') AS documento, COALESCE(ot.codigo_orden, 'Sin orden') AS codigo_orden
+        FROM dmi.facturas f
+        LEFT JOIN dmi.usuarios u ON u.idusuarios = f.cliente_id
+        LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id
+        WHERE f.idfactura = :id
+    """), {"id": factura_id}).mappings().fetchone()
+    if not factura:
+        raise HTTPException(status_code=404, detail="Factura no encontrada")
+    contenido = factura.get("pdf_contenido")
+    if contenido:
+        return bytes(contenido), factura.get("codigo_factura") or str(factura_id)
+    items = []
+    if factura.get("orden_id"):
+        cotizacion_id = conn.execute(text("SELECT idcotizacion FROM dmi.cotizaciones WHERE orden_id = :orden_id AND estado = 'aprobada' ORDER BY idcotizacion DESC LIMIT 1"), {"orden_id": factura["orden_id"]}).scalar()
+        if cotizacion_id:
+            items = obtener_items_cotizacion(conn, cotizacion_id)
+    contenido = construir_pdf_factura(dict(factura), items)
+    conn.execute(text("UPDATE dmi.facturas SET pdf_contenido = :contenido, pdf_generado_en = :fecha WHERE idfactura = :id"), {"contenido": contenido, "fecha": datetime.now(), "id": factura_id})
+    return contenido, factura.get("codigo_factura") or str(factura_id)
 
 # ==================== ORDENES DE TRABAJO ====================
 @app.get("/mecanico", response_class=HTMLResponse)
@@ -2413,6 +2537,10 @@ async def generar_factura_orden(orden_id: int, request: Request, access_token: s
                 "saldo": total_orden,
                 "estado": "pendiente",
             }, "idfactura")
+            # El comprobante se crea al facturar y queda persistido como BYTEA
+            # en dmi.facturas para que la vista de administración siempre use
+            # el mismo documento, incluso después de modificar la orden.
+            obtener_o_generar_pdf_factura(conn, factura_id)
             update_dynamic(conn, "orden_trabajo", "idorden", orden_id, {"estado": "facturada", "fecha_finalizacion": datetime.now()})
             notificar_cliente(conn, orden.get("cliente_id"), "Factura disponible", f"Tu factura {codigo} fue generada por un total de ${total_orden:,.0f}.", "factura_generada", "factura", factura_id)
             notificar_administradores(conn, "Factura generada", f"Se generó la factura {codigo} para la orden {orden.get('codigo_orden') or '#' + str(orden_id)}.", "factura_generada", "factura", factura_id, "/admin/ordenes")
@@ -8772,10 +8900,6 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
-
-
 
 
 

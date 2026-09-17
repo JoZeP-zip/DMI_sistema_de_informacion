@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -96,9 +97,14 @@
               </td>
               <td data-label="Factura generada">
                 {% if factura.orden_id %}
-                  <a class="view-btn" href="/admin/ordenes/{{ factura.orden_id }}">
-                    <i class="bi bi-receipt"></i> VER FACTURA
-                  </a>
+                  <div class="factura-actions">
+                    <a class="view-btn" href="/admin/ordenes/{{ factura.orden_id }}">
+                      <i class="bi bi-receipt"></i> VER FACTURA
+                    </a>
+                    <a class="pdf-btn" href="/admin/facturas/{{ factura.idfactura }}/pdf" target="_blank" rel="noopener" title="Ver factura en PDF" aria-label="Ver factura {{ factura.codigo_factura }} en PDF">
+                      <i class="bi bi-file-earmark-pdf-fill"></i><span>PDF</span>
+                    </a>
+                  </div>
                 {% else %}
                   <span class="muted">No disponible</span>
                 {% endif %}
