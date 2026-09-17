@@ -1384,65 +1384,114 @@ def asegurar_columnas_pdf_factura(conn):
         conn.execute(text("ALTER TABLE dmi.facturas ADD COLUMN pdf_contenido BYTEA"))
     if "pdf_generado_en" not in columnas:
         conn.execute(text("ALTER TABLE dmi.facturas ADD COLUMN pdf_generado_en TIMESTAMPTZ"))
+    if "pdf_version" not in columnas:
+        conn.execute(text("ALTER TABLE dmi.facturas ADD COLUMN pdf_version INTEGER"))
 
 
 def escapar_texto_pdf(valor) -> str:
-    """Convierte texto de la factura a una cadena segura para un PDF básico."""
+    """Convierte texto a la codificación segura de las fuentes PDF incorporadas."""
     texto = str(valor or "").replace("\r", " ").replace("\n", " ").replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-    return texto.encode("cp1252", "replace").decode("cp1252")
+    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
 
 
 def construir_pdf_factura(factura: dict, items: list[dict]) -> bytes:
-    """Crea un PDF ligero y autocontenido para que no dependa de librerías del servidor."""
+    """Genera el mismo comprobante visual que consulta el cliente en Mi Cuenta."""
     fecha = factura.get("fecha_factura")
     fecha_texto = fecha.strftime("%d/%m/%Y %H:%M") if hasattr(fecha, "strftime") else str(fecha or "")
     cliente = factura.get("cliente") or "Cliente"
-    lineas = [
-        ("DISOL MOTORS", 20),
-        ("FACTURA DE SERVICIO", 14),
-        (f"Factura: {factura.get('codigo_factura') or ''}", 11),
-        (f"Fecha: {fecha_texto}", 10),
-        (f"Cliente: {cliente}", 10),
-        (f"Documento: {factura.get('documento') or 'No registrado'}", 10),
-        (f"Orden: {factura.get('codigo_orden') or 'Sin orden'}", 10),
-        ("", 8),
-        ("DETALLE", 11),
+    total = float(factura.get("total") or 0)
+    saldo = float(factura.get("saldo") if factura.get("saldo") is not None else total)
+    rojo = "0.93 0.20 0.32"
+    oscuro = "0.14 0.03 0.05"
+    gris = "0.96 0.96 0.97"
+    comandos = ["1 1 1 rg 0 0 612 792 re f"]
+
+    def rectangulo(x, y, ancho, alto, color):
+        comandos.append(f"{color} rg {x} {y} {ancho} {alto} re f")
+
+    def linea(x1, y1, x2, y2, color="0.86 0.86 0.86", grosor=0.7):
+        comandos.append(f"{color} RG {grosor} w {x1} {y1} m {x2} {y2} l S")
+
+    def texto(x, y, valor, tamano=10, negrita=False, color="0.08 0.10 0.14"):
+        fuente = "F2" if negrita else "F1"
+        comandos.append(f"BT /{fuente} {tamano} Tf {color} rg {x} {y} Td ({escapar_texto_pdf(valor)}) Tj ET")
+
+    def recortar(valor, limite=54):
+        valor = str(valor or "")
+        return valor if len(valor) <= limite else valor[:limite - 3] + "..."
+
+    # Encabezado y marca, iguales en jerarquía a la factura de Mi Cuenta.
+    rectangulo(0, 770, 612, 22, rojo)
+    rectangulo(52, 650, 52, 52, oscuro)
+    texto(62, 675, "DMI", 15, True, "1 1 1")
+    texto(116, 690, "DISOL MOTORS INJECTIONS", 18, True)
+    texto(116, 671, "NIT/CC: Por definir", 10, False, "0.30 0.34 0.40")
+    texto(116, 655, "Teléfono: Por definir", 10, False, "0.30 0.34 0.40")
+    texto(116, 639, "Dirección: Por definir - Colombia", 10, False, "0.30 0.34 0.40")
+    texto(388, 688, "FACTURA DE SERVICIO", 18, True, rojo)
+    texto(446, 670, f"No. {factura.get('codigo_factura') or ''}", 10, False, "0.30 0.34 0.40")
+    texto(402, 654, f"Fecha: {fecha_texto}", 10, True, "0.30 0.34 0.40")
+    texto(393, 638, f"Pago: {str(factura.get('estado') or 'pendiente').capitalize()}/registrado por taller", 10, True, "0.30 0.34 0.40")
+    linea(52, 615, 560, 615)
+
+    texto(52, 590, "C L I E N T E", 9, False, rojo)
+    rectangulo(52, 520, 508, 56, gris)
+    texto(64, 548, "Nombre:", 10, True, "0.30 0.34 0.40")
+    texto(116, 548, recortar(cliente, 30), 10)
+    texto(315, 548, "Documento:", 10, True, "0.30 0.34 0.40")
+    texto(380, 548, recortar(factura.get("documento") or "No registrado", 21), 10)
+    texto(64, 530, "Correo:", 10, True, "0.30 0.34 0.40")
+    texto(108, 530, recortar(factura.get("email") or "No registrado", 28), 10)
+    texto(315, 530, "Teléfono:", 10, True, "0.30 0.34 0.40")
+    texto(375, 530, recortar(factura.get("telefono") or "No registrado", 20), 10)
+
+    texto(52, 492, "D E T A L L E", 9, False, rojo)
+    rectangulo(52, 463, 508, 24, oscuro)
+    texto(62, 472, "CONCEPTO", 8, True, "1 1 1")
+    texto(327, 472, "CANT.", 8, True, "1 1 1")
+    texto(393, 472, "VALOR UNITARIO", 8, True, "1 1 1")
+    texto(502, 472, "TOTAL", 8, True, "1 1 1")
+
+    y = 442
+    detalle = items or [{"descripcion": factura.get("codigo_orden") or "Servicio técnico automotriz", "cantidad": 1, "valor_unitario": total, "subtotal": total}]
+    for item in detalle[:8]:
+        descripcion = recortar(item.get("descripcion") or item.get("concepto") or item.get("nombre") or "Servicio / repuesto", 40)
+        cantidad = float(item.get("cantidad") or 1)
+        unitario = float(item.get("valor_unitario") or item.get("subtotal") or 0)
+        subtotal = float(item.get("subtotal") or unitario * cantidad)
+        texto(62, y, descripcion, 10, True)
+        texto(327, y, f"{cantidad:g}", 10)
+        texto(393, y, f"${unitario:,.0f}", 10)
+        texto(502, y, f"${subtotal:,.0f}", 10)
+        linea(52, y - 12, 560, y - 12, "0.90 0.90 0.90", 0.4)
+        y -= 26
+    if len(detalle) > 8:
+        texto(62, y, f"y {len(detalle) - 8} ítem(s) adicional(es) incluidos", 9, False, "0.30 0.34 0.40")
+        y -= 22
+
+    resumen_y = min(y - 10, 330)
+    linea(330, resumen_y + 50, 560, resumen_y + 50)
+    texto(375, resumen_y + 32, "Subtotal", 10)
+    texto(510, resumen_y + 32, f"${total:,.0f}", 10, True)
+    texto(375, resumen_y + 13, "IVA", 10)
+    texto(470, resumen_y + 13, "Incluido/según régimen", 10, True)
+    linea(330, resumen_y, 560, resumen_y)
+    texto(375, resumen_y - 22, "Total", 15, True, rojo)
+    texto(500, resumen_y - 22, f"${total:,.0f}", 15, True, rojo)
+    texto(375, resumen_y - 42, f"Saldo: ${saldo:,.0f}", 9, False, "0.30 0.34 0.40")
+    linea(52, 78, 560, 78)
+    texto(52, 58, "Documento generado por sistema para soporte de compra o servicio.", 8, False, "0.30 0.34 0.40")
+    texto(52, 44, "Debe complementarse con los datos tributarios definitivos antes de usarlo como factura electrónica ante la DIAN.", 8, False, "0.30 0.34 0.40")
+
+    stream = "\n".join(comandos).encode("cp1252", "replace")
+    objetos = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [5 0 R] /Count 1 >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
     ]
-    for item in items:
-        descripcion = item.get("descripcion") or item.get("concepto") or item.get("nombre") or item.get("tipo") or "Servicio / repuesto"
-        cantidad = item.get("cantidad") or 1
-        subtotal = float(item.get("subtotal") or item.get("valor_total") or 0)
-        lineas.append((f"{descripcion}  |  Cant.: {cantidad}  |  ${subtotal:,.0f}", 9))
-    if not items:
-        lineas.append(("Servicios y repuestos incluidos en la orden.", 9))
-    lineas.extend([
-        ("", 8),
-        (f"TOTAL: ${float(factura.get('total') or 0):,.0f}", 14),
-        (f"SALDO: ${float(factura.get('saldo') if factura.get('saldo') is not None else factura.get('total') or 0):,.0f}", 11),
-        (f"ESTADO: {str(factura.get('estado') or 'pendiente').upper()}", 10),
-        ("Gracias por confiar en Disol Motors.", 9),
-    ])
-
-    paginas = [lineas[indice:indice + 42] for indice in range(0, len(lineas), 42)] or [[]]
-    objetos = [b"<< /Type /Catalog /Pages 2 0 R >>", None, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
-    paginas_objetos = []
-    for pagina in paginas:
-        contenido = ["BT", "/F1 10 Tf", "50 790 Td"]
-        for texto_linea, tamano in pagina:
-            contenido.append(f"/F1 {tamano} Tf ({escapar_texto_pdf(texto_linea)}) Tj")
-            contenido.append("0 -17 Td")
-        stream = "\n".join(contenido + ["ET"]).encode("cp1252", "replace")
-        paginas_objetos.append((stream, None))
-
-    # El catálogo, las páginas, la fuente y pares página/contenido se numeran explícitamente.
-    total_objetos = 3 + len(paginas_objetos) * 2
-    referencias_paginas = " ".join(f"{4 + indice * 2} 0 R" for indice in range(len(paginas_objetos)))
-    objetos[1] = f"<< /Type /Pages /Kids [{referencias_paginas}] /Count {len(paginas_objetos)} >>".encode()
-    for indice, (stream, _) in enumerate(paginas_objetos):
-        pagina_numero = 4 + indice * 2
-        contenido_numero = pagina_numero + 1
-        objetos.append(f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents {contenido_numero} 0 R >>".encode())
-        objetos.append(b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream")
 
     resultado = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     offsets = [0]
@@ -1452,6 +1501,7 @@ def construir_pdf_factura(factura: dict, items: list[dict]) -> bytes:
         resultado.extend(objeto)
         resultado.extend(b"\nendobj\n")
     inicio_xref = len(resultado)
+    total_objetos = len(objetos)
     resultado.extend(f"xref\n0 {total_objetos + 1}\n0000000000 65535 f \n".encode())
     for offset in offsets[1:]:
         resultado.extend(f"{offset:010d} 00000 n \n".encode())
@@ -1464,7 +1514,9 @@ def obtener_o_generar_pdf_factura(conn, factura_id: int) -> tuple[bytes, str]:
     asegurar_columnas_pdf_factura(conn)
     factura = conn.execute(text("""
         SELECT f.*, COALESCE(NULLIF(trim(concat_ws(' ', u.nombre, u.apellidos)), ''), NULLIF(u.usuarionombre, ''), 'Cliente') AS cliente,
-               COALESCE(u.documento::text, 'No registrado') AS documento, COALESCE(ot.codigo_orden, 'Sin orden') AS codigo_orden
+               COALESCE(u.documento::text, 'No registrado') AS documento,
+               COALESCE(u.email, 'No registrado') AS email, COALESCE(u.telefono, 'No registrado') AS telefono,
+               COALESCE(ot.codigo_orden, 'Sin orden') AS codigo_orden
         FROM dmi.facturas f
         LEFT JOIN dmi.usuarios u ON u.idusuarios = f.cliente_id
         LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id
@@ -1473,7 +1525,7 @@ def obtener_o_generar_pdf_factura(conn, factura_id: int) -> tuple[bytes, str]:
     if not factura:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     contenido = factura.get("pdf_contenido")
-    if contenido:
+    if contenido and factura.get("pdf_version") == 2:
         return bytes(contenido), factura.get("codigo_factura") or str(factura_id)
     items = []
     if factura.get("orden_id"):
@@ -1481,7 +1533,7 @@ def obtener_o_generar_pdf_factura(conn, factura_id: int) -> tuple[bytes, str]:
         if cotizacion_id:
             items = obtener_items_cotizacion(conn, cotizacion_id)
     contenido = construir_pdf_factura(dict(factura), items)
-    conn.execute(text("UPDATE dmi.facturas SET pdf_contenido = :contenido, pdf_generado_en = :fecha WHERE idfactura = :id"), {"contenido": contenido, "fecha": datetime.now(), "id": factura_id})
+    conn.execute(text("UPDATE dmi.facturas SET pdf_contenido = :contenido, pdf_generado_en = :fecha, pdf_version = 2 WHERE idfactura = :id"), {"contenido": contenido, "fecha": datetime.now(), "id": factura_id})
     return contenido, factura.get("codigo_factura") or str(factura_id)
 
 # ==================== ORDENES DE TRABAJO ====================
@@ -8911,5 +8963,3 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-

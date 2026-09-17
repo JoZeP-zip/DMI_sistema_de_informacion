@@ -120,6 +120,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   const [ordenActiva, setOrdenActiva] = useState(null);
   const [cotizacionActiva, setCotizacionActiva] = useState(null);
   const [respondiendoCotizacion, setRespondiendoCotizacion] = useState(false);
+  const [confirmacionCotizacion, setConfirmacionCotizacion] = useState(null);
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
   const [facturaAPagar, setFacturaAPagar] = useState(null);
   const [seccionActiva, setSeccionActiva] = useState('resumen');
@@ -375,16 +376,13 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
 
   const responderCotizacion = async (respuesta) => {
     if (!cotizacionActiva || respondiendoCotizacion) return;
-    const mensaje = respuesta === 'aceptada'
-      ? '¿Deseas aceptar la cotizacion y autorizar la reparacion?'
-      : '¿Deseas rechazar esta cotizacion? La reparacion no continuara.';
-    if (!window.confirm(mensaje)) return;
+    setConfirmacionCotizacion(null);
     setRespondiendoCotizacion(true);
     try {
       await MiCuentaService.responderCotizacion(cotizacionActiva.idcotizacion, respuesta);
       setData((actual) => ({
         ...actual,
-        cotizaciones: (actual?.cotizaciones || []).map((item) => item.idcotizacion === cotizacionActiva.idcotizacion ? { ...item, estado: respuesta === 'aceptada' ? 'aprobada' : 'rechazada', respuesta_cliente: respuesta } : item),
+        cotizaciones: (actual?.cotizaciones || []).map((item) => String(item.idcotizacion) === String(cotizacionActiva.idcotizacion) ? { ...item, estado: respuesta === 'aceptada' ? 'aprobada' : 'rechazada', respuesta_cliente: respuesta } : item),
         ordenes: (actual?.ordenes || []).map((orden) => String(orden.idorden) === String(cotizacionActiva.orden_id) ? {
           ...orden,
           estado: respuesta === 'aceptada' ? 'aprobada' : 'cancelada',
@@ -701,10 +699,32 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
             {cotizacionActiva.estado === 'pendiente' && (
               <div className="user-quote-actions">
                 <button type="button" className="outline" onClick={() => setCotizacionActiva(null)}>Pendiente</button>
-                <button type="button" className="danger" disabled={respondiendoCotizacion} onClick={() => responderCotizacion('rechazada')}>No continuar</button>
-                <button type="button" disabled={respondiendoCotizacion} onClick={() => responderCotizacion('aceptada')}>Aceptar y continuar</button>
+                <button type="button" className="danger" disabled={respondiendoCotizacion} onClick={() => setConfirmacionCotizacion('rechazada')}>No continuar</button>
+                <button type="button" disabled={respondiendoCotizacion} onClick={() => setConfirmacionCotizacion('aceptada')}>Aceptar y continuar</button>
               </div>
             )}
+          </div>
+        )}
+      </DetailModal>
+
+      <DetailModal title={confirmacionCotizacion ? (confirmacionCotizacion === 'aceptada' ? 'Confirmar aprobación' : 'Confirmar rechazo') : ''} onClose={() => setConfirmacionCotizacion(null)}>
+        {confirmacionCotizacion && (
+          <div className="user-detail-content user-quote-confirmation">
+            <div className="user-detail-grid">
+              <article><span>Cotización</span><strong>{cotizacionActiva?.codigo_cotizacion}</strong></article>
+              <article><span>Total autorizado</span><strong>{money(cotizacionActiva?.total)}</strong></article>
+            </div>
+            {confirmacionCotizacion === 'aceptada' ? (
+              <><h3>¿Autorizar reparación?</h3><p className="user-muted">Al confirmar, el taller podrá continuar con los trabajos aprobados en esta cotización.</p></>
+            ) : (
+              <><h3>¿No deseas continuar?</h3><p className="user-muted">La cotización se marcará como rechazada y el taller será informado.</p></>
+            )}
+            <div className="user-quote-actions">
+              <button type="button" className="outline" disabled={respondiendoCotizacion} onClick={() => setConfirmacionCotizacion(null)}>Volver</button>
+              <button type="button" className={confirmacionCotizacion === 'rechazada' ? 'danger' : ''} disabled={respondiendoCotizacion} onClick={() => responderCotizacion(confirmacionCotizacion)}>
+                {respondiendoCotizacion ? 'Guardando...' : confirmacionCotizacion === 'aceptada' ? 'Sí, autorizar reparación' : 'Sí, rechazar cotización'}
+              </button>
+            </div>
           </div>
         )}
       </DetailModal>
