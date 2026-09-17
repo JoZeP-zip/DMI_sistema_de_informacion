@@ -8327,7 +8327,7 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     v.combustible
                 FROM dmi.orden_trabajo ot
                 LEFT JOIN dmi.vehiculos v ON v.idvehiculo = ot.vehiculo_id
-                WHERE ot.cliente_id = :usuario_id
+                WHERE ot.cliente_id = :usuario_id OR v.cliente_id = :usuario_id
                 ORDER BY ot.fecha_apertura DESC, ot.idorden DESC
                 """,
                 {"usuario_id": usuario_id},
@@ -8350,7 +8350,8 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     d.estado
                 FROM dmi.diagnosticos d
                 JOIN dmi.orden_trabajo ot ON ot.idorden = d.orden_id
-                WHERE ot.cliente_id = :usuario_id
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = ot.vehiculo_id
+                WHERE ot.cliente_id = :usuario_id OR v.cliente_id = :usuario_id
                 ORDER BY d.fecha_diagnostico DESC, d.iddiagnostico DESC
                 """,
                 {"usuario_id": usuario_id},
@@ -8375,7 +8376,8 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                 FROM dmi.detalle_servicios ds
                 LEFT JOIN dmi.servicios s ON s.idservicios = ds.servicio_id
                 JOIN dmi.orden_trabajo ot ON ot.idorden = ds.orden_id
-                WHERE ot.cliente_id = :usuario_id
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = ot.vehiculo_id
+                WHERE ot.cliente_id = :usuario_id OR v.cliente_id = :usuario_id
                 ORDER BY ds.iddetalle_servicio DESC
                 """,
                 {"usuario_id": usuario_id},
@@ -8400,7 +8402,8 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                 FROM dmi.detalle_repuestos dr
                 LEFT JOIN dmi.inventario_catalogo p ON p.id = COALESCE(dr.producto_id, dr.inventario_id)
                 JOIN dmi.orden_trabajo ot ON ot.idorden = dr.orden_id
-                WHERE ot.cliente_id = :usuario_id
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = ot.vehiculo_id
+                WHERE ot.cliente_id = :usuario_id OR v.cliente_id = :usuario_id
                 ORDER BY dr.iddetalle_repuesto DESC
                 """,
                 {"usuario_id": usuario_id},
@@ -8423,7 +8426,8 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     ot.codigo_orden
                 FROM dmi.facturas f
                 LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id
-                WHERE f.cliente_id = :usuario_id
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = ot.vehiculo_id
+                WHERE f.cliente_id = :usuario_id OR ot.cliente_id = :usuario_id OR v.cliente_id = :usuario_id
                 ORDER BY f.fecha_factura DESC, f.idfactura DESC
                 """,
                 {"usuario_id": usuario_id},
@@ -8444,7 +8448,9 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                        c.subtotal, c.impuestos, c.descuento, c.total, c.estado, ot.codigo_orden
                 FROM dmi.cotizaciones c
                 JOIN dmi.orden_trabajo ot ON ot.idorden = c.orden_id
-                WHERE c.cliente_id = :usuario_id AND c.enviado_en IS NOT NULL
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = ot.vehiculo_id
+                WHERE (c.cliente_id = :usuario_id OR ot.cliente_id = :usuario_id OR v.cliente_id = :usuario_id)
+                  AND c.enviado_en IS NOT NULL
                 ORDER BY {orden_cotizaciones}
                 """.replace("c.fecha_cotizacion", fecha_cotizacion_select, 1),
                 {"usuario_id": usuario_id},
@@ -8455,7 +8461,10 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                 SELECT cd.*
                 FROM dmi.cotizacion_detalles cd
                 JOIN dmi.cotizaciones c ON c.idcotizacion = cd.cotizacion_id
-                WHERE c.cliente_id = :usuario_id AND c.enviado_en IS NOT NULL
+                JOIN dmi.orden_trabajo ot ON ot.idorden = c.orden_id
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = ot.vehiculo_id
+                WHERE (c.cliente_id = :usuario_id OR ot.cliente_id = :usuario_id OR v.cliente_id = :usuario_id)
+                  AND c.enviado_en IS NOT NULL
                 ORDER BY cd.iddetalle_cotizacion
                 """,
                 {"usuario_id": usuario_id},
@@ -8476,8 +8485,10 @@ async def api_mi_garage(request: Request, access_token: str = Cookie(None)):
                     f.codigo_factura
                 FROM dmi.pagos p
                 LEFT JOIN dmi.facturas f ON f.idfactura = p.factura_id
+                LEFT JOIN dmi.orden_trabajo ot ON ot.idorden = f.orden_id
+                LEFT JOIN dmi.vehiculos v ON v.idvehiculo = ot.vehiculo_id
                 LEFT JOIN dmi.metodopago mp ON mp.idmetodopago = p.metodopago_id
-                WHERE f.cliente_id = :usuario_id
+                WHERE f.cliente_id = :usuario_id OR ot.cliente_id = :usuario_id OR v.cliente_id = :usuario_id
                 ORDER BY p.fecha_pago DESC, p.idpago DESC
                 """,
                 {"usuario_id": usuario_id},
@@ -8900,6 +8911,5 @@ async def config_activar_usuario(usuario_id: int, access_token: str = Cookie(Non
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
 
 

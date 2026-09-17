@@ -119,7 +119,6 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   const [historialActivo, setHistorialActivo] = useState(null);
   const [ordenActiva, setOrdenActiva] = useState(null);
   const [cotizacionActiva, setCotizacionActiva] = useState(null);
-  const [confirmacionCotizacion, setConfirmacionCotizacion] = useState(null);
   const [respondiendoCotizacion, setRespondiendoCotizacion] = useState(false);
   const [vehiculoSeleccionadoId, setVehiculoSeleccionadoId] = useState('');
   const [facturaAPagar, setFacturaAPagar] = useState(null);
@@ -198,22 +197,15 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
     if (!vehiculoIdActual) return data?.citas || [];
     return (data?.citas || []).filter((cita) => String(cita.idvehiculo || cita.vehiculos_idvehiculo) === String(vehiculoIdActual));
   }, [data, vehiculoIdActual]);
-  const idOrdenDeItem = (item) => String(item?.orden_id ?? item?.idorden ?? item?.orden_trabajo_id ?? '');
-  const diagnosticosVehiculo = useMemo(() => (data?.diagnosticos_orden || []).filter((item) => ordenIdsVehiculo.has(idOrdenDeItem(item))), [data, ordenIdsVehiculo]);
-  const facturasVehiculo = useMemo(() => (data?.facturas || []).filter((factura) => ordenIdsVehiculo.has(idOrdenDeItem(factura))), [data, ordenIdsVehiculo]);
-  const cotizacionesVehiculo = useMemo(() => (data?.cotizaciones || []).filter((cotizacion) => ordenIdsVehiculo.has(idOrdenDeItem(cotizacion))), [data, ordenIdsVehiculo]);
-  const cotizacionPorId = useMemo(() => new Map(cotizacionesVehiculo.map((cotizacion) => [String(cotizacion.idcotizacion), cotizacion])), [cotizacionesVehiculo]);
-  const itemsCotizacionVehiculo = useMemo(() => (data?.cotizacion_detalles || [])
-    .filter((item) => cotizacionPorId.has(String(item.cotizacion_id)))
-    .map((item) => ({ ...item, orden_id: cotizacionPorId.get(String(item.cotizacion_id))?.orden_id })), [data, cotizacionPorId]);
-  const serviciosVehiculo = useMemo(() => [
-    ...(data?.servicios_orden || []).filter((item) => ordenIdsVehiculo.has(idOrdenDeItem(item))),
-    ...itemsCotizacionVehiculo.filter((item) => String(item.tipo || '').toLowerCase() === 'servicio').map((item) => ({ ...item, descripcionservicio: item.descripcion, estado: 'cotizado' })),
-  ], [data, ordenIdsVehiculo, itemsCotizacionVehiculo]);
-  const repuestosVehiculo = useMemo(() => [
-    ...(data?.repuestos_orden || []).filter((item) => ordenIdsVehiculo.has(idOrdenDeItem(item))),
-    ...itemsCotizacionVehiculo.filter((item) => String(item.tipo || '').toLowerCase() === 'repuesto').map((item) => ({ ...item, descripcionproductos: item.descripcion, estado: 'cotizado' })),
-  ], [data, ordenIdsVehiculo, itemsCotizacionVehiculo]);
+  // Los datos de PostgreSQL pueden llegar como número o como cadena según el
+  // serializador. El conjunto de órdenes usa cadenas, así que normalizamos
+  // cada clave antes de filtrar para no ocultar información válida del cliente.
+  const perteneceAOrdenesDelVehiculo = (ordenId) => ordenId !== null && ordenId !== undefined && ordenIdsVehiculo.has(String(ordenId));
+  const diagnosticosVehiculo = useMemo(() => (data?.diagnosticos_orden || []).filter((item) => perteneceAOrdenesDelVehiculo(item.orden_id || item.idorden || item.orden_trabajo_id)), [data, ordenIdsVehiculo]);
+  const serviciosVehiculo = useMemo(() => (data?.servicios_orden || []).filter((item) => perteneceAOrdenesDelVehiculo(item.orden_id)), [data, ordenIdsVehiculo]);
+  const repuestosVehiculo = useMemo(() => (data?.repuestos_orden || []).filter((item) => perteneceAOrdenesDelVehiculo(item.orden_id)), [data, ordenIdsVehiculo]);
+  const facturasVehiculo = useMemo(() => (data?.facturas || []).filter((factura) => perteneceAOrdenesDelVehiculo(factura.orden_id)), [data, ordenIdsVehiculo]);
+  const cotizacionesVehiculo = useMemo(() => (data?.cotizaciones || []).filter((cotizacion) => perteneceAOrdenesDelVehiculo(cotizacion.orden_id)), [data, ordenIdsVehiculo]);
   const historialVehiculo = useMemo(() => {
     if (!vehiculoIdActual) return data?.historial || [];
     return (data?.historial || []).filter((evento) => String(evento.vehiculo_id) === String(vehiculoIdActual));
@@ -243,11 +235,11 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
     });
   }, [ordenesVehiculo]);
 
-  const diagnosticosPorOrden = (ordenId) => diagnosticosVehiculo.filter((item) => item.orden_id === ordenId);
+  const diagnosticosPorOrden = (ordenId) => diagnosticosVehiculo.filter((item) => String(item.orden_id) === String(ordenId));
   const serviciosPorOrden = (ordenId) => serviciosVehiculo.filter((item) => String(item.orden_id) === String(ordenId));
   const repuestosPorOrden = (ordenId) => repuestosVehiculo.filter((item) => String(item.orden_id) === String(ordenId));
   const facturaPorOrden = (ordenId) => facturasVehiculo.find((item) => String(item.orden_id) === String(ordenId));
-  const pagosPorFactura = (facturaId) => (data?.pagos_facturas || []).filter((item) => item.factura_id === facturaId);
+  const pagosPorFactura = (facturaId) => (data?.pagos_facturas || []).filter((item) => String(item.factura_id) === String(facturaId));
   const itemsPorCotizacion = (cotizacionId) => (data?.cotizacion_detalles || []).filter((item) => String(item.cotizacion_id) === String(cotizacionId));
   const actualizarCitaLocal = (citaId, cambios) => {
     setData((actual) => ({
@@ -381,23 +373,19 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
     items: itemsPorCotizacion(cotizacion.idcotizacion),
   });
 
-  const responderCotizacion = async (respuesta, confirmado = false) => {
+  const responderCotizacion = async (respuesta) => {
     if (!cotizacionActiva || respondiendoCotizacion) return;
     const mensaje = respuesta === 'aceptada'
       ? '¿Deseas aceptar la cotizacion y autorizar la reparacion?'
       : '¿Deseas rechazar esta cotizacion? La reparacion no continuara.';
-    if (!confirmado) {
-      setConfirmacionCotizacion({ respuesta, mensaje });
-      return;
-    }
-    setConfirmacionCotizacion(null);
+    if (!window.confirm(mensaje)) return;
     setRespondiendoCotizacion(true);
     try {
       await MiCuentaService.responderCotizacion(cotizacionActiva.idcotizacion, respuesta);
       setData((actual) => ({
         ...actual,
         cotizaciones: (actual?.cotizaciones || []).map((item) => item.idcotizacion === cotizacionActiva.idcotizacion ? { ...item, estado: respuesta === 'aceptada' ? 'aprobada' : 'rechazada', respuesta_cliente: respuesta } : item),
-        ordenes: (actual?.ordenes || []).map((orden) => orden.idorden === cotizacionActiva.orden_id ? {
+        ordenes: (actual?.ordenes || []).map((orden) => String(orden.idorden) === String(cotizacionActiva.orden_id) ? {
           ...orden,
           estado: respuesta === 'aceptada' ? 'aprobada' : 'cancelada',
           estado_label: respuesta === 'aceptada' ? 'Cotizacion aprobada' : 'Cotizacion rechazada',
@@ -414,7 +402,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   const abrirFactura = (factura) => {
     const servicios = serviciosPorOrden(factura.orden_id);
     const repuestos = repuestosPorOrden(factura.orden_id);
-    const orden = ordenesVehiculo.find((item) => item.idorden === factura.orden_id);
+    const orden = ordenesVehiculo.find((item) => String(item.idorden) === String(factura.orden_id));
     const pagos = pagosPorFactura(factura.idfactura);
 
     const items = [
@@ -467,11 +455,14 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
   };
 
   const verHistorial = (evento) => {
-    const orden = ordenesVehiculo.find((item) => item.idorden === evento.orden_id);
+    const orden = ordenesVehiculo.find((item) => String(item.idorden) === String(evento.orden_id));
     const diagnosticos = diagnosticosPorOrden(evento.orden_id);
     const servicios = serviciosPorOrden(evento.orden_id);
     const repuestos = repuestosPorOrden(evento.orden_id);
-    const factura = facturasVehiculo.find((item) => item.idfactura === evento.factura_id || item.orden_id === evento.orden_id);
+    const factura = facturasVehiculo.find((item) => (
+      (evento.factura_id != null && String(item.idfactura) === String(evento.factura_id))
+      || (evento.orden_id != null && String(item.orden_id) === String(evento.orden_id))
+    ));
     setHistorialActivo({ evento, orden, diagnosticos, servicios, repuestos, factura, eventos: historialVehiculo });
   };
 
@@ -565,7 +556,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
           {serviciosVehiculo.length ? (
             <div className="user-account-list">
               {serviciosVehiculo.slice(0, 8).map((item) => (
-                <div className="user-account-item user-service-item" key={'servicio-' + (item.iddetalle_servicio || item.cotizacion_id || item.descripcion)}>
+                <div className="user-account-item user-service-item" key={item.iddetalle_servicio}>
                   <strong>{clean(item.descripcion || item.descripcionservicio, 'Servicio tecnico')}</strong>
                   <span>Cantidad {clean(item.cantidad, 1)} | {money(item.subtotal)}</span>
                   <small>Orden #{item.orden_id}</small>
@@ -578,7 +569,7 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
           {repuestosVehiculo.length ? (
             <div className="user-account-list">
               {repuestosVehiculo.slice(0, 8).map((item) => (
-                <div className="user-account-item" key={'repuesto-' + (item.iddetalle_repuesto || item.cotizacion_id || item.descripcion)}>
+                <div className="user-account-item" key={item.iddetalle_repuesto}>
                   <strong>{clean(item.descripcion)}</strong>
                   <span>Cantidad {clean(item.cantidad, 1)} | {money(item.subtotal)}</span>
                   <small>Orden #{item.orden_id}</small>
@@ -718,22 +709,6 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
         )}
       </DetailModal>
 
-      <DetailModal title={confirmacionCotizacion ? 'Confirmar respuesta' : ''} onClose={() => setConfirmacionCotizacion(null)}>
-        {confirmacionCotizacion && (
-          <div className="user-detail-content user-confirmation-content">
-            <div className="user-confirmation-icon">!</div>
-            <h3>¿Confirmas esta acción?</h3>
-            <p>{confirmacionCotizacion.mensaje}</p>
-            <div className="user-quote-actions">
-              <button type="button" className="outline" onClick={() => setConfirmacionCotizacion(null)}>Cancelar</button>
-              <button type="button" className={confirmacionCotizacion.respuesta === 'aceptada' ? '' : 'danger'} onClick={() => responderCotizacion(confirmacionCotizacion.respuesta, true)}>
-                {confirmacionCotizacion.respuesta === 'aceptada' ? 'Aceptar cotización' : 'Rechazar cotización'}
-              </button>
-            </div>
-          </div>
-        )}
-      </DetailModal>
-
       <DetailModal title={citaGestionActiva ? 'Reprogramar cita' : ''} onClose={() => setCitaGestionActiva(null)}>
         {citaGestionActiva && <form className="user-appointment-form" onSubmit={confirmarReprogramacion}>
           <p>Actualizarás la misma cita #{citaGestionActiva.cita.idcita}; su historial se conservará.</p>
@@ -768,14 +743,14 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
 
             <h3>Servicios realizados</h3>
             {ordenActiva.servicios.length ? ordenActiva.servicios.map((item) => (
-              <div className="user-detail-line" key={'servicio-' + (item.iddetalle_servicio || item.cotizacion_id || item.descripcion)}>
+              <div className="user-detail-line" key={item.iddetalle_servicio}>
                 <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay servicios registrados para esta orden.</p>}
 
             <h3>Repuestos utilizados</h3>
             {ordenActiva.repuestos.length ? ordenActiva.repuestos.map((item) => (
-              <div className="user-detail-line" key={'repuesto-' + (item.iddetalle_repuesto || item.cotizacion_id || item.descripcion)}>
+              <div className="user-detail-line" key={item.iddetalle_repuesto}>
                 <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay repuestos registrados para esta orden.</p>}
@@ -811,14 +786,14 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
 
             <h3>Servicios realizados</h3>
             {historialActivo.servicios.length ? historialActivo.servicios.map((item) => (
-              <div className="user-detail-line" key={'servicio-' + (item.iddetalle_servicio || item.cotizacion_id || item.descripcion)}>
+              <div className="user-detail-line" key={item.iddetalle_servicio}>
                 <span>{clean(item.descripcion)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay servicios registrados para esta orden.</p>}
 
             <h3>Repuestos utilizados</h3>
             {historialActivo.repuestos.length ? historialActivo.repuestos.map((item) => (
-              <div className="user-detail-line" key={'repuesto-' + (item.iddetalle_repuesto || item.cotizacion_id || item.descripcion)}>
+              <div className="user-detail-line" key={item.iddetalle_repuesto}>
                 <span>{clean(item.descripcion)} x {clean(item.cantidad, 1)}</span><strong>{money(item.subtotal)}</strong>
               </div>
             )) : <p className="user-muted">No hay repuestos registrados para esta orden.</p>}
@@ -853,8 +828,3 @@ export default function MiCuenta({ onAddVehicle, onScheduleAppointment, initialS
     </main>
   );
 }
-
-
-
-
-
