@@ -27,13 +27,12 @@ const DashboardAdmin = ({ onLogout }) => {
 
 
       if (event.data?.type === 'DMI_LOGOUT') {
-        // El panel embebido ya eliminó la cookie del backend. Cerramos
-        // también el estado React y volvemos directamente al inicio.
+   
         if (onLogout) onLogout(true);
       }
     };
 
-    window.addEventListener('message', handleMessage);
+    window.addEventListener('dmi:message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [onLogout, apiBaseUrl]);
 
