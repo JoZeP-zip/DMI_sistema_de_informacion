@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, text
 from supabase import create_client
 from dotenv import load_dotenv
 from typing import Optional
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 import calendar
 from decimal import Decimal
 from urllib.parse import quote, quote_plus
@@ -700,7 +700,7 @@ def construir_calendario_mes(mes: Optional[str], citas: list) -> list:
 
 
 def generar_codigo_orden(conn) -> str:
-    base = f"OT-{datetime.utcnow().strftime('%Y%m%d')}"
+    base = f"OT-{datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y%m%d')}"
     total_dia = conn.execute(
         text("""
             SELECT COUNT(*)
@@ -1313,7 +1313,7 @@ def registrar_historial_orden(conn, orden_id: int, tipo_evento: str, descripcion
         "costo_total": costo_total,
     })
 def generar_codigo_documento(conn, table: str, column: str, prefix: str):
-    base = f"{prefix}-{datetime.utcnow().strftime('%Y%m%d')}"
+    base = f"{prefix}-{datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y%m%d')}"
     if not table_exists(conn, "dmi", table) or column not in table_columns(conn, "dmi", table):
         return f"{base}-0001"
     total_dia = conn.execute(
@@ -4292,7 +4292,7 @@ async def crear_cita(
                         status_code=400
                     )
 
-                auto_code = f"AUTO{datetime.utcnow().strftime('%m%d%H%M%S%f')[:12]}"
+                auto_code = f"AUTO{datetime.now(timezone.utc).replace(tzinfo=None).strftime('%m%d%H%M%S%f')[:12]}"
 
                 result = conn.execute(
                     text("""
@@ -4760,7 +4760,10 @@ def enviar_correo_transaccional(destinatario: str, asunto: str, contenido_html: 
         mensaje["To"] = destinatario
         mensaje.set_content("Consulta este mensaje desde un cliente compatible con HTML.")
         mensaje.add_alternative(contenido_html, subtype="html")
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ssl.create_default_context(), timeout=20) as smtp:
+        contexto_ssl = ssl.create_default_context()
+        contexto_ssl.check_hostname = True
+        contexto_ssl.verify_mode = ssl.CERT_REQUIRED
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=contexto_ssl, timeout=20) as smtp:
             smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
             smtp.send_message(mensaje)
         with engine.connect() as conn:
@@ -6365,7 +6368,7 @@ def _ficha_orden_envio(pedido: dict, iniciar_endpoint: str, ubicacion_endpoint: 
     ruta = pedido.get("ruta_google_maps")
     boton_ruta = ("<a class='button alt' target='_blank' rel='noopener' href='" + seguro(ruta) + "'>ABRIR RUTA EN GOOGLE MAPS</a>") if ruta else ""
     bloque_referencia = ("<div class='field wide'><span>REFERENCIA</span><strong>" + seguro(referencia) + "</strong></div>") if referencia else ""
-    return """<!doctype html><html lang='es'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Orden de envío | DMI</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center;background:radial-gradient(circle at 20% 15%,#351019 0,transparent 34%),#07080c;color:#f6f7fa;font-family:Arial,sans-serif}.card{width:min(680px,100%);padding:clamp(24px,5vw,45px);border:1px solid #ff3158;background:linear-gradient(135deg,rgba(35,10,17,.96),rgba(13,17,25,.98));box-shadow:0 20px 60px #000}.eyebrow{color:#ff5271;letter-spacing:3px;font-size:11px;font-weight:700}.brand{font-size:clamp(34px,7vw,54px);margin:8px 0 4px}.brand b{color:#ff3158}.sub{color:#b6bac5;margin:0 0 28px}.code{display:inline-block;border:1px solid #ff3158;padding:8px 12px;font-weight:bold;margin-bottom:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{padding:14px;border:1px solid #3b414d;background:rgba(255,255,255,.035)}.field span{display:block;color:#ff6983;font-size:10px;letter-spacing:1.6px;margin-bottom:7px}.wide{grid-column:1/-1}.actions{display:grid;gap:12px;margin-top:26px}.button{border:1px solid #ff3158;background:#ff3158;color:#fff;text-decoration:none;text-align:center;padding:15px 18px;font-weight:800;letter-spacing:.7px;cursor:pointer}.button.alt{background:transparent}.note{font-size:12px;color:#aeb4c0;line-height:1.45;margin:18px 0 0}.status{font-size:13px;color:#86ebb0;min-height:20px}@media(max-width:540px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}</style></head><body><main class='card'><div class='eyebrow'>DMI / ORDEN DE REPARTO</div><h1 class='brand'>ENVIAR <b>PEDIDO</b></h1><p class='sub'>Abre la ruta, inicia el reparto y permite la ubicación para que el cliente pueda seguir el pedido.</p><div class='code'>""" + seguro(pedido.get("orden_envio") or f"ENV-{pedido.get('id')}") + """</div><section class='grid'><div class='field'><span>CLIENTE</span><strong>""" + seguro(pedido.get("nombre")) + """</strong></div><div class='field'><span>TELÉFONO</span><strong>""" + seguro(pedido.get("telefono")) + """</strong></div><div class='field wide'><span>DIRECCIÓN DE ENTREGA</span><strong>""" + seguro(direccion) + """</strong></div>""" + bloque_referencia + """</section><div class='actions'>""" + boton_ruta + """<button class='button' id='iniciar' type='button'>INICIAR REPARTO Y COMPARTIR UBICACIÓN</button><div id='estado' class='status'></div></div><p class='note'>Mantén esta página abierta y permite la ubicación mientras realizas el envío.</p></main><script>const iniciarEndpoint=""" + json.dumps(iniciar_endpoint).replace("</", "<\\/") + """,ubicacionEndpoint=""" + json.dumps(ubicacion_endpoint).replace("</", "<\\/") + """,estado=document.getElementById('estado');let activo=false;async function enviar(pos){const{latitude:a,longitude:b}=pos.coords;try{await fetch(ubicacionEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitud:a,longitud:b})})}catch(_){}}document.getElementById('iniciar').addEventListener('click',async()=>{const b=document.getElementById('iniciar');b.disabled=true;try{await fetch(iniciarEndpoint,{method:'POST'});if(!navigator.geolocation){estado.textContent='Este dispositivo no permite compartir ubicación.';return}if(!activo){activo=true;navigator.geolocation.watchPosition(enviar,()=>{estado.textContent='No pudimos obtener la ubicación. Revisa los permisos.'},{enableHighAccuracy:true,maximumAge:30000,timeout:15000})}estado.textContent='Reparto iniciado. Tu ubicación se está compartiendo con el cliente.'}catch(_){estado.textContent='No fue posible iniciar el reparto. Intenta nuevamente.';b.disabled=false}});</script></body></html>"""
+    return """<!doctype html><html lang='es'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Orden de envío | DMI</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center;background:radial-gradient(circle at 20% 15%,#351019 0,transparent 34%),#07080c;color:#f6f7fa;font-family:Arial,sans-serif}.card{width:min(680px,100%);padding:clamp(24px,5vw,45px);border:1px solid #ff3158;background:linear-gradient(135deg,rgba(35,10,17,.96),rgba(13,17,25,.98));box-shadow:0 20px 60px #000}.eyebrow{color:#ff5271;letter-spacing:3px;font-size:11px;font-weight:700}.brand{font-size:clamp(34px,7vw,54px);margin:8px 0 4px}.brand b{color:#ff3158}.sub{color:#b6bac5;margin:0 0 28px}.code{display:inline-block;border:1px solid #ff3158;padding:8px 12px;font-weight:bold;margin-bottom:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{padding:14px;border:1px solid #3b414d;background:rgba(255,255,255,.035)}.field span{display:block;color:#ff6983;font-size:10px;letter-spacing:1.6px;margin-bottom:7px}.wide{grid-column:1/-1}.actions{display:grid;gap:12px;margin-top:26px}.button{border:1px solid #ff3158;background:#ff3158;color:#fff;text-decoration:none;text-align:center;padding:15px 18px;font-weight:800;letter-spacing:.7px;cursor:pointer}.button.alt{background:transparent}.note{font-size:12px;color:#aeb4c0;line-height:1.45;margin:18px 0 0}.status{font-size:13px;color:#86ebb0;min-height:20px}@media(max-width:540px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}}</style></head><body><main class='card' data-iniciar='""" + seguro(iniciar_endpoint) + """' data-ubicacion='""" + seguro(ubicacion_endpoint) + """'><div class='eyebrow'>DMI / ORDEN DE REPARTO</div><h1 class='brand'>ENVIAR <b>PEDIDO</b></h1><p class='sub'>Abre la ruta, inicia el reparto y permite la ubicación para que el cliente pueda seguir el pedido.</p><div class='code'>""" + seguro(pedido.get("orden_envio") or f"ENV-{pedido.get('id')}") + """</div><section class='grid'><div class='field'><span>CLIENTE</span><strong>""" + seguro(pedido.get("nombre")) + """</strong></div><div class='field'><span>TELÉFONO</span><strong>""" + seguro(pedido.get("telefono")) + """</strong></div><div class='field wide'><span>DIRECCIÓN DE ENTREGA</span><strong>""" + seguro(direccion) + """</strong></div>""" + bloque_referencia + """</section><div class='actions'>""" + boton_ruta + """<button class='button' id='iniciar' type='button'>INICIAR REPARTO Y COMPARTIR UBICACIÓN</button><div id='estado' class='status'></div></div><p class='note'>Mantén esta página abierta y permite la ubicación mientras realizas el envío.</p></main><script>const m=document.querySelector('main.card'),iniciarEndpoint=m.dataset.iniciar,ubicacionEndpoint=m.dataset.ubicacion,estado=document.getElementById('estado');let activo=false;async function enviar(pos){const{latitude:a,longitude:b}=pos.coords;try{await fetch(ubicacionEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({latitud:a,longitud:b})})}catch(_){}}document.getElementById('iniciar').addEventListener('click',async()=>{const b=document.getElementById('iniciar');b.disabled=true;try{await fetch(iniciarEndpoint,{method:'POST'});if(!navigator.geolocation){estado.textContent='Este dispositivo no permite compartir ubicación.';return}if(!activo){activo=true;navigator.geolocation.watchPosition(enviar,()=>{estado.textContent='No pudimos obtener la ubicación. Revisa los permisos.'},{enableHighAccuracy:true,maximumAge:30000,timeout:15000})}estado.textContent='Reparto iniciado. Tu ubicación se está compartiendo con el cliente.'}catch(_){estado.textContent='No fue posible iniciar el reparto. Intenta nuevamente.';b.disabled=false}});</script></body></html>"""
 
 
 @app.get("/api/repartidor/envio/{pedido_id}", response_class=HTMLResponse)
@@ -6832,7 +6835,7 @@ async def api_crear_tipo_vehiculo(request: Request):
             return JSONResponse({"error": "Escribe el tipo de vehiculo"}, status_code=400)
 
         codigo_base = "".join(ch for ch in nombre.upper() if ch.isalnum())[:12] or "TIPO"
-        codigo = f"TV-{codigo_base}-{datetime.utcnow().strftime('%H%M%S%f')[:8]}"
+        codigo = f"TV-{codigo_base}-{datetime.now(timezone.utc).replace(tzinfo=None).strftime('%H%M%S%f')[:8]}"
 
         with engine.connect() as conn:
             existente = conn.execute(

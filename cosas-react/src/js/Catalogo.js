@@ -478,7 +478,7 @@ function Catalogo({ onNeedLogin } = {}) {
 
     try {
       const response = await fetch(
-        `${getApiBaseUrl()}/api/catalogo-productos/${editingId}`,
+        `${getApiBaseUrl()}/api/catalogo-productos/${encodeURIComponent(editingId)}`,
         {
           method: "PUT",
           headers: {
@@ -2522,6 +2522,7 @@ function Catalogo({ onNeedLogin } = {}) {
         createPortal(
           <div
             className="product-detail-overlay"
+            role="presentation"
             onClick={() => setSelectedProduct(null)}
           >
             <div

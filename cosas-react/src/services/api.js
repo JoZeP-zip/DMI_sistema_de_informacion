@@ -1,3 +1,4 @@
+import { rolSeguro, textoSeguro, tokenSeguro } from "../utils/safe";
 /**
  * api.js - Capa de servicios para DMI Motors.
  * Centraliza las llamadas al backend FastAPI.
@@ -118,10 +119,10 @@ export const AuthService = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    localStorage.setItem("token",  data.token);
-    localStorage.setItem("role",   data.role);
-    localStorage.setItem("email",  data.email);
-    localStorage.setItem("nombre", data.nombre);
+    localStorage.setItem("token",  tokenSeguro(data.token));
+    localStorage.setItem("role",   rolSeguro(data.role));
+    localStorage.setItem("email",  textoSeguro(data.email, 254));
+    localStorage.setItem("nombre", textoSeguro(data.nombre, 120));
     localStorage.setItem("dmiSessionStartedAt", new Date().toISOString());
     return data;
   },

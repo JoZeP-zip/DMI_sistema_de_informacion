@@ -425,8 +425,8 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage, onViewAppointment
               <form className="cita-form" onSubmit={handleCita} noValidate>
                 <p className="ac-section">Vehiculo</p>
                 <div className="form-group">
-                  <label>Selecciona un vehiculo de Mi Garaje <span className="ac-req">*</span></label>
-                  <select
+                  <label htmlFor="f-selecciona-un-vehiculo-de-mi-g-1">Selecciona un vehiculo de Mi Garaje <span className="ac-req">*</span></label>
+                  <select id="f-selecciona-un-vehiculo-de-mi-g-1"
                     name="vehiculos_idvehiculo"
                     value={formData.vehiculos_idvehiculo}
                     onChange={handleChange}
@@ -447,8 +447,8 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage, onViewAppointment
                 </div>
 
                 <div className="form-group">
-                  <label>Descripcion del vehiculo <span className="ac-req">*</span></label>
-                  <textarea
+                  <label htmlFor="f-descripcion-del-vehiculo-2">Descripcion del vehiculo <span className="ac-req">*</span></label>
+                  <textarea id="f-descripcion-del-vehiculo-2"
                     name="descripcion_vehiculo"
                     placeholder="Ejemplo: Renault Logan 2012, falla al encender, ruido en motor..."
                     value={formData.descripcion_vehiculo || [selectedVehicle?.marca, selectedVehicle?.modelo, selectedVehicle?.placa].filter(Boolean).join(' ')}
@@ -461,8 +461,8 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage, onViewAppointment
                 <p className="ac-section">Programacion</p>
                 <div className="form-row">
                   <div className="form-group no-mb">
-                    <label>Fecha <span className="ac-req">*</span></label>
-                    <input
+                    <label htmlFor="f-fecha-3">Fecha <span className="ac-req">*</span></label>
+                    <input id="f-fecha-3"
                       type="date"
                       name="fecha_cita"
                       value={formData.fecha_cita}
@@ -476,8 +476,8 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage, onViewAppointment
                     </span>
                   </div>
                   <div className="form-group no-mb">
-                    <label>Hora disponible <span className="ac-req">*</span></label>
-                    <select
+                    <label htmlFor="f-hora-disponible-4">Hora disponible <span className="ac-req">*</span></label>
+                    <select id="f-hora-disponible-4"
                       name="hora_cita"
                       value={formData.hora_cita}
                       onChange={handleChange}
@@ -508,8 +508,8 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage, onViewAppointment
 
                 <p className="ac-section">Servicio</p>
                 <div className="form-group">
-                  <label>Servicio <span className="ac-req">*</span></label>
-                  <select
+                  <label htmlFor="f-servicio-5">Servicio <span className="ac-req">*</span></label>
+                  <select id="f-servicio-5"
                     name="motivo"
                     value={formData.motivo}
                     onChange={handleChange}
@@ -527,8 +527,8 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage, onViewAppointment
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Observaciones</label>
-                  <textarea
+                  <label htmlFor="f-observaciones-6">Observaciones</label>
+                  <textarea id="f-observaciones-6"
                     name="observaciones"
                     placeholder="Describe el problema o detalle adicional..."
                     value={formData.observaciones}

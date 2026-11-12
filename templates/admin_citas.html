@@ -132,7 +132,7 @@
                   <div class="ot-actions" role="presentation" onclick="event.stopPropagation()">
                     <button class="ot-icon-btn" type="button" title="Ver detalle" onclick="openCitaModal(this.closest('tr'))"><i class="bi bi-eye"></i></button>
                     <form class="ot-order-form" action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
-                      <select class="ot-mini-select" name="empleado_id" title="Empleado asignado">
+                      <select class="ot-mini-select" name="empleado_id" title="Empleado asignado" aria-label="Empleado asignado">
                         <option value="">Sin asignar</option>
                         {% for empleado in empleados %}
                         <option value="{{ empleado.idempleado }}">{{ empleado.nombre }} {{ empleado.apellido }} - {{ empleado.rol }}</option>
@@ -181,7 +181,7 @@
                   <div class="ot-actions">
                     <button class="ot-icon-btn js-reprogramar-cita" type="button" title="Reprogramar" data-cita-id="{{ cita.idcita }}" data-fecha="{{ cita.fecha }}" data-hora="{{ cita.hora }}"><i class="bi bi-calendar2-week"></i></button>
                     <form class="ot-order-form" action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
-                      <select class="ot-mini-select" name="empleado_id" title="Empleado asignado">
+                      <select class="ot-mini-select" name="empleado_id" title="Empleado asignado" aria-label="Empleado asignado">
                         <option value="">Sin asignar</option>
                         {% for empleado in empleados %}
                         <option value="{{ empleado.idempleado }}">{{ empleado.nombre }} {{ empleado.apellido }} - {{ empleado.rol }}</option>

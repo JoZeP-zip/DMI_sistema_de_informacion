@@ -83,8 +83,8 @@ export default function RegistroPrueba() {
           <input style={{ padding: "8px", width: "70%" }} type="text" name="documento" placeholder="Documento" value={formData.documento} onChange={handleChange} required />
         </div>
 
-        <label style={{ fontSize: "12px", color: "#aaa" }}>Fecha de Nacimiento:</label>
-        <input style={{ padding: "8px" }} type="date" name="fechadenacimiento" value={formData.fechadenacimiento} onChange={handleChange} required />
+        <label style={{ fontSize: "12px", color: "#aaa" }} htmlFor="f-fecha-de-nacimiento-1">Fecha de Nacimiento:</label>
+        <input id="f-fecha-de-nacimiento-1" style={{ padding: "8px" }} type="date" name="fechadenacimiento" value={formData.fechadenacimiento} onChange={handleChange} required />
         <input style={{ padding: "8px" }} type="tel" name="telefono" placeholder="Teléfono" value={formData.telefono} onChange={handleChange} required />
 
         <button type="submit" disabled={loading} style={{ padding: "10px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" }}>

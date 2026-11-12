@@ -4,6 +4,7 @@ import { CheckoutService, MiCuentaService } from "../services/api";
 import { buildProductInvoice, openInvoiceDocument, saveInvoiceLocally } from "./invoice";
 import { showDmiError, showDmiSuccess } from "./DmiMessages";
 
+import { redirigirAPago } from "../utils/safe";
 const LOGO_DMI = "/assets/images/logoempresaXD.png";
 
 const PAYMENT_METHODS = [
@@ -117,7 +118,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
         if (intent?.checkout_url) {
           // El enlace de Wompi es el checkout real. Wompi volvera al sitio
           // cuando configures una URL de redireccion en su panel.
-          window.location.assign(intent.checkout_url);
+          redirigirAPago(intent.checkout_url);
           return;
         }
       } catch (error) {
@@ -152,7 +153,7 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
     try {
       const pedido = await CheckoutService.registrarPedido({ datos: formData, items });
       if (formData.tipoPago === "wompi" && pedido?.checkout_url) {
-        window.location.assign(pedido.checkout_url);
+        redirigirAPago(pedido.checkout_url);
         return;
       }
     } catch (error) {

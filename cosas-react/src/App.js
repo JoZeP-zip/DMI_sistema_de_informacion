@@ -19,6 +19,7 @@ import AdminGalleryManager from './components/AdminGalleryManager';
 import { cld } from './utils/cloudinary';
 
 
+import { rolSeguro, textoSeguro } from './utils/safe';
 const getApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
@@ -361,7 +362,7 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openC
           </button>
         </p>
         <p className="text-center small text-muted">
-          No tienes una cuenta? <span className="text-danger cursor-pointer fw-bold text-decoration-underline" style={{cursor: 'pointer'}} onClick={onSwitchToRegister}>Registrate aqui</span>
+          No tienes una cuenta? <span className="text-danger cursor-pointer fw-bold text-decoration-underline" style={{cursor: 'pointer'}} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSwitchToRegister(); } }} onClick={onSwitchToRegister}>Registrate aqui</span>
         </p>
       </form>
     </div>
@@ -618,7 +619,7 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           REGISTRARSE
         </button>
         <p className="text-center small text-muted">
-          Ya tienes cuenta? <span className="text-danger cursor-pointer fw-bold text-decoration-underline" style={{cursor: 'pointer'}} onClick={onRegisterSuccess}>Inicia sesion</span>
+          Ya tienes cuenta? <span className="text-danger cursor-pointer fw-bold text-decoration-underline" style={{cursor: 'pointer'}} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRegisterSuccess(); } }} onClick={onRegisterSuccess}>Inicia sesion</span>
         </p>
       </form>
     </div>
@@ -1079,7 +1080,7 @@ function App() {
 
   useEffect(() => {
     if (window.location.pathname === '/login') {
-      AuthService.logout();
+      void AuthService.logout();
       setUser(null);
       setView('login');
       return;
@@ -1094,10 +1095,10 @@ function App() {
         const session = await AuthService.validarSesion();
         if (!mounted) return;
 
-        const normalizedRole = String(session.role || 'usuario').toLowerCase();
+        const normalizedRole = rolSeguro(session.role);
         localStorage.setItem('role', normalizedRole);
-        localStorage.setItem('email', session.email || '');
-        localStorage.setItem('nombre', session.nombre || '');
+        localStorage.setItem('email', textoSeguro(session.email, 254));
+        localStorage.setItem('nombre', textoSeguro(session.nombre, 120));
         setUser({ email: session.email, role: normalizedRole, nombre: session.nombre });
 
         const initialView = getInitialView();
@@ -1115,7 +1116,7 @@ function App() {
       } catch (error) {
         if (!mounted) return;
         if (!localStorage.getItem('token')) return;
-        AuthService.logout();
+        void AuthService.logout();
         setUser(null);
         setView('login');
         showNotice('Sesion no valida', 'Tu sesion ya no es valida o tu cuenta ya no existe. Inicia sesion nuevamente.');
@@ -1261,7 +1262,7 @@ function App() {
       confirmText: "Cerrar sesion",
       cancelText: "Cancelar",
       onConfirm: () => {
-        AuthService.logout();
+        void AuthService.logout();
         setUser(null);
         setView('inicio');
         showNotice("Sesion cerrada", "Has salido del sistema correctamente.");
@@ -1660,6 +1661,10 @@ function App() {
                   <div
                     key={i}
                     className={`progress-bar-item ${i === currentSlide ? 'active' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Ir a la diapositiva ${i + 1}`}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCurrentSlide(i); } }}
                     onClick={() => setCurrentSlide(i)}
                   ></div>
                 ))}

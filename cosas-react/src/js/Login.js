@@ -258,7 +258,7 @@ function Login({ setView }) {
 
             marginBottom: '5px'
 
-          }}>
+          }} htmlFor="f-correo-electronico-1">
 
             Correo Electronico:
 
@@ -266,7 +266,7 @@ function Login({ setView }) {
 
  
 
-          <input
+          <input id="f-correo-electronico-1"
 
             type="email"
 
@@ -302,7 +302,7 @@ function Login({ setView }) {
 
             marginBottom: '5px'
 
-          }}>
+          }} htmlFor="f-contrasena-2">
 
             contraseña:
 
@@ -312,7 +312,7 @@ function Login({ setView }) {
 
           <div style={{ position: 'relative' }}>
 
-            <input
+            <input id="f-contrasena-2"
 
               type={showPassword ? 'text' : 'password'}
 
