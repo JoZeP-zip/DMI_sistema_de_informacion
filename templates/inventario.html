@@ -52,7 +52,7 @@
 
     <section class="inv-toolbar">
       <form class="inv-filter" method="get" action="/admin/inventario">
-        <input type="search" name="q" value="{{ q }}" placeholder="Buscar producto, codigo, categoria...">
+        <input aria-label="Buscar producto, codigo, categoria..." type="search" name="q" value="{{ q }}" placeholder="Buscar producto, codigo, categoria...">
         <select name="categoria" onchange="this.form.submit()">
           <option value="">Todas las categorias</option>
           {% for cat in categorias %}
@@ -74,27 +74,27 @@
       <aside class="inv-card inv-form-card" id="inventoryFormCard">
         <h2 class="inv-form-title" id="inventoryFormTitle"><i class="bi bi-plus-square-fill"></i> Nuevo producto</h2>
         <form action="/admin/inventario/nuevo" method="post" id="inventoryProductForm" data-default-action="/admin/inventario/nuevo">
-          <label>Nombre</label>
-          <input type="text" name="nombre" required>
+          <label for="f-nombre-1">Nombre</label>
+          <input id="f-nombre-1" type="text" name="nombre" required>
 
-          <label>Codigo</label>
-          <input type="text" name="codigo">
+          <label for="f-codigo-2">Codigo</label>
+          <input id="f-codigo-2" type="text" name="codigo">
 
           <div class="inv-two">
-            <div><label>Costo</label><input type="number" step="0.01" name="precio_costo" value="0"></div>
-            <div><label>Venta</label><input type="number" step="0.01" name="precio_venta" value="0"></div>
+            <div><label for="f-costo-3">Costo</label><input id="f-costo-3" type="number" step="0.01" name="precio_costo" value="0"></div>
+            <div><label for="f-venta-4">Venta</label><input id="f-venta-4" type="number" step="0.01" name="precio_venta" value="0"></div>
           </div>
 
           <div class="inv-two">
-            <div><label>Cantidad</label><input type="number" name="cantidad" value="0"></div>
-            <div><label>Categoria</label><input type="text" name="categoria"></div>
+            <div><label for="f-cantidad-5">Cantidad</label><input id="f-cantidad-5" type="number" name="cantidad" value="0"></div>
+            <div><label for="f-categoria-6">Categoria</label><input id="f-categoria-6" type="text" name="categoria"></div>
           </div>
 
-          <label>Departamento</label>
-          <input type="text" name="departamento">
+          <label for="f-departamento-7">Departamento</label>
+          <input id="f-departamento-7" type="text" name="departamento">
 
-          <label>Imagen URL</label>
-          <input type="url" name="imagen_url">
+          <label for="f-imagen-url-8">Imagen URL</label>
+          <input id="f-imagen-url-8" type="url" name="imagen_url">
 
           <label class="inv-check-row">
             <input type="checkbox" name="activo" id="inventoryActivo" checked>
@@ -144,13 +144,13 @@
                         <span class="inv-no-img"><i class="bi bi-image"></i></span>
                       {% endif %}
                     </td>
-                    <td><input readonly value="{{ item.nombre }}"></td>
-                    <td><input readonly value="{{ item.codigo or '' }}"></td>
-                    <td><input readonly type="number" step="0.01" value="{{ item.precio_costo }}"></td>
-                    <td><input readonly type="number" step="0.01" value="{{ item.precio_venta }}"></td>
-                    <td><input readonly type="number" value="{{ item.cantidad }}"></td>
-                    <td><input readonly value="{{ item.categoria or '' }}"></td>
-                    <td><input readonly value="{{ item.departamento or '' }}"></td>
+                    <td><input readonly aria-label="Nombre" value="{{ item.nombre }}"></td>
+                    <td><input readonly aria-label="Código" value="{{ item.codigo or '' }}"></td>
+                    <td><input readonly aria-label="Precio costo" type="number" step="0.01" value="{{ item.precio_costo }}"></td>
+                    <td><input readonly aria-label="Precio venta" type="number" step="0.01" value="{{ item.precio_venta }}"></td>
+                    <td><input readonly aria-label="Cantidad" type="number" value="{{ item.cantidad }}"></td>
+                    <td><input readonly aria-label="Categoría" value="{{ item.categoria or '' }}"></td>
+                    <td><input readonly aria-label="Departamento" value="{{ item.departamento or '' }}"></td>
                     <td class="inv-center"><input type="checkbox" disabled {% if item.activo %}checked{% endif %}></td>
                     <td>
                       <button

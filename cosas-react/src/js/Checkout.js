@@ -237,18 +237,18 @@ function Checkout({ total = 0, items = [], onClose, onPaid, factura = null, onIn
           ) : (
             <>
               <div className="form-group">
-                <label className="form-label">Datos de contacto</label>
+                <label className="form-label" htmlFor="f-datos-de-contacto-1">Datos de contacto</label>
                 <div className="form-row">
-                  <input type="text" name="nombre" placeholder="Nombre completo" value={formData.nombre} onChange={handleChange} />
+                  <input id="f-datos-de-contacto-1" type="text" name="nombre" placeholder="Nombre completo" value={formData.nombre} onChange={handleChange} />
                   <input type="text" name="telefono" placeholder="Telefono" value={formData.telefono} onChange={handleChange} />
                 </div>
                 <input type="email" name="email" placeholder="Correo electronico" value={formData.email} onChange={handleChange} />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Direccion de entrega</label>
+                <label className="form-label" htmlFor="f-direccion-de-entrega-2">Direccion de entrega</label>
                 <div className="form-row">
-                  <input type="text" name="direccion" placeholder="Direccion" value={formData.direccion} onChange={handleChange} />
+                  <input id="f-direccion-de-entrega-2" type="text" name="direccion" placeholder="Direccion" value={formData.direccion} onChange={handleChange} />
                   <input type="text" name="ciudad" placeholder="Ciudad" value={formData.ciudad} onChange={handleChange} />
                 </div>
                 <div className="form-row">

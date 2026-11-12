@@ -112,6 +112,9 @@ const CloudinaryUpload = ({ onUploadSuccess, onUploadError, maxSize = 5 }) => {
         cursor: 'pointer',
         transition: 'all 0.3s ease',
       }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
       onClick={() => fileInputRef.current?.click()}
     >
       <input

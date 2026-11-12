@@ -964,7 +964,7 @@ body.ot-table-expanded {
   right: 14px;
   bottom: 7px;
   color: rgba(255,255,255,.09);
-  font-family: 'bootstrap-icons';
+  font-family: 'bootstrap-icons', sans-serif;
   font-size: 4.6rem;
 }
 
@@ -1093,7 +1093,7 @@ body.ot-table-expanded {
   content: '\f18a';
   grid-row: 1 / span 3;
   color: #72df99;
-  font-family: 'bootstrap-icons';
+  font-family: 'bootstrap-icons', sans-serif;
   font-size: 1.2rem;
 }
 .ot-topbar .ot-notification-menu a strong,

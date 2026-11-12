@@ -574,10 +574,10 @@
           <article class="ot-form-panel">
             <h3><i class="bi bi-search"></i> Registrar diagnostico</h3>
             <form action="/admin/ordenes/{{ orden_detalle.idorden }}/diagnostico" method="post">
-              <label>Diagnostico tecnico</label>
-              <textarea name="diagnostico_tecnico" rows="4" required></textarea>
-              <label>Recomendacion</label>
-              <textarea name="recomendacion" rows="4"></textarea>
+              <label for="f-diagnostico-tecnico-1">Diagnostico tecnico</label>
+              <textarea id="f-diagnostico-tecnico-1" name="diagnostico_tecnico" rows="4" required></textarea>
+              <label for="f-recomendacion-2">Recomendacion</label>
+              <textarea id="f-recomendacion-2" name="recomendacion" rows="4"></textarea>
               <button type="submit"><i class="bi bi-check2-square"></i> Agregar diagnostico</button>
               <button type="reset" class="ot-secondary-btn"><i class="bi bi-plus-circle"></i> Agregar otro diagnostico</button>
             </form>
@@ -587,11 +587,11 @@
             <h3><i class="bi bi-tools"></i> Cotizar servicio</h3>
             <form action="/admin/ordenes/{{ orden_detalle.idorden }}/cotizacion/item" method="post">
               <input type="hidden" name="tipo" value="servicio">
-              <label>Servicio a cotizar</label>
-              <input name="descripcion" required placeholder="Ej: Limpieza de inyectores">
+              <label for="f-servicio-a-cotizar-3">Servicio a cotizar</label>
+              <input id="f-servicio-a-cotizar-3" name="descripcion" required placeholder="Ej: Limpieza de inyectores">
               <div class="ot-form-row">
-                <div><label>Cantidad</label><input name="cantidad" type="number" step="0.01" value="1"></div>
-                <div><label>Valor unitario</label><input id="ordenServicioPrecio" name="valor_unitario" type="number" step="0.01" value="0"></div>
+                <div><label for="f-cantidad-4">Cantidad</label><input id="f-cantidad-4" name="cantidad" type="number" step="0.01" value="1"></div>
+                <div><label for="ordenServicioPrecio">Valor unitario</label><input id="ordenServicioPrecio" name="valor_unitario" type="number" step="0.01" value="0"></div>
               </div>
               <button type="submit"><i class="bi bi-plus-square"></i> Agregar a cotizacion</button>
               <button type="reset" class="ot-secondary-btn"><i class="bi bi-plus-circle"></i> Agregar otro servicio</button>
@@ -604,14 +604,14 @@
     <form action="/admin/ordenes/{{ orden_detalle.idorden }}/cotizacion/item" method="post">
         <input type="hidden" name="tipo" value="repuesto">
 
-        <label>Buscar producto</label>
-        <input
+        <label for="ordenInventarioSearch">Buscar producto</label>
+        <input aria-label="Escribe nombre, codigo o categoria"
             type="search"
             id="ordenInventarioSearch"
             class="ot-product-search"
             placeholder="Escribe nombre, codigo o categoria">
 
-        <label>Producto del inventario</label>
+        <label for="ordenInventarioSelect">Producto del inventario</label>
 
         <select name="inventario_id" id="ordenInventarioSelect">
             <option value="">Seleccionar producto</option>
@@ -631,16 +631,16 @@
         </select>
         <small class="ot-product-search-help" id="ordenInventarioSearchHelp">Busca y luego selecciona el producto.</small>
 
-        <label>Descripcion manual</label>
-        <input
+        <label for="f-descripcion-manual-5">Descripcion manual</label>
+        <input id="f-descripcion-manual-5"
             name="descripcion"
             placeholder="Opcional si seleccionas producto">
 
         <div class="ot-form-row">
 
             <div>
-                <label>Cantidad</label>
-                <input
+                <label for="f-cantidad-6">Cantidad</label>
+                <input id="f-cantidad-6"
                     name="cantidad"
                     type="number"
                     step="0.01"
@@ -649,7 +649,7 @@
             </div>
 
             <div>
-                <label>Valor unitario</label>
+                <label for="ordenRepuestoPrecio">Valor unitario</label>
                 <input
                     id="ordenRepuestoPrecio"
                     name="valor_unitario"
@@ -680,17 +680,17 @@
 
             {% if factura_orden %}
               <form action="/admin/ordenes/{{ orden_detalle.idorden }}/pago" method="post" class="ot-payment-form">
-                <label>Valor del pago</label>
-                <input name="valor" type="number" step="0.01" value="{{ factura_orden.saldo or factura_orden.total or 0 }}" required>
-                <label>Metodo de pago</label>
-                <select name="metodopago_id">
+                <label for="f-valor-del-pago-7">Valor del pago</label>
+                <input id="f-valor-del-pago-7" name="valor" type="number" step="0.01" value="{{ factura_orden.saldo or factura_orden.total or 0 }}" required>
+                <label for="f-metodo-de-pago-8">Metodo de pago</label>
+                <select id="f-metodo-de-pago-8" name="metodopago_id">
                   <option value="">Sin metodo</option>
                   {% for metodo in metodos_pago or [] %}
                     <option value="{{ metodo.idmetodopago }}">{{ metodo.descripcionmpago }}</option>
                   {% endfor %}
                 </select>
-                <label>Referencia</label>
-                <input name="referencia" placeholder="Numero de comprobante o nota">
+                <label for="f-referencia-9">Referencia</label>
+                <input id="f-referencia-9" name="referencia" placeholder="Numero de comprobante o nota">
                 <button type="submit"><i class="bi bi-cash-coin"></i> Registrar pago</button>
               </form>
             {% else %}

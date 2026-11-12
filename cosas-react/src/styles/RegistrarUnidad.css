@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Barlow+Condensed:ital,wght@0,400;0,600;1,700&family=Barlow:wght@400;500&display=swap');
  
 /* ══════════════════════════════════════════
@@ -428,7 +429,6 @@
 }
 
 /* DMI FUTURE GARAGE - identidad visual compartida con Citas y Contacto */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
 .ru-wrapper {
   --dm-red: #ff2f55;

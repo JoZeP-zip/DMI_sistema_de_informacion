@@ -139,6 +139,9 @@ const AdminGalleryManager = () => {
               {proyectos.map(proyecto => (
                 <div
                   key={proyecto.id}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setProyectoSeleccionado(proyecto); } }}
                   onClick={() => setProyectoSeleccionado(proyecto)}
                   style={{
                     padding: '12px',
@@ -178,8 +181,8 @@ const AdminGalleryManager = () => {
               >
                 <h4 className="text-danger mb-3">Detalles del Proyecto</h4>
                 <div className="mb-3">
-                  <label className="form-label text-white">Título</label>
-                  <input
+                  <label className="form-label text-white" htmlFor="f-titulo-1">Título</label>
+                  <input id="f-titulo-1"
                     type="text"
                     className="form-control bg-black text-white border-secondary"
                     value={proyectoSeleccionado.titulo}
@@ -190,8 +193,8 @@ const AdminGalleryManager = () => {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label text-white">Descripción</label>
-                  <textarea
+                  <label className="form-label text-white" htmlFor="f-descripcion-2">Descripción</label>
+                  <textarea id="f-descripcion-2"
                     className="form-control bg-black text-white border-secondary"
                     value={proyectoSeleccionado.descripcion}
                     onChange={(e) => setProyectoSeleccionado({
@@ -348,7 +351,7 @@ const AdminGalleryManager = () => {
   descripcion: '${proyectoSeleccionado.descripcion}',
   imagenes: [${proyectoSeleccionado.imagenes?.map(id => `'${id}'`).join(', ') || ''}],
 }`;
-                    navigator.clipboard.writeText(code);
+                    navigator.clipboard.writeText(code).catch(() => {});
                     mostrarMensaje('success', 'Código copiado al portapapeles');
                   }}
                 >

@@ -441,12 +441,13 @@ function Login({ setView }) {
           }}
 
           onClick={() => setNotice(null)}
+          role="presentation"
 
         >
 
           <div
 
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()} role="presentation"
 
             style={{
 

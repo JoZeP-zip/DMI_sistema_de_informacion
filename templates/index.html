@@ -804,37 +804,37 @@
 
                   <div class="form-row">
                     <div class="form-group">
-                      <label class="form-label">Email</label>
-                      <input type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
+                      <label class="form-label" for="f-email-1">Email</label>
+                      <input id="f-email-1" type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">contraseña</label>
-                      <input type="password" name="password" class="form-control" required>
+                      <label class="form-label" for="f-contrasena-2">contraseña</label>
+                      <input id="f-contrasena-2" type="password" name="password" class="form-control" required>
                     </div>
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label">Nombre de usuario</label>
-                    <input type="text" name="usuarionombre" class="form-control" required>
+                    <label class="form-label" for="f-nombre-de-usuario-3">Nombre de usuario</label>
+                    <input id="f-nombre-de-usuario-3" type="text" name="usuarionombre" class="form-control" required>
                   </div>
 
                   <div class="form-section">Datos personales</div>
 
                   <div class="form-row">
                     <div class="form-group">
-                      <label class="form-label">Nombre</label>
-                      <input type="text" name="nombre" class="form-control" required>
+                      <label class="form-label" for="f-nombre-4">Nombre</label>
+                      <input id="f-nombre-4" type="text" name="nombre" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Apellidos</label>
-                      <input type="text" name="apellidos" class="form-control" required>
+                      <label class="form-label" for="f-apellidos-5">Apellidos</label>
+                      <input id="f-apellidos-5" type="text" name="apellidos" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Tipo documento</label>
-                      <select name="tipodedocumento" class="form-select" required>
+                      <label class="form-label" for="f-tipo-documento-6">Tipo documento</label>
+                      <select id="f-tipo-documento-6" name="tipodedocumento" class="form-select" required>
                         <option value="" disabled selected>Seleccione</option>
                         <option value="CC">Cedula Ciudadania</option>
                         <option value="TI">Tarjeta Identidad</option>
@@ -847,18 +847,18 @@
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">No. Documento</label>
-                      <input type="text" name="documento" class="form-control" required pattern="[0-9]+" inputmode="numeric">
+                      <label class="form-label" for="f-no-documento-7">No. Documento</label>
+                      <input id="f-no-documento-7" type="text" name="documento" class="form-control" required pattern="[0-9]+" inputmode="numeric">
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Fecha nacimiento</label>
-                      <input type="date" name="fechadenacimiento" class="form-control" required>
+                      <label class="form-label" for="f-fecha-nacimiento-8">Fecha nacimiento</label>
+                      <input id="f-fecha-nacimiento-8" type="date" name="fechadenacimiento" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Telefono</label>
-                      <input type="text" name="telefono" class="form-control" required>
+                      <label class="form-label" for="f-telefono-9">Telefono</label>
+                      <input id="f-telefono-9" type="text" name="telefono" class="form-control" required>
                     </div>
                   </div>
 
@@ -877,13 +877,13 @@
               <div class="dmi-card-body">
                 <form action="/login" method="post">
                   <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
+                    <label class="form-label" for="f-email-10">Email</label>
+                    <input id="f-email-10" type="email" name="email" class="form-control" required placeholder="correo@dominio.com">
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label">contraseña</label>
-                    <input type="password" name="password" class="form-control" required>
+                    <label class="form-label" for="f-contrasena-11">contraseña</label>
+                    <input id="f-contrasena-11" type="password" name="password" class="form-control" required>
                   </div>
 
                   <button type="submit" class="btn-dmi btn-primary-dmi">
@@ -913,23 +913,23 @@
 
                   <div class="form-row">
                     <div class="form-group">
-                      <label class="form-label">Codigo</label>
-                      <input type="text" name="codigovehiculo" class="form-control" value="{{ vehicle_to_edit[1] if vehicle_to_edit else '' }}" required>
+                      <label class="form-label" for="f-codigo-12">Codigo</label>
+                      <input id="f-codigo-12" type="text" name="codigovehiculo" class="form-control" value="{{ vehicle_to_edit[1] if vehicle_to_edit else '' }}" required>
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Placa</label>
-                      <input type="text" name="placa" class="form-control" value="{{ vehicle_to_edit[5] if vehicle_to_edit else '' }}" required maxlength="10">
+                      <label class="form-label" for="f-placa-13">Placa</label>
+                      <input id="f-placa-13" type="text" name="placa" class="form-control" value="{{ vehicle_to_edit[5] if vehicle_to_edit else '' }}" required maxlength="10">
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Marca</label>
-                      <input type="text" name="marca" class="form-control" value="{{ vehicle_to_edit[8] if vehicle_to_edit else '' }}" required>
+                      <label class="form-label" for="f-marca-14">Marca</label>
+                      <input id="f-marca-14" type="text" name="marca" class="form-control" value="{{ vehicle_to_edit[8] if vehicle_to_edit else '' }}" required>
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Tipo vehiculo</label>
-                      <select name="tipovehiculos_idtipovehiculos" class="form-select" required>
+                      <label class="form-label" for="f-tipo-vehiculo-15">Tipo vehiculo</label>
+                      <select id="f-tipo-vehiculo-15" name="tipovehiculos_idtipovehiculos" class="form-select" required>
                         <option value="" disabled selected>Seleccione</option>
                         {% for tipo in tipos %}
                           <option value="{{ tipo[0] if tipo[0] else tipo.idtipovehiculos }}">
@@ -940,28 +940,28 @@
                     </div>
 
                     <div class="form-group form-wide">
-                      <label class="form-label">Descripcion</label>
-                      <input type="text" name="descripcionvehiculo" class="form-control" value="{{ vehicle_to_edit[2] if vehicle_to_edit else '' }}">
+                      <label class="form-label" for="f-descripcion-16">Descripcion</label>
+                      <input id="f-descripcion-16" type="text" name="descripcionvehiculo" class="form-control" value="{{ vehicle_to_edit[2] if vehicle_to_edit else '' }}">
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Motor</label>
-                      <input type="text" name="motor" class="form-control" value="{{ vehicle_to_edit[3] if vehicle_to_edit else '' }}">
+                      <label class="form-label" for="f-motor-17">Motor</label>
+                      <input id="f-motor-17" type="text" name="motor" class="form-control" value="{{ vehicle_to_edit[3] if vehicle_to_edit else '' }}">
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Asientos</label>
-                      <input type="text" name="cantidad_asientos" class="form-control" value="{{ vehicle_to_edit[4] if vehicle_to_edit else '' }}">
+                      <label class="form-label" for="f-asientos-18">Asientos</label>
+                      <input id="f-asientos-18" type="text" name="cantidad_asientos" class="form-control" value="{{ vehicle_to_edit[4] if vehicle_to_edit else '' }}">
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Capacidad</label>
-                      <input type="text" name="capacidad" class="form-control" value="{{ vehicle_to_edit[6] if vehicle_to_edit else '' }}">
+                      <label class="form-label" for="f-capacidad-19">Capacidad</label>
+                      <input id="f-capacidad-19" type="text" name="capacidad" class="form-control" value="{{ vehicle_to_edit[6] if vehicle_to_edit else '' }}">
                     </div>
 
                     <div class="form-group">
-                      <label class="form-label">Modelo</label>
-                      <input type="text" name="modelo" class="form-control" value="{{ vehicle_to_edit[7] if vehicle_to_edit else '' }}">
+                      <label class="form-label" for="f-modelo-20">Modelo</label>
+                      <input id="f-modelo-20" type="text" name="modelo" class="form-control" value="{{ vehicle_to_edit[7] if vehicle_to_edit else '' }}">
                     </div>
                   </div>
 

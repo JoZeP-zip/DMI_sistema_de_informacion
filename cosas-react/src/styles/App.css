@@ -2265,11 +2265,11 @@ body {
 @keyframes dmiPopoverIn {
     from {
         opacity: 0;
-        transform: translate(-50%, -47%) scale(.96) !important;
+        transform: translate(-50%, -47%) scale(.96);
     }
     to {
         opacity: 1;
-        transform: translate(-50%, -50%) scale(1) !important;
+        transform: translate(-50%, -50%) scale(1);
     }
 }
 
@@ -2891,8 +2891,8 @@ body {
 }
 
 @keyframes dmiPopoverPortalIn {
-    from { opacity: 0; transform: translateY(12px) scale(.97) !important; }
-    to { opacity: 1; transform: translateY(0) scale(1) !important; }
+    from { opacity: 0; transform: translateY(12px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @media (max-width: 767.98px) {

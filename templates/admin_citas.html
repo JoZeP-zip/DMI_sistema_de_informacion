@@ -129,7 +129,7 @@
                 <td>{{ cita.motivo }}</td>
                 <td><span class="ot-status {{ cita.estado }}">{{ cita.estado }}</span></td>
                 <td>
-                  <div class="ot-actions" onclick="event.stopPropagation()">
+                  <div class="ot-actions" role="presentation" onclick="event.stopPropagation()">
                     <button class="ot-icon-btn" type="button" title="Ver detalle" onclick="openCitaModal(this.closest('tr'))"><i class="bi bi-eye"></i></button>
                     <form class="ot-order-form" action="/admin/ordenes/desde-cita/{{ cita.idcita }}" method="post">
                       <select class="ot-mini-select" name="empleado_id" title="Empleado asignado">

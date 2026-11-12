@@ -312,14 +312,14 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                 <p className="ru-section">Datos de acceso</p>
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">Nombre de usuario <span className="ru-req">*</span></label>
-                    <input className="ru-input" type="text" name="nombreUsuario"
+                    <label className="ru-label" htmlFor="f-nombre-de-usuario-1">Nombre de usuario <span className="ru-req">*</span></label>
+                    <input id="f-nombre-de-usuario-1" className="ru-input" type="text" name="nombreUsuario"
                       value={cliente.nombreUsuario} onChange={onCliente}
                       placeholder="juanperez92" required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Correo electronico <span className="ru-req">*</span></label>
-                    <input className="ru-input" type="email" name="email"
+                    <label className="ru-label" htmlFor="f-correo-electronico-2">Correo electronico <span className="ru-req">*</span></label>
+                    <input id="f-correo-electronico-2" className="ru-input" type="email" name="email"
                       value={cliente.email} onChange={onCliente}
                       placeholder="juan@email.com" required />
                   </div>
@@ -327,9 +327,9 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
                 <div className="ru-row mb-22">
                   <div className="ru-field">
-                    <label className="ru-label">contraseña <span className="ru-req">*</span></label>
+                    <label className="ru-label" htmlFor="f-contrasena-3">contraseña <span className="ru-req">*</span></label>
                     <div className="ru-pw-wrap">
-                      <input
+                      <input id="f-contrasena-3"
                         className="ru-input pr-40"
                         type={showPw ? 'text' : 'password'}
                         name="contraseña" value={cliente.contraseña}
@@ -341,9 +341,9 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                     </div>
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Confirmar contraseña <span className="ru-req">*</span></label>
+                    <label className="ru-label" htmlFor="f-confirmar-contrasena-4">Confirmar contraseña <span className="ru-req">*</span></label>
                     <div className="ru-pw-wrap">
-                      <input
+                      <input id="f-confirmar-contrasena-4"
                         className="ru-input pr-40"
                         type={showConfirmPw ? 'text' : 'password'}
                         name="confirmarcontraseña"
@@ -363,14 +363,14 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                 <p className="ru-section">Datos personales</p>
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">Nombre <span className="ru-req">*</span></label>
-                    <input className="ru-input" type="text" name="nombre"
+                    <label className="ru-label" htmlFor="f-nombre-5">Nombre <span className="ru-req">*</span></label>
+                    <input id="f-nombre-5" className="ru-input" type="text" name="nombre"
                       value={cliente.nombre} onChange={onCliente}
                       placeholder="Juan" required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Apellido <span className="ru-req">*</span></label>
-                    <input className="ru-input" type="text" name="apellido"
+                    <label className="ru-label" htmlFor="f-apellido-6">Apellido <span className="ru-req">*</span></label>
+                    <input id="f-apellido-6" className="ru-input" type="text" name="apellido"
                       value={cliente.apellido} onChange={onCliente}
                       placeholder="PÃ©rez" required />
                   </div>
@@ -378,16 +378,16 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
                 <div className="ru-row">
                   <div className="ru-field w-155">
-                    <label className="ru-label">Tipo doc. <span className="ru-req">*</span></label>
-                    <select className="ru-select" name="tipoDocumento"
+                    <label className="ru-label" htmlFor="f-tipo-doc-7">Tipo doc. <span className="ru-req">*</span></label>
+                    <select id="f-tipo-doc-7" className="ru-select" name="tipoDocumento"
                       value={cliente.tipoDocumento} onChange={onCliente} required>
                       <option value="">Seleccionar</option>
                       {tiposDocumento.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">NÂ° Documento <span className="ru-req">*</span></label>
-                    <input className="ru-input" type="text" name="documento"
+                    <label className="ru-label" htmlFor="f-na-documento-8">NÂ° Documento <span className="ru-req">*</span></label>
+                    <input id="f-na-documento-8" className="ru-input" type="text" name="documento"
                       value={cliente.documento} onChange={onCliente}
                       placeholder="1234567890" required />
                   </div>
@@ -395,13 +395,13 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">Fecha de nacimiento <span className="ru-req">*</span></label>
-                    <input className="ru-input" type="date" name="fechaNacimiento"
+                    <label className="ru-label" htmlFor="f-fecha-de-nacimiento-9">Fecha de nacimiento <span className="ru-req">*</span></label>
+                    <input id="f-fecha-de-nacimiento-9" className="ru-input" type="date" name="fechaNacimiento"
                       value={cliente.fechaNacimiento} onChange={onCliente} required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">TelÃ©fono</label>
-                    <input className="ru-input" type="tel" name="telefono"
+                    <label className="ru-label" htmlFor="f-telafono-10">TelÃ©fono</label>
+                    <input id="f-telafono-10" className="ru-input" type="tel" name="telefono"
                       value={cliente.telefono} onChange={onCliente}
                       placeholder="555-0123" />
                   </div>
@@ -430,14 +430,14 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                 <p className="ru-section">Identificacion</p>
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">Codigo <span className="ru-req">*</span></label>
-                    <input className="ru-input" type="text" name="codigo"
+                    <label className="ru-label" htmlFor="f-codigo-11">Codigo <span className="ru-req">*</span></label>
+                    <input id="f-codigo-11" className="ru-input" type="text" name="codigo"
                       value={vehiculo.codigo} onChange={onVehiculo}
                       placeholder="VEH-001" required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Placa <span className="ru-req">*</span></label>
-                    <input className="ru-input uppercase" type="text" name="placa"
+                    <label className="ru-label" htmlFor="f-placa-12">Placa <span className="ru-req">*</span></label>
+                    <input id="f-placa-12" className="ru-input uppercase" type="text" name="placa"
                       value={vehiculo.placa} onChange={onVehiculo}
                       placeholder="XYZ-123" required />
                   </div>
@@ -445,14 +445,14 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">Marca <span className="ru-req">*</span></label>
-                    <input className="ru-input" type="text" name="marca"
+                    <label className="ru-label" htmlFor="f-marca-13">Marca <span className="ru-req">*</span></label>
+                    <input id="f-marca-13" className="ru-input" type="text" name="marca"
                       value={vehiculo.marca} onChange={onVehiculo}
                       placeholder="Nissan" required />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Tipo de Vehi­culo <span className="ru-req">*</span></label>
-                    <select className="ru-select" name="tipoVehiculo"
+                    <label className="ru-label" htmlFor="f-tipo-de-vehiculo-14">Tipo de Vehi­culo <span className="ru-req">*</span></label>
+                    <select id="f-tipo-de-vehiculo-14" className="ru-select" name="tipoVehiculo"
                       value={vehiculo.tipoVehiculo} onChange={onVehiculo} required>
                       <option value="">Seleccionar</option>
                       {tiposVehiculo.map(t => (
@@ -479,14 +479,14 @@ export default function RegistrarUnidad({ onComplete } = {}) {
                 <p className="ru-section">Especificaciones</p>
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">Motor</label>
-                    <input className="ru-input" type="text" name="motor"
+                    <label className="ru-label" htmlFor="f-motor-15">Motor</label>
+                    <input id="f-motor-15" className="ru-input" type="text" name="motor"
                       value={vehiculo.motor} onChange={onVehiculo}
                       placeholder="2.0L Turbo" />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Modelo</label>
-                    <input className="ru-input" type="text" name="modelos"
+                    <label className="ru-label" htmlFor="f-modelo-16">Modelo</label>
+                    <input id="f-modelo-16" className="ru-input" type="text" name="modelos"
                       value={vehiculo.modelos} onChange={onVehiculo}
                       placeholder="Sentra 2022" />
                   </div>
@@ -494,22 +494,22 @@ export default function RegistrarUnidad({ onComplete } = {}) {
 
                 <div className="ru-row">
                   <div className="ru-field">
-                    <label className="ru-label">Asientos</label>
-                    <input className="ru-input" type="number" name="asientos"
+                    <label className="ru-label" htmlFor="f-asientos-17">Asientos</label>
+                    <input id="f-asientos-17" className="ru-input" type="number" name="asientos"
                       value={vehiculo.asientos} onChange={onVehiculo}
                       placeholder="5" min="1" />
                   </div>
                   <div className="ru-field">
-                    <label className="ru-label">Capacidad (kg)</label>
-                    <input className="ru-input" type="text" name="capacidad"
+                    <label className="ru-label" htmlFor="f-capacidad-kg-18">Capacidad (kg)</label>
+                    <input id="f-capacidad-kg-18" className="ru-input" type="text" name="capacidad"
                       value={vehiculo.capacidad} onChange={onVehiculo}
                       placeholder="1500 kg" />
                   </div>
                 </div>
 
                 <div className="ru-field">
-                  <label className="ru-label">Descripcion</label>
-                  <textarea className="ru-textarea" name="descripcion"
+                  <label className="ru-label" htmlFor="f-descripcion-19">Descripcion</label>
+                  <textarea id="f-descripcion-19" className="ru-textarea" name="descripcion"
                     value={vehiculo.descripcion} onChange={onVehiculo}
                     placeholder="Descripcion general del Vehi­culo..." />
                 </div>

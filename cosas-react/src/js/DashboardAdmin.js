@@ -24,15 +24,21 @@ const DashboardAdmin = ({ onLogout }) => {
 
   useEffect(() => {
     const handleMessage = (event) => {
-
+      // Solo aceptamos mensajes del propio sitio o del backend del panel embebido.
+      const origenesPermitidos = [window.location.origin];
+      try {
+        origenesPermitidos.push(new URL(apiBaseUrl || window.location.origin, window.location.origin).origin);
+      } catch (_) { /* apiBaseUrl invalida: solo se acepta el origen propio */ }
+      if (!origenesPermitidos.includes(event.origin)) return;
 
       if (event.data?.type === 'DMI_LOGOUT') {
-   
+        // El panel embebido ya eliminó la cookie del backend. Cerramos
+        // también el estado React y volvemos directamente al inicio.
         if (onLogout) onLogout(true);
       }
     };
 
-    window.addEventListener('dmi:message', handleMessage);
+    window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [onLogout, apiBaseUrl]);
 

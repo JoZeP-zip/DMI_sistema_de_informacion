@@ -342,8 +342,8 @@ const AgendarCita = ({ onNeedLogin, onNeedVehicle, onGoGarage, onViewAppointment
   return (
     <div className="agendar-cita-wrapper">
       {modalAlerta && (
-        <div className="ac-modal-overlay" onClick={cerrarAlerta}>
-          <div className="ac-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ac-modal-overlay" role="presentation" onClick={cerrarAlerta}>
+          <div className="ac-modal" onClick={(e) => e.stopPropagation()} role="presentation">
             <p className="ac-modal-label">{modalAlerta.etiqueta}</p>
             <h3 className="ac-modal-title">{modalAlerta.titulo}</h3>
             <p className="ac-modal-text">{modalAlerta.mensaje}</p>

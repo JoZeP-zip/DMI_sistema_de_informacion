@@ -242,8 +242,7 @@ function Catalogo({ onNeedLogin } = {}) {
       }
     };
 
-    loadCatalogFromDatabase();
-
+    void loadCatalogFromDatabase();
     return () => {
       cancelled = true;
     };
@@ -2527,7 +2526,7 @@ function Catalogo({ onNeedLogin } = {}) {
           >
             <div
               className="product-detail-modal"
-              onClick={e => e.stopPropagation()}
+              onClick={e => e.stopPropagation()} role="presentation"
             >
               <button
                 className="product-detail-close"

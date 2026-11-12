@@ -182,7 +182,7 @@ const DmiToast = ({ toast, onClose }) => {
 
 
 // Componente para Iniciar Sesion
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
 
 // Regla de seguridad para todas las contrasenas del sistema.
 // Debe tener entre 8 y 20 caracteres y al menos un simbolo.
@@ -307,8 +307,8 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openC
       </h3>
       <form onSubmit={handleSubmit} noValidate>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">CORREO ELECTRONICO</label>
-          <input 
+          <label className="form-label text-white small fw-bold" htmlFor="f-correo-electronico-1">CORREO ELECTRONICO</label>
+          <input id="f-correo-electronico-1" 
             type="email" 
             className="form-control bg-black text-white border-secondary rounded-0 focus-red"
             value={email}
@@ -317,9 +317,9 @@ const LoginView = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword, openC
           />
         </div>
         <div className="mb-4">
-          <label className="form-label text-white small fw-bold">contraseña</label>
+          <label className="form-label text-white small fw-bold" htmlFor="f-contrasena-2">contraseña</label>
           <div className="position-relative">
-            <input 
+            <input id="f-contrasena-2" 
               type={showPassword ? "text" : "password"} 
               className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
               value={password}
@@ -484,8 +484,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
 
       <form onSubmit={handleRegister} noValidate>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">NOMBRE COMPLETO</label>
-          <input 
+          <label className="form-label text-white small fw-bold" htmlFor="f-nombre-completo-3">NOMBRE COMPLETO</label>
+          <input id="f-nombre-completo-3" 
             type="text" 
             className="form-control bg-black text-white border-secondary rounded-0 focus-red"
             value={nombre}
@@ -494,8 +494,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           />
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">APELLIDOS</label>
-          <input 
+          <label className="form-label text-white small fw-bold" htmlFor="f-apellidos-4">APELLIDOS</label>
+          <input id="f-apellidos-4" 
             type="text" 
             className="form-control bg-black text-white border-secondary rounded-0 focus-red"
             value={apellidos}
@@ -504,8 +504,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           />
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">NOMBRE DE USUARIO</label>
-          <input 
+          <label className="form-label text-white small fw-bold" htmlFor="f-nombre-de-usuario-5">NOMBRE DE USUARIO</label>
+          <input id="f-nombre-de-usuario-5" 
             type="text" 
             className="form-control bg-black text-white border-secondary rounded-0 focus-red"
             value={usuarionombre}
@@ -514,8 +514,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           />
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">TIPO DE DOCUMENTO</label>
-          <select
+          <label className="form-label text-white small fw-bold" htmlFor="f-tipo-de-documento-6">TIPO DE DOCUMENTO</label>
+          <select id="f-tipo-de-documento-6"
             className="form-select bg-black text-white border-secondary rounded-0 focus-red"
             value={tipodedocumento}
             onChange={(e) => setTipodedocumento(e.target.value)}
@@ -529,8 +529,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           </select>
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">DOCUMENTO</label>
-          <input 
+          <label className="form-label text-white small fw-bold" htmlFor="f-documento-7">DOCUMENTO</label>
+          <input id="f-documento-7" 
             type="text" 
             inputMode="numeric"
             pattern="[0-9]*"
@@ -541,8 +541,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           />
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">TELEFONO</label>
-          <input 
+          <label className="form-label text-white small fw-bold" htmlFor="f-telefono-8">TELEFONO</label>
+          <input id="f-telefono-8" 
             type="tel" 
             className="form-control bg-black text-white border-secondary rounded-0 focus-red"
             value={telefono}
@@ -551,8 +551,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           />
         </div>
         <div className="mb-3 auth-date-field">
-          <label className="form-label text-white small fw-bold">FECHA DE NACIMIENTO</label>
-          <input
+          <label className="form-label text-white small fw-bold" htmlFor="f-fecha-de-nacimiento-9">FECHA DE NACIMIENTO</label>
+          <input id="f-fecha-de-nacimiento-9"
             type="date"
             className="form-control bg-black text-white border-secondary rounded-0 focus-red"
             value={fechadenacimiento}
@@ -562,8 +562,8 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           />
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">CORREO ELECTRONICO</label>
-          <input 
+          <label className="form-label text-white small fw-bold" htmlFor="f-correo-electronico-10">CORREO ELECTRONICO</label>
+          <input id="f-correo-electronico-10" 
             type="email" 
             className="form-control bg-black text-white border-secondary rounded-0 focus-red"
             value={email}
@@ -572,9 +572,9 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           />
         </div>
         <div className="mb-3">
-          <label className="form-label text-white small fw-bold">contraseña</label>
+          <label className="form-label text-white small fw-bold" htmlFor="f-contrasena-11">contraseña</label>
           <div className="position-relative">
-            <input 
+            <input id="f-contrasena-11" 
               type={showPassword ? "text" : "password"} 
               className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
               value={password}
@@ -594,9 +594,9 @@ const RegistroUsuarioView = ({ onRegisterSuccess, onVerificationNeeded, openConf
           <small className="text-muted d-block mt-2">8-20 caracteres y minimo 1 simbolo.</small>
         </div>
         <div className="mb-4">
-          <label className="form-label text-white small fw-bold">CONFIRMAR contraseña</label>
+          <label className="form-label text-white small fw-bold" htmlFor="f-confirmar-contrasena-12">CONFIRMAR contraseña</label>
           <div className="position-relative">
-            <input 
+            <input id="f-confirmar-contrasena-12" 
               type={showConfirmPassword ? "text" : "password"} 
               className="form-control bg-black text-white border-secondary rounded-0 focus-red pe-5"
               value={confirmPassword}
@@ -810,8 +810,8 @@ const NuevaPasswordView = ({ onBackToLogin, openConfirm }) => {
       <h3 className="text-center text-uppercase fw-black mb-3">Nueva <span className="text-danger">Contrasena</span></h3>
       <p className="text-center text-white-50 small mb-4">Crea una contrasena de 8 a 20 caracteres con minimo un simbolo.</p>
       <form onSubmit={handleSubmit} noValidate>
-        <div className="mb-3"><label className="form-label text-white small fw-bold">NUEVA CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={password} onChange={(event) => setPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))} maxLength={PASSWORD_MAX_LENGTH} required /></div>
-        <div className="mb-4"><label className="form-label text-white small fw-bold">CONFIRMAR CONTRASENA</label><input type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))} maxLength={PASSWORD_MAX_LENGTH} required /></div>
+        <div className="mb-3"><label className="form-label text-white small fw-bold" htmlFor="f-nueva-contrasena-13">NUEVA CONTRASENA</label><input id="f-nueva-contrasena-13" type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={password} onChange={(event) => setPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))} maxLength={PASSWORD_MAX_LENGTH} required /></div>
+        <div className="mb-4"><label className="form-label text-white small fw-bold" htmlFor="f-confirmar-contrasena-14">CONFIRMAR CONTRASENA</label><input id="f-confirmar-contrasena-14" type="password" className="form-control bg-black text-white border-secondary rounded-0 focus-red" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value.slice(0, PASSWORD_MAX_LENGTH))} maxLength={PASSWORD_MAX_LENGTH} required /></div>
         <button type="submit" className="btn btn-danger w-100 rounded-0 fw-bold py-2 tracking-widest" disabled={saving}>{saving ? 'ACTUALIZANDO...' : 'ACTUALIZAR CONTRASENA'}</button>
       </form>
     </div>
@@ -1052,7 +1052,7 @@ function App() {
       }
     };
 
-    cargarNotificaciones();
+    void cargarNotificaciones();
   }, [user]);
 
   useEffect(() => {
@@ -1122,7 +1122,7 @@ function App() {
       }
     };
 
-    validarSesion();
+    void validarSesion();
     return () => { mounted = false; };
   }, []);
 
